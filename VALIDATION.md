@@ -72,3 +72,21 @@ smoke-test configuration, not a tracked release configuration:
 ```
 
 See README.md for standard release packaging, pushing the fork, and future upstream merges.
+
+## GitHub publication and additional packaging checks
+
+The source was pushed to `liwwyy/OneForAllLauncher` on `main` and `oneforall`.
+The fork release workflow now builds unsigned Windows NSIS installers, Linux
+DEB/RPM/AppImage packages, and macOS DMG/app archives for Intel and Apple Silicon.
+It publishes only after all expected assets are present, including checksums.
+Upstream signing credentials and updater signatures are not required.
+
+Locally, the RPM configuration produced a package with the separate
+`oneforall-launcher` identity and the original license and attribution files.
+AppImage packaging succeeded with `NO_STRIP=1` (the bundled linuxdeploy strip
+tool cannot read this host's RELR libraries). The AppImage opened the
+OneForAllLauncher window and initialized Vulkan with only the known nonfatal
+libayatana deprecation warning. AppImageLauncher desktop integration was bypassed
+for the smoke test using `APPIMAGELAUNCHER_DISABLE=1`; test XDG directories were
+under `target/smoke-appimage`. These local artifacts still use the development
+binary; optimized release binaries are built separately by GitHub Actions.

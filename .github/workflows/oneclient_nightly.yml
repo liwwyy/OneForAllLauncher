@@ -142,6 +142,8 @@ jobs:
         shell: bash
         env:
           CI: 'true'
+          # Cargo strips the executable; linuxdeploy's old strip cannot read modern RELR libraries.
+          NO_STRIP: '1'
         run: |
           ARGS="--release --formats ${{ matrix.formats }}"
           if [ -n "${{ matrix.target }}" ]; then

@@ -47,6 +47,10 @@ cargo build --release -p oneclient_app --bin oneforall_app
 cargo packager --release --packages oneclient_app --formats deb
 ```
 
+For AppImage packaging on modern Linux distributions, set `NO_STRIP=1` so
+linuxdeploy does not run its older strip tool on system libraries. Cargo already
+strips the release executable.
+
 Packaging metadata lives in `packages/oneclient_app/Cargo.toml`.
 The original `icon.jpg` is ignored; converted icons and the embedded SVG logo are
 tracked. No generated Apple `Assets.car` is needed or shipped.
