@@ -1,78 +1,102 @@
-<div align="center">
+# OneForAllLauncher
 
-<img src=".github/media/RepoBanner.png" alt="Repository Banner" />
+OneForAllLauncher, a fork of OneClient by Polyfrost.
 
-# OneClient  |  OneLauncher
-The monorepo containing the code for OneLauncher, OneClient, and their core backend.
+Modified on **2026-10-06** to support standalone offline accounts, independent
+branding and side-by-side installation with upstream. Original copyright and
+third-party notices are preserved in [LICENSE](LICENSE) and [ATTRIBUTION.md).
+This project remains **GPL-3.0-only**, without warranty. When distributing binaries,
+make the corresponding source for that exact build available alongside them.
 
-OneClient is a Minecraft client featuring fully 100% open-source components, offering many packaged and pre-configured mods in one click.
-OneLauncher is a WIP Minecraft launcher giving power-users the greatest customization whilst featuring a clean UI.
+Offline accounts work without Microsoft sign-in. They require a valid Minecraft
+username (3–16 ASCII letters, digits or underscores) and use Minecraft's offline
+UUID algorithm. Game downloads still require connectivity on first installation;
+offline accounts can join servers that accept offline players. Authenticated
+servers require a Microsoft account with Minecraft access. Bundled online services
+(such as cosmetics and friend/P2P hosting) may also require an authenticated account.
 
-</div>
+## Build and run
 
-## Installing
-
-You can install the latest release of OneClient from our website: [https://polyfrost.org/projects/oneclient](https://polyfrost.org/projects/oneclient)
-as well as our [GitHub releases](https://github.com/Polyfrost/OneLauncher/releases/latest).
-
-| Windows (x86_64) | macOS (Intel & Apple Silicon) | Linux (x86_64)                                          |
-|------------------|-------------------------------|---------------------------------------------------------|
-| Installer 🔄      | DMG 🔄                        | AppImage 🔄                                             |
-|                  | App Bundle 🔄                 | DEB                                                     |
-|                  |                               | RPM                                                     |
-|                  |                               | [AUR](https://aur.archlinux.org/packages/oneclient-bin) |
-
-> 🔄 = Has support for autoupdating built-in
-
-
-## Contributing
-
-We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) before getting started.
-
-
-### Requirements
-
-The project targets **Rust 1.97** or later. You can install Rust via [rustup](https://rustup.rs/).
-
-
-### Building & Running
+Use Rust 1.97 or later and the native dependencies required by Freya/Skia.
 
 ```sh
-# Run the app
-cargo run -p oneclient_app
-
-# Build a release binary
-cargo build -p oneclient_app --release
+cargo build
+cargo test -p oneclient_auth
+cargo run -p oneclient_app --bin oneforall_app
 ```
 
+Workspace crate names retain the `oneclient_` prefix to keep upstream merges
+manageable. The executable is `oneforall_app`, the URL scheme is `oneforall://`
+(`oneforall-dev://` in debug builds), and release data lives under
+`OneForAll/OneForAllLauncher` in the platform's application data directory.
+Debug builds use `OneForAllLauncher-dev`. Settings, accounts, game installations,
+and single-instance IPC are independent of upstream. OneClient v1 imports are disabled.
 
-### Packaging / Releasing
+Automatic updates are disabled. Configure a fork-owned endpoint and signing key
+before enabling them. Fork release notes are bundled locally. Upstream AUR/COPR
+publishing configurations and macOS liquid-glass asset catalogs are removed;
+macOS packaging uses the supplied ICNS icon. Upstream service endpoints are retained
+for game metadata and Microsoft login. Crash reporting requires an explicit
+`ONEFORALL_SENTRY_DSN` at build time.
 
-Installers are produced with [**cargo-packager**](https://github.com/crabnebula-dev/cargo-packager)
-(the standalone bundler spun out of the Tauri bundler). Config lives in
-[`packages/oneclient_app/Cargo.toml`](./packages/oneclient_app/Cargo.toml) under
-`[package.metadata.packager]`.
+## Package
 
 ```sh
 cargo install cargo-packager --locked
-
-# Build the binary, then bundle it for the current OS:
-cargo build --release -p oneclient_app
-cargo packager --release -p oneclient_app --formats <targets>
-#   Windows: nsis      macOS: app,dmg      Linux: deb,appimage
+cargo build --release -p oneclient_app --bin oneforall_app
+cargo packager --release --packages oneclient_app --formats deb
 ```
 
+Packaging metadata lives in `packages/oneclient_app/Cargo.toml`.
+The original `icon.jpg` is ignored; converted icons and the embedded SVG logo are
+tracked. No generated Apple `Assets.car` is needed or shipped.
 
-### Versioning
+## GitHub releases
 
-The workspace shares a single version, defined in the root [`Cargo.toml`](./Cargo.toml) under `[workspace.package]`.
+The repository is https://github.com/liwwyy/OneForAllLauncher. `origin` points to
+this fork; `upstream` points to Polyfrost. Fork development lives on `main`.
 
-Versions and release notes come from [Knope](https://knope.tech) change files in [`.changeset/`](./.changeset).
-Add one per user-facing change with `knope document-change` (installed via `cargo install knope`). The
-`OneClient Release Build` workflow consumes them, bumps the version, writes [`CHANGELOG.md`](./CHANGELOG.md),
-and uses the new entry as the GitHub release body, which is what the launcher's changelog page shows.
+In GitHub Actions, run **OneForAllLauncher Release Build** on `main`, or use:
 
+```sh
+gh workflow run oneclient_release.yml --ref main -f prerelease=true
+```
 
-## Code signing
+The workflow builds optimized binaries and publishes a release only when all
+four platform builds succeed:
 
-This program uses free code signing provided by [SignPath.io](https://signpath.io?utm_source=foundation&utm_medium=github&utm_campaign=0install), and a certificate by the [SignPath Foundation](https://signpath.org?utm_source=foundation&utm_medium=github&utm_campaign=0install). We thank them very much to their contributions to OSS software!
+- Windows x86_64: NSIS `.exe` installer with the Microsoft VC++ runtime bundled.
+- Linux x86_64: `.deb`, `.rpm`, and `.AppImage`.
+- macOS Apple Silicon and Intel: `.dmg` and `.app.tar.gz`.
+- `SHA256SUMS.txt` and GitHub's source archives for the exact release tag.
+
+Fork releases use tags like `oneforall-2.6.1`. Increase `workspace.package.version`
+in `Cargo.toml`, update `Cargo.lock` (`cargo check`), and update `FORK_CHANGELOG.md`
+before the next release. The workflow refuses to overwrite an existing release.
+Use `prerelease=false` when a build has been validated for general release.
+
+No private signing secrets are required. These builds are unsigned and macOS
+builds are not notarized; Windows SmartScreen/macOS Gatekeeper may prompt or block
+them. Automatic updates stay disabled. The inherited upstream signing and updater
+publication steps are removed. Nightly builds are available by manual workflow
+dispatch, so pushing source does not duplicate the four-platform release build.
+
+## Keep up with upstream
+
+Keep fork changes in commits separate from upstream, so future merges preserve
+branding, isolated storage, offline account support and disabled upstream updates.
+Update on a dedicated branch and test before merging:
+
+```sh
+git fetch upstream
+git switch main
+git switch -c sync-upstream-YYYY-MM-DD
+git merge upstream/main
+cargo build
+cargo test -p oneclient_auth
+# Also run GUI/packaging checks, then merge into your fork branch.
+```
+
+Check monthly or after an upstream security release. You can ask Codex to perform
+an upstream sync, resolve conflicts, audit these fork requirements, and rerun
+build, auth and packaged-launch checks. Review the resulting diff before publishing.

@@ -118,7 +118,7 @@ fn build_client() -> Result<reqwest::Client, reqwest::Error> {
         .http1_only()
         .tls_backend_rustls()
         .user_agent(format!(
-            "OneClient {} ({})",
+            "OneForAllLauncher {} ({})",
             env!("CARGO_PKG_VERSION"),
             env!("CARGO_PKG_HOMEPAGE")
         ));

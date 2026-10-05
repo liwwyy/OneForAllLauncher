@@ -71,7 +71,7 @@ impl Component for OnboardingMigration {
                 "Bring over your Minecraft files",
                 "We found a Minecraft installation on this PC. We can copy your worlds, \
                  settings, screenshots and servers over. Mods, resource packs and shaders stay \
-                 behind; OneClient manages those for you."
+                 behind; OneForAllLauncher manages those for you."
                     .to_string(),
             )
         } else {

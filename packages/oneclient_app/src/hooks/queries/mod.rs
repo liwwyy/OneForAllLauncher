@@ -39,15 +39,16 @@ pub use analytics::{
     try_cluster_analytics, try_global_analytics, use_cluster_analytics, use_global_analytics,
 };
 pub use auth::{
-    AddOfflineAccountKeys, BeginMicrosoftLoginMutation, CancelMicrosoftLoginKeys,
-    CancelMicrosoftLoginMutation, FinishMicrosoftLoginMutation, RefreshAccountKeys,
-    RemoveAccountKeys, SetDefaultAccountKeys, UseRefreshAccount, UseRemoveAccount,
-    UseSetDefaultAccount, accounts_have_microsoft, login_code_already_handled, mutation_error,
-    mutation_is_pending, mutation_is_running, mutation_ok, reset_login_code_dedup, try_account,
-    try_accounts, try_default_account, use_account, use_accounts, use_add_microsoft_account,
-    use_add_offline_account, use_begin_microsoft_login, use_cancel_microsoft_login,
-    use_current_account, use_default_account, use_finish_microsoft_login, use_refresh_account,
-    use_refresh_all_accounts, use_remove_account, use_set_default_account,
+    AddOfflineAccountKeys, AddOfflineAccountMutation, BeginMicrosoftLoginMutation,
+    CancelMicrosoftLoginKeys, CancelMicrosoftLoginMutation, FinishMicrosoftLoginMutation,
+    RefreshAccountKeys, RemoveAccountKeys, SetDefaultAccountKeys, UseRefreshAccount,
+    UseRemoveAccount, UseSetDefaultAccount, accounts_have_microsoft, login_code_already_handled,
+    mutation_error, mutation_is_pending, mutation_is_running, mutation_ok, reset_login_code_dedup,
+    try_account, try_accounts, try_default_account, use_account, use_accounts,
+    use_add_microsoft_account, use_add_offline_account, use_begin_microsoft_login,
+    use_cancel_microsoft_login, use_current_account, use_default_account,
+    use_finish_microsoft_login, use_refresh_account, use_refresh_all_accounts, use_remove_account,
+    use_set_default_account,
 };
 pub use bundles::{
     AvailableBundlesQuery, ClusterBundles, OnboardingBundlesQuery, available_bundles,

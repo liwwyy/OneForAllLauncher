@@ -1,6 +1,6 @@
 [package]
 name = "oneclient_macro"
-description = "Macros for OneClient"
+description = "Macros for OneForAllLauncher"
 version = { workspace = true }
 license = { workspace = true }
 edition = { workspace = true }

@@ -15,7 +15,7 @@ enum UpdateAnswer {
 fn update_prompt(version: &str) -> Prompt<UpdateAnswer> {
     Prompt::new(
         "Update available",
-        format!("OneClient {version} is ready to install. Download and install it now?"),
+        format!("OneForAllLauncher {version} is ready to install. Download and install it now?"),
     )
     .option(
         Choice::primary(UPDATE_CHOICE_INSTALL, "Install"),
@@ -27,6 +27,10 @@ fn update_prompt(version: &str) -> Prompt<UpdateAnswer> {
 const PROGRESS_STEP: u64 = 256 * 1024;
 
 pub fn spawn_update_check(auto_install: bool, events: EventBus) {
+    if UPDATER_ENDPOINT.is_none() {
+        tracing::debug!("automatic updates disabled for this fork");
+        return;
+    }
     tokio::spawn(async move {
         if let Err(err) = run_check(auto_install, events).await {
             tracing::warn!("update check failed: {err:#}");
@@ -55,7 +59,7 @@ async fn run_simulated_update() -> anyhow::Result<()> {
     }
 
     let progress_id = Uuid::new_v4();
-    let label = format!("Downloading OneClient {FAKE_VERSION}");
+    let label = format!("Downloading OneForAllLauncher {FAKE_VERSION}");
 
     let mut downloaded = 0u64;
     events.progress(progress_id, &label, downloaded, FAKE_TOTAL);
@@ -68,7 +72,7 @@ async fn run_simulated_update() -> anyhow::Result<()> {
     events.finish_progress(
         progress_id,
         "Finished Downloading",
-        format!("OneClient {FAKE_VERSION} is ready. Restart to apply."),
+        format!("OneForAllLauncher {FAKE_VERSION} is ready. Restart to apply."),
     );
 
     Ok(())
@@ -90,7 +94,7 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         events
             .notify("Update available")
             .body(format!(
-                "OneClient {} is available. Download the latest package from {} to update.",
+                "OneForAllLauncher {} is available. Download the latest package from {} to update.",
                 update.version, RELEASES_URL
             ))
             .send();
@@ -110,7 +114,7 @@ fn can_self_update() -> bool {
         return false;
     }
 
-    if std::env::var_os("ONECLIENT_DISABLE_AUTOUPDATE")
+    if std::env::var_os("ONEFORALL_DISABLE_AUTOUPDATE")
         .is_some_and(|val| val.eq_ignore_ascii_case("1"))
     {
         return false;
@@ -127,9 +131,12 @@ fn can_self_update() -> bool {
 }
 
 fn check_for_update() -> anyhow::Result<Option<Update>> {
+    let Some(endpoint) = UPDATER_ENDPOINT else {
+        return Ok(None);
+    };
     let current = env!("CARGO_PKG_VERSION").parse()?;
     let config = Config {
-        endpoints: vec![UPDATER_ENDPOINT.parse()?],
+        endpoints: vec![endpoint.parse()?],
         pubkey: UPDATER_PUBKEY.into(),
         ..Default::default()
     };
@@ -140,7 +147,7 @@ fn check_for_update() -> anyhow::Result<Option<Update>> {
 async fn download_and_install(update: Update, events: EventBus) -> anyhow::Result<()> {
     let progress_id = Uuid::new_v4();
     let version = update.version.clone();
-    let label = format!("Downloading OneClient {version}");
+    let label = format!("Downloading OneForAllLauncher {version}");
 
     events.progress(progress_id, &label, 0, 0);
 
@@ -174,7 +181,7 @@ async fn download_and_install(update: Update, events: EventBus) -> anyhow::Resul
         events.finish_progress(
             progress_id,
             "Finished Downloading",
-            format!("OneClient {version} is ready. Restart to apply."),
+            format!("OneForAllLauncher {version} is ready. Restart to apply."),
         );
         Ok(())
     })
@@ -182,4 +189,13 @@ async fn download_and_install(update: Update, events: EventBus) -> anyhow::Resul
 
     tracing::info!("update installed; restart to apply");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn fork_updater_is_disabled_without_network_access() {
+        assert!(super::UPDATER_ENDPOINT.is_none());
+        assert!(super::check_for_update().unwrap().is_none());
+    }
 }

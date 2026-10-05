@@ -428,7 +428,7 @@ fn parse_java_argument(
             &polyio::canonicalize(libraries_path)?.display().to_string(),
         )
         .replace("${classpath_separator}", constants::CLASSPATH_SEPARATOR)
-        .replace("${launcher_name}", "OneClient")
+        .replace("${launcher_name}", "OneForAllLauncher")
         .replace("${launcher_version}", env!("CARGO_PKG_VERSION"))
         .replace("${version_name}", version)
         .replace("${classpath}", classpaths))

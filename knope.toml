@@ -12,8 +12,8 @@ change_templates = [
 ]
 
 [github]
-owner = "Polyfrost"
-repo = "OneLauncher"
+owner = "liwwyy"
+repo = "OneForAllLauncher"
 
 [[workflows]]
 name = "prepare-release"

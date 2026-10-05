@@ -1,13 +1,11 @@
-name: OneClient Nightly (Unsigned)
+name: OneForAllLauncher Nightly (Unsigned)
 
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: oneclient-nightly-${{ github.ref }}
+  group: oneforall-nightly-${{ github.ref }}
   cancel-in-progress: true
 
 # Nightlies are unsigned test builds, so they do not need the release profile's
@@ -98,9 +96,9 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ matrix.target }}" ]; then
-            cargo build --release --bin oneclient_app --target ${{ matrix.target }}
+            cargo build --release --bin oneforall_app --target ${{ matrix.target }}
           else
-            cargo build --release --bin oneclient_app
+            cargo build --release --bin oneforall_app
           fi
 
       - name: (macOS) Verify deployment target
@@ -108,30 +106,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bin="target/${{ matrix.target }}/release/oneclient_app"
+          bin="target/${{ matrix.target }}/release/oneforall_app"
           minos="$(vtool -show-build "$bin" | awk '/minos/ {print $2; exit}')"
           echo "linked minos=$minos, declared minimum=${{ matrix.macos_deployment_target }}"
           if [ "$(printf '%s\n%s\n' "$minos" "${{ matrix.macos_deployment_target }}" | sort -V | tail -n1)" != "${{ matrix.macos_deployment_target }}" ]; then
             echo "::error::Binary requires macOS $minos but the bundle advertises ${{ matrix.macos_deployment_target }}."
             exit 1
           fi
-
-      - name: (macOS) Compile app icon catalog
-        if: startsWith(matrix.platform, 'macos')
-        shell: bash
-        run: |
-          set -euo pipefail
-          out="packages/oneclient_app/icons/generated"
-          mkdir -p "$out"
-          xcrun actool packages/oneclient_app/icons/OneClient.icon \
-            --compile "$out" \
-            --app-icon OneClient \
-            --output-partial-info-plist "$out/partial.plist" \
-            --platform macosx \
-            --minimum-deployment-target 26.0 \
-            --errors --warnings --notices
-          rm -f "$out/OneClient.icns"
-          test -f "$out/Assets.car" || { echo "::error::actool produced no Assets.car"; exit 1; }
 
       - name: (Windows) Stage app-local VC++ runtime
         if: matrix.platform == 'windows-latest'
@@ -190,8 +171,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp target/release/.cargo-packager/deb/*/data/usr/share/applications/oneclient_app.desktop \
-             target/release/oneclient_app.desktop
+          cp target/release/.cargo-packager/deb/*/data/usr/share/applications/oneforall_app.desktop \
+             target/release/oneforall_app.desktop
           cargo generate-rpm -p packages/oneclient_app
           cp target/generate-rpm/*.rpm "${{ steps.outdir.outputs.dir }}/"
 
@@ -200,7 +181,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $dest = 'C:\oneclient-smoke'
+          $dest = 'C:\oneforall-smoke'
           Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
           $exe = Resolve-Path (Get-ChildItem '${{ steps.outdir.outputs.dir }}/*-setup.exe')[0].FullName
           # NSIS: /S is silent, /D= sets the install dir and must be the last arg.
@@ -210,17 +191,17 @@ jobs:
           Write-Host '--- installed layout ---'
           Get-ChildItem -Recurse $dest | ForEach-Object { Write-Host $_.FullName }
 
-          if (-not (Test-Path "$dest\oneclient_app.exe")) {
-            Write-Error "oneclient_app.exe is not at the root of $dest"
+          if (-not (Test-Path "$dest\oneforall_app.exe")) {
+            Write-Error "oneforall_app.exe is not at the root of $dest"
             exit 1
           }
           foreach ($dll in @(Get-ChildItem 'target/crt/*.dll')) {
             if (-not (Test-Path (Join-Path $dest $dll.Name))) {
-              Write-Error "$($dll.Name) did not land beside oneclient_app.exe - cargo-packager put resources elsewhere, so app-local CRT loading will not work"
+              Write-Error "$($dll.Name) did not land beside oneforall_app.exe - cargo-packager put resources elsewhere, so app-local CRT loading will not work"
               exit 1
             }
           }
-          Write-Host "OK: $($(Get-ChildItem 'target/crt/*.dll').Count) CRT DLLs sit beside oneclient_app.exe"
+          Write-Host "OK: $($(Get-ChildItem 'target/crt/*.dll').Count) CRT DLLs sit beside oneforall_app.exe"
 
       # Upload debug info (dSYM / .dwp / .pdb produced by the release profile's
       # split-debuginfo) to Sentry so nightly crash reports get real file/function/
@@ -245,8 +226,8 @@ jobs:
           export PATH="/usr/local/bin:$PATH"
           SYMS="$(mktemp -d)"
           shopt -s nullglob
-          for f in "$OUT_DIR"/oneclient_app "$OUT_DIR"/oneclient_app.exe \
-                   "$OUT_DIR"/oneclient_app.pdb "$OUT_DIR"/*.dwp "$OUT_DIR"/*.dSYM; do
+          for f in "$OUT_DIR"/oneforall_app "$OUT_DIR"/oneforall_app.exe \
+                   "$OUT_DIR"/oneforall_app.pdb "$OUT_DIR"/*.dwp "$OUT_DIR"/*.dSYM; do
             [ -e "$f" ] || continue
             cp -R "$f" "$SYMS/"
           done
@@ -264,15 +245,16 @@ jobs:
           for f in "${{ steps.outdir.outputs.dir }}"/*.dmg \
                    "${{ steps.outdir.outputs.dir }}"/*.deb \
                    "${{ steps.outdir.outputs.dir }}"/*.rpm \
-                   "${{ steps.outdir.outputs.dir }}"/*.AppImage; do
+                   "${{ steps.outdir.outputs.dir }}"/*.AppImage \
+                   "${{ steps.outdir.outputs.dir }}"/*-setup.exe; do
             [ -e "$f" ] || continue
             cp "$f" dist/
           done
           # Raw executable, renamed per platform so the unzipped uploads don't collide.
-          bin="${{ steps.outdir.outputs.dir }}/oneclient_app"
+          bin="${{ steps.outdir.outputs.dir }}/oneforall_app"
           ext=""
           [ -e "$bin.exe" ] && ext=".exe"
-          cp "$bin$ext" "dist/oneclient_app-${{ matrix.os_key }}-${{ matrix.arch }}$ext"
+          cp "$bin$ext" "dist/oneforall_app-${{ matrix.os_key }}-${{ matrix.arch }}$ext"
           if [ -z "$(ls -A dist)" ]; then
             echo "::error::No installers found in ${{ steps.outdir.outputs.dir }}"
             exit 1
@@ -282,7 +264,7 @@ jobs:
       - name: Upload unsigned executable
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          path: dist/oneclient_app-*
+          path: dist/oneforall_app-*
           archive: false
           if-no-files-found: error
           retention-days: 14

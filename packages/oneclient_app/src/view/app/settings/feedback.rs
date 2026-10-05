@@ -18,7 +18,7 @@ impl Component for SettingsFeedback {
                     .padding(Gaps::new(0., 0., 8., 0.))
                     .child(
                         label()
-                            .text("Help us improve OneClient")
+                            .text("Help us improve OneForAllLauncher")
                             .font_size(16.)
                             .font_weight(FontWeight::SEMI_BOLD)
                             .color(colors::fg_primary()),

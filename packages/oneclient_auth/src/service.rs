@@ -306,10 +306,6 @@ impl AuthService {
     pub async fn account_for_launch(&self, id: Uuid) -> AuthResult<MinecraftAccount> {
         let account = self.renew_token(id, false).await?;
 
-        if account.is_offline() && !self.has_microsoft_account().await {
-            return Err(AuthError::OfflineRequiresMicrosoft);
-        }
-
         Ok(account)
     }
 

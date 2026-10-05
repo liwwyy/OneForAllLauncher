@@ -1,4 +1,4 @@
-pub mod oneclient_v1;
+// OneClient v1 migration is deliberately not compiled or detected by this fork.
 pub mod vanilla;
 
 use std::path::PathBuf;
@@ -10,24 +10,20 @@ use oneclient_common::domain::GameLoader;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MigrationSource {
-    OneClientV1,
     Vanilla,
 }
 
 impl MigrationSource {
-    pub const ALL: &'static [MigrationSource] =
-        &[MigrationSource::OneClientV1, MigrationSource::Vanilla];
+    pub const ALL: &'static [MigrationSource] = &[MigrationSource::Vanilla];
 
     pub fn id(self) -> &'static str {
         match self {
-            MigrationSource::OneClientV1 => "oneclient_v1",
             MigrationSource::Vanilla => "vanilla",
         }
     }
 
     pub fn display_name(self) -> &'static str {
         match self {
-            MigrationSource::OneClientV1 => "OneClient",
             MigrationSource::Vanilla => "Minecraft",
         }
     }
@@ -87,7 +83,6 @@ pub enum ImportTarget {
 pub async fn detect() -> LauncherResult<Option<MigrationDetection>> {
     for source in MigrationSource::ALL.iter().copied() {
         let detection = match source {
-            MigrationSource::OneClientV1 => oneclient_v1::detect().await?,
             MigrationSource::Vanilla => vanilla::detect().await?,
         };
 
@@ -104,13 +99,10 @@ pub async fn detect() -> LauncherResult<Option<MigrationDetection>> {
 pub async fn import_game_dir(
     state: &std::sync::Arc<crate::LauncherState>,
     source: MigrationSource,
-    folder_name: &str,
+    _folder_name: &str,
     target: ImportTarget,
 ) -> LauncherResult<()> {
     match source {
-        MigrationSource::OneClientV1 => {
-            oneclient_v1::import_game_dir(state, folder_name, target).await
-        }
         MigrationSource::Vanilla => vanilla::import_game_dir(state, target).await,
     }
 }
@@ -118,6 +110,12 @@ pub async fn import_game_dir(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn upstream_installations_are_not_migration_sources() {
+        assert_eq!(MigrationSource::ALL, &[MigrationSource::Vanilla]);
+        assert_eq!(MigrationSource::from_id("oneclient_v1"), None);
+    }
 
     #[test]
     fn vanilla_is_the_last_resort() {

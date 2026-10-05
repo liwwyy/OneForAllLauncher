@@ -1,6 +1,6 @@
 [package]
 name = "oneclient_common"
-description = "Shared vocabulary for OneClient: paths, constants, platform and content types"
+description = "Shared vocabulary for OneForAllLauncher: paths, constants, platform and content types"
 version.workspace = true
 license.workspace = true
 edition.workspace = true

@@ -93,7 +93,7 @@ impl Component for OnboardingLocation {
             .width(Size::fill())
             .spacing(16.)
             .child(step_heading(
-                "Where should OneClient live?",
+                "Where should OneForAllLauncher live?",
                 "All your data including mods, worlds and game settings gets stored here. This can be changed later from Settings.",
             ));
 
@@ -112,7 +112,7 @@ impl Component for OnboardingLocation {
                 .child(
                     label()
                         .text(
-                            "This is where OneClient is set up. Settings can move it once you are \
+                            "This is where OneForAllLauncher is set up. Settings can move it once you are \
                              through setup.",
                         )
                         .font_size(13.)
@@ -186,7 +186,7 @@ fn browse(
 ) {
     spawn(async move {
         let Some(handle) = rfd::AsyncFileDialog::new()
-            .set_title("Choose where OneClient stores game data")
+            .set_title("Choose where OneForAllLauncher stores game data")
             .pick_folder()
             .await
         else {

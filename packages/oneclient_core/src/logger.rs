@@ -14,7 +14,7 @@ pub mod console;
 /// The launcher's own crates given an explicit directive rather than falling
 /// back to the base level
 const APP_TARGETS: &[&str] = &[
-    "oneclient_app",
+    "oneforall_app",
     "oneclient_auth",
     "oneclient_cluster",
     "oneclient_common",
@@ -69,7 +69,7 @@ const UI_FLOOD_TARGETS: &[&str] = &[
     "freya_core::runner",
     "freya_core::tree",
     "freya_winit::renderer",
-	"freya::metrics",
+    "freya::metrics",
     "ragnarok::executor",
     "ragnarok::nodes_state",
     "torin::torin",

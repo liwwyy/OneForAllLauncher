@@ -133,11 +133,11 @@ mod tests {
 
     #[test]
     fn one_bad_field_does_not_cost_the_user_their_library() {
-        let raw = r#"{"max_concurrent_requests":"25","data_dir":"D:\\OneClient"}"#;
+        let raw = r#"{"max_concurrent_requests":"25","data_dir":"D:\\OneForAllLauncher"}"#;
 
         assert_eq!(
             salvage(raw),
-            Some(std::path::PathBuf::from("D:\\OneClient")),
+            Some(std::path::PathBuf::from("D:\\OneForAllLauncher")),
             "the location has to survive whatever else is wrong with the file"
         );
     }

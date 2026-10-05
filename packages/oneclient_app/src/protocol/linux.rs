@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use super::SCHEME;
 use crate::file_content::url_handler_entry;
 
-const ICON: &str = "oneclient_app";
+const ICON: &str = "oneforall_app";
 
 fn handler_name() -> String {
     format!("{SCHEME}-url-handler.desktop")

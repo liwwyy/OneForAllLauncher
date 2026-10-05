@@ -151,11 +151,11 @@ pub mod tray {
     use crate::constants;
     use crate::ipc::{self, IpcCommand};
 
-    const OPEN_ID: &str = "oneclient.open";
-    const PLAY_ID: &str = "oneclient.play";
-    const STOP_ID: &str = "oneclient.stop";
-    const LOGS_ID: &str = "oneclient.logs";
-    const QUIT_ID: &str = "oneclient.quit";
+    const OPEN_ID: &str = "oneforall.open";
+    const PLAY_ID: &str = "oneforall.play";
+    const STOP_ID: &str = "oneforall.stop";
+    const LOGS_ID: &str = "oneforall.logs";
+    const QUIT_ID: &str = "oneforall.quit";
 
     #[cfg(target_os = "macos")]
     const ICON: &[u8] = include_bytes!("../icons/tray.png");
@@ -203,13 +203,13 @@ pub mod tray {
         let logs = MenuItem::with_id(LOGS_ID, "Show logs", live_on_linux, None);
 
         let menu = Menu::with_items(&[
-            &MenuItem::with_id(OPEN_ID, "Open OneClient", true, None),
+            &MenuItem::with_id(OPEN_ID, "Open OneForAllLauncher", true, None),
             &MenuItem::with_id(PLAY_ID, "Play last version", true, None),
             &PredefinedMenuItem::separator(),
             &stop,
             &logs,
             &PredefinedMenuItem::separator(),
-            &MenuItem::with_id(QUIT_ID, "Quit OneClient", true, None),
+            &MenuItem::with_id(QUIT_ID, "Quit OneForAllLauncher", true, None),
         ])
         .expect("failed to build the tray menu");
 
@@ -220,7 +220,7 @@ pub mod tray {
             .with_menu(Box::new(menu))
             .with_tooltip(constants::WINDOW_TITLE)
             .with_icon(LaunchConfig::tray_icon(ICON))
-            .with_icon_as_template(cfg!(target_os = "macos"))
+            .with_icon_as_template(false) // The supplied icon uses color and an opaque background.
             .with_menu_on_left_click(!cfg!(target_os = "windows"))
             .build()
             .expect("failed to create the tray icon")

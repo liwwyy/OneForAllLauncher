@@ -126,3 +126,6 @@ pub use tooltip::{TooltipHost, TooltipPlacement, use_provide_tooltips, use_toolt
 pub use update_prompt::UpdatePromptOverlay;
 pub use version_art_gallery::{GALLERY_COVER_EDGE, VersionArtGallery};
 pub use version_card::VersionCard;
+
+mod offline_login;
+pub use offline_login::use_offline_login;

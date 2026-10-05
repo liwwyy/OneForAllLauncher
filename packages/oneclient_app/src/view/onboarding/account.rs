@@ -1,7 +1,7 @@
 use freya::prelude::*;
 use oneclient_auth::MinecraftAccount;
 
-use crate::components::{Avatar, Button, Icon, IconType, use_microsoft_login};
+use crate::components::{Avatar, Button, Icon, IconType, use_microsoft_login, use_offline_login};
 use crate::hooks::{try_default_account, use_current_account};
 use crate::routes::Route;
 use crate::theme::colors;
@@ -16,6 +16,7 @@ impl Component for OnboardingAccount {
     fn render(&self) -> impl IntoElement {
         let account_query = use_current_account();
         let msa = use_microsoft_login();
+        let offline = use_offline_login();
 
         let account = try_default_account(&account_query);
         let has_account = account.is_some();
@@ -26,7 +27,7 @@ impl Component for OnboardingAccount {
             .spacing(24.)
             .child(step_heading(
                 "Account",
-                "Before you continue, we require you to own a copy of Minecraft: Java Edition.",
+                "Add a Microsoft or offline account to start playing Minecraft: Java Edition.",
             ))
             .child(match &account {
                 Some(account) => account_preview(account).into_element(),
@@ -36,6 +37,15 @@ impl Component for OnboardingAccount {
                         .into_element()
                 }
             })
+            .child(
+                Button::new()
+                    .secondary()
+                    .on_press({
+                        let offline = offline.clone();
+                        move |_| offline.open()
+                    })
+                    .text("Add an offline account"),
+            )
             .into_element();
 
         let page = onboarding_page(
@@ -53,6 +63,7 @@ impl Component for OnboardingAccount {
             .height(Size::fill())
             .child(page)
             .maybe_child(msa.popup())
+            .maybe_child(offline.popup())
     }
 }
 

@@ -5,14 +5,14 @@ use std::sync::OnceLock;
 use crate::domain::{ContentType, ProviderId};
 use crate::error::{PathsError, PathsResult};
 
-const QUALIFIER: &str = "org";
-const ORGANIZATION: &str = "Polyfrost";
+const QUALIFIER: &str = "com";
+const ORGANIZATION: &str = "OneForAll";
 
 #[cfg(not(debug_assertions))]
-const APPLICATION: &str = "OneClient";
+const APPLICATION: &str = "OneForAllLauncher";
 
 #[cfg(debug_assertions)]
-const APPLICATION: &str = "OneClient-dev";
+const APPLICATION: &str = "OneForAllLauncher-dev";
 
 pub const SETTINGS_FILE: &str = "settings.json";
 pub const DATABASE_FILE: &str = "user_data.db";
@@ -254,6 +254,35 @@ mod tests {
     use std::ffi::OsStr;
 
     #[test]
+    fn fork_identity_is_distinct_from_upstream() {
+        assert_eq!(QUALIFIER, "com");
+        assert_eq!(ORGANIZATION, "OneForAll");
+        let upstream = ProjectDirs::from(
+            "org",
+            "Polyfrost",
+            if cfg!(debug_assertions) {
+                "OneClient-dev"
+            } else {
+                "OneClient"
+            },
+        )
+        .unwrap();
+        assert_ne!(legacy_dir().unwrap(), upstream.data_local_dir());
+        assert_ne!(
+            standard_dir().unwrap(),
+            BaseDirs::new()
+                .unwrap()
+                .data_dir()
+                .join("Polyfrost")
+                .join(if cfg!(debug_assertions) {
+                    "OneClient-dev"
+                } else {
+                    "OneClient"
+                })
+        );
+    }
+
+    #[test]
     fn the_launcher_sits_one_level_under_the_organization_folder() {
         let organization = organization_dir().expect("a home directory");
         assert_eq!(organization.file_name(), Some(OsStr::new(ORGANIZATION)));
@@ -264,7 +293,7 @@ mod tests {
         assert_eq!(
             tail,
             vec![OsStr::new(APPLICATION), OsStr::new(ORGANIZATION)],
-            "every Polyfrost product shares one folder and takes a single name inside it"
+            "every OneForAll product shares one folder and takes a single name inside it"
         );
     }
 
@@ -286,9 +315,9 @@ mod tests {
         assert_eq!(
             APPLICATION,
             if cfg!(debug_assertions) {
-                "OneClient-dev"
+                "OneForAllLauncher-dev"
             } else {
-                "OneClient"
+                "OneForAllLauncher"
             }
         );
     }

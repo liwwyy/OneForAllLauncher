@@ -173,7 +173,7 @@ pub(crate) fn restore_executable_bits(executable: &Path) {
     }
 }
 
-/// Only ever touches OneClient's own java dir a runtime the user added from
+/// Only ever touches OneForAllLauncher's own java dir a runtime the user added from
 /// their own folder is left on disk untouched
 #[tracing::instrument(level = "debug")]
 pub async fn remove_installed_package(executable: &Path) -> JavaResult<bool> {

@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
     <dict>
-        <key>CFBundleIconName</key>
-        <string>OneClient</string>
         <!-- allows us to request camera permissions (for things like voice chat) -->
         <key>NSCameraUsageDescription</key>
         <string>A Minecraft mod is requesting access to your camera.</string>

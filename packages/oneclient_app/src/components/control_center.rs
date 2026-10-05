@@ -529,7 +529,7 @@ impl Component for PanelFooter {
                                         .child(
                                             label()
                                                 .text(format!(
-                                                    "{username} will be removed from OneClient. You will need to sign in again to use this account."
+                                                    "{username} will be removed from OneForAllLauncher. You will need to sign in again to use this account."
                                                 ))
                                                 .font_size(12.)
                                                 .max_lines(4)

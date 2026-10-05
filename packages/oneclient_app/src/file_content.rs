@@ -43,7 +43,7 @@ pub fn desktop_entry(name: &str, exe: &Path, folder: &str, icon: &str) -> String
          Type=Application\n\
          Version=1.0\n\
          Name={name}\n\
-         Comment=Launch {name} with OneClient\n\
+         Comment=Launch {name} with OneForAllLauncher\n\
          Exec={exec}\n\
          Icon={icon}\n\
          Terminal=false\n\
@@ -58,7 +58,7 @@ pub fn url_handler_entry(exe: &Path, scheme: &str, icon: &str) -> String {
     format!(
         "[Desktop Entry]\n\
          Type=Application\n\
-         Name=OneClient\n\
+         Name=OneForAllLauncher\n\
          Exec={exec} %u\n\
          Icon={icon}\n\
          Terminal=false\n\
@@ -117,7 +117,7 @@ pub fn info_plist(name: &str, executable: &str, folder: &str, icon: Option<&str>
          <dict>\n\
          \t<key>CFBundleName</key>\n\t<string>{display}</string>\n\
          \t<key>CFBundleDisplayName</key>\n\t<string>{display}</string>\n\
-         \t<key>CFBundleIdentifier</key>\n\t<string>org.polyfrost.OneClient.shortcut.{slug}</string>\n\
+         \t<key>CFBundleIdentifier</key>\n\t<string>com.oneforall.OneForAllLauncher.shortcut.{slug}</string>\n\
          \t<key>CFBundleExecutable</key>\n\t<string>{executable}</string>\n\
          {icon_entry}\
          \t<key>CFBundlePackageType</key>\n\t<string>APPL</string>\n\
@@ -147,12 +147,12 @@ mod tests {
     fn a_newline_in_a_cluster_name_cannot_forge_a_second_key() {
         let entry = desktop_entry(
             "Pack\nExec=/bin/sh",
-            &PathBuf::from("/usr/bin/oneclient_app"),
+            &PathBuf::from("/usr/bin/oneforall_app"),
             "pack",
-            "oneclient_app",
+            "oneforall_app",
         );
         assert!(!entry.lines().any(|line| line.starts_with("Exec=/bin/sh")));
-        assert!(entry.contains(r#"Exec="/usr/bin/oneclient_app" --launch "pack""#));
+        assert!(entry.contains(r#"Exec="/usr/bin/oneforall_app" --launch "pack""#));
         assert!(entry.contains("Name=Pack Exec=/bin/sh"));
     }
 
@@ -160,32 +160,32 @@ mod tests {
     fn a_space_in_the_install_path_stays_one_argument() {
         let entry = desktop_entry(
             "Pack",
-            &PathBuf::from("/opt/One Client/oneclient_app"),
+            &PathBuf::from("/opt/One Client/oneforall_app"),
             "my pack",
-            "oneclient_app",
+            "oneforall_app",
         );
-        assert!(entry.contains(r#"Exec="/opt/One Client/oneclient_app" --launch "my pack""#));
+        assert!(entry.contains(r#"Exec="/opt/One Client/oneforall_app" --launch "my pack""#));
     }
 
     #[test]
     fn the_url_handler_quotes_an_install_path_with_a_space() {
         let entry = url_handler_entry(
-            &PathBuf::from("/opt/One Client/oneclient_app"),
-            "oneclient",
-            "oneclient_app",
+            &PathBuf::from("/opt/One Client/oneforall_app"),
+            "oneforall",
+            "oneforall_app",
         );
-        assert!(entry.contains(r#"Exec="/opt/One Client/oneclient_app" %u"#));
-        assert!(entry.contains("MimeType=x-scheme-handler/oneclient;"));
+        assert!(entry.contains(r#"Exec="/opt/One Client/oneforall_app" %u"#));
+        assert!(entry.contains("MimeType=x-scheme-handler/oneforall;"));
     }
 
     #[test]
     fn the_url_handler_keeps_the_field_code_outside_the_quoted_path() {
         let entry = url_handler_entry(
-            &PathBuf::from("/usr/bin/oneclient_app"),
-            "oneclient",
-            "oneclient_app",
+            &PathBuf::from("/usr/bin/oneforall_app"),
+            "oneforall",
+            "oneforall_app",
         );
-        assert!(entry.contains(r#"Exec="/usr/bin/oneclient_app" %u"#));
+        assert!(entry.contains(r#"Exec="/usr/bin/oneforall_app" %u"#));
         assert!(!entry.contains("%%u"));
     }
 
@@ -205,15 +205,15 @@ mod tests {
             "Pack",
             &PathBuf::from(r"/opt/one\client/$app"),
             "pack",
-            "oneclient_app",
+            "oneforall_app",
         );
         assert!(entry.contains(r#"Exec="/opt/one\\\\client/\\$app" --launch "pack""#));
     }
 
     #[test]
     fn the_mac_wrapper_survives_a_quote_in_the_path() {
-        let script = shell_script(&PathBuf::from("/Users/o'brien/OneClient"), "pack");
-        assert!(script.contains(r"'/Users/o'\''brien/OneClient'"));
+        let script = shell_script(&PathBuf::from("/Users/o'brien/OneForAllLauncher"), "pack");
+        assert!(script.contains(r"'/Users/o'\''brien/OneForAllLauncher'"));
         assert!(script.starts_with("#!/bin/sh\n"));
     }
 
@@ -239,13 +239,13 @@ mod tests {
     #[test]
     fn the_url_shortcut_is_a_single_ini_section() {
         let file = url_shortcut(
-            "oneclient://launch/My%20Pack",
-            &PathBuf::from(r"C:\Program Files\OneClient\oneclient_app.exe"),
+            "oneforall://launch/My%20Pack",
+            &PathBuf::from(r"C:\Program Files\OneForAllLauncher\oneforall_app.exe"),
         );
 
         assert!(file.starts_with("[InternetShortcut]\r\n"));
-        assert!(file.contains("\r\nURL=oneclient://launch/My%20Pack\r\n"));
-        assert!(file.contains(r"IconFile=C:\Program Files\OneClient\oneclient_app.exe"));
+        assert!(file.contains("\r\nURL=oneforall://launch/My%20Pack\r\n"));
+        assert!(file.contains(r"IconFile=C:\Program Files\OneForAllLauncher\oneforall_app.exe"));
         assert!(file.ends_with("IconIndex=0\r\n"));
     }
 }

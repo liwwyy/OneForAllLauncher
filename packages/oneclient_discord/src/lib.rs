@@ -169,7 +169,7 @@ impl Worker {
             .assets(
                 Assets::new()
                     .large_image(LARGE_IMAGE)
-                    .large_text("OneClient"),
+                    .large_text("OneForAllLauncher"),
             )
             .buttons(vec![Button::new("Website", "https://polyfrost.org/")]);
 

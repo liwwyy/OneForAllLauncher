@@ -18,11 +18,9 @@ pub const TOS_URL: &str = "https://polyfrost.org/legal/terms";
 pub const PRIVACY_URL: &str = "https://polyfrost.org/legal/privacy";
 pub const PLUS_BACKEND_URL: &str = "https://plus.polyfrost.org";
 
-pub const SENTRY_DSN: &str = match option_env!("ONECLIENT_SENTRY_DSN") {
+pub const SENTRY_DSN: &str = match option_env!("ONEFORALL_SENTRY_DSN") {
     Some(dsn) => dsn,
-    None => {
-        "https://e7dff7e07427e1a28b9212cfcc8ddc1e@o4511714343124992.ingest.us.sentry.io/4511714354135040"
-    }
+    None => "",
 };
 
 pub const TARGET_OS: &str = cfg_select! {

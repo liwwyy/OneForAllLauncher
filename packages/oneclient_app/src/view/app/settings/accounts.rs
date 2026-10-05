@@ -1,19 +1,17 @@
 use chrono::{DateTime, Utc};
 use freya::animation::{AnimNum, Function, OnFinish, use_animation};
 use freya::prelude::*;
-use freya::query::{MutationCapability, MutationStateData, UseMutation};
 use oneclient_auth::{AccountKind, MinecraftAccount};
 use uuid::Uuid;
 
 use super::{section_header, settings_page};
 use crate::components::{
-    Avatar, Button, Icon, IconType, OverlayPopup, PlayerModel, TextInput, use_microsoft_login,
+    Avatar, Button, Icon, IconType, PlayerModel, use_microsoft_login, use_offline_login,
 };
 use crate::hooks::{
-    AddOfflineAccountKeys, RefreshAccountKeys, RemoveAccountKeys, SetDefaultAccountKeys,
-    accounts_have_microsoft, try_accounts, try_default_account, use_accounts,
-    use_add_offline_account, use_current_account, use_refresh_account, use_remove_account,
-    use_set_default_account,
+    RefreshAccountKeys, RemoveAccountKeys, SetDefaultAccountKeys, try_accounts,
+    try_default_account, use_accounts, use_current_account, use_refresh_account,
+    use_remove_account, use_set_default_account,
 };
 use crate::theme::colors;
 use crate::ui::border_all_color;
@@ -33,51 +31,14 @@ impl Component for SettingsAccounts {
         let default_query = use_current_account();
 
         let msa = use_microsoft_login();
-        let add_offline = use_add_offline_account();
         let set_default = use_set_default_account();
         let remove = use_remove_account();
         let refresh = use_refresh_account();
 
-        let mut username = use_state(String::new);
-        let mut show_offline = use_state(|| false);
-        let mut closing_offline = use_state(|| false);
-
-        use_side_effect(move || {
-            if !*closing_offline.read() {
-                return;
-            }
-            match &*add_offline.read().state() {
-                MutationStateData::Settled { res: Ok(_), .. } => {
-                    closing_offline.set(false);
-                    show_offline.set(false);
-                    username.set(String::new());
-                }
-                MutationStateData::Settled { res: Err(_), .. } => {
-                    closing_offline.set(false);
-                }
-                _ => {}
-            }
-        });
-
+        let offline = use_offline_login();
         let accounts = try_accounts(&accounts_query).unwrap_or_default();
         let default_account = try_default_account(&default_query);
         let default_id = default_account.as_ref().map(|a| a.id);
-        let has_microsoft = accounts_have_microsoft(&accounts);
-
-        let offline_name = username.read().trim().to_string();
-        let offline_uuid = (!offline_name.is_empty())
-            .then(|| oneclient_auth::offline_uuid(&offline_name).to_string());
-
-        let offline_error = mutation_err_text(&add_offline);
-
-        let on_confirm_offline = move |_| {
-            let name = username.peek().trim().to_string();
-            if name.is_empty() {
-                return;
-            }
-            add_offline.mutate(AddOfflineAccountKeys { username: name });
-            closing_offline.set(true);
-        };
 
         let mut rows: Vec<Element> = accounts
             .iter()
@@ -102,10 +63,12 @@ impl Component for SettingsAccounts {
         settings_page()
             .child(hero(
                 default_account,
-                has_microsoft,
                 msa.pending,
                 msa.error.clone(),
-                move |_| show_offline.set(true),
+                {
+                    let offline = offline.clone();
+                    move |_| offline.open()
+                },
                 {
                     let msa = msa.clone();
                     move |_| msa.start()
@@ -113,15 +76,7 @@ impl Component for SettingsAccounts {
             ))
             .child(section_header("YOUR ACCOUNTS"))
             .children(rows)
-            .maybe_child(show_offline.read().then(|| {
-                offline_dialog(
-                    username,
-                    offline_uuid,
-                    offline_error,
-                    on_confirm_offline,
-                    show_offline,
-                )
-            }))
+            .maybe_child(offline.popup())
             .maybe_child(msa.popup())
             .into_element()
     }
@@ -129,7 +84,6 @@ impl Component for SettingsAccounts {
 
 fn hero(
     account: Option<MinecraftAccount>,
-    has_microsoft: bool,
     microsoft_pending: bool,
     error: Option<String>,
     on_open_offline: impl FnMut(Event<PressEventData>) + 'static,
@@ -212,7 +166,6 @@ fn hero(
                                 .child(
                                     Button::new()
                                         .secondary()
-                                        .enabled(has_microsoft)
                                         .on_press(on_open_offline)
                                         .child(Icon::new(IconType::Plus).size(16.))
                                         .text("Add offline"),
@@ -220,14 +173,6 @@ fn hero(
                         )
                         .map(error, |el, msg| {
                             el.child(hint_line(IconType::AlertTriangle, msg, colors::danger()))
-                        })
-                        .maybe(!has_microsoft, |el| {
-                            el.child(hint_line(
-                                IconType::InfoCircle,
-                                "Add a Microsoft account before creating offline accounts."
-                                    .to_string(),
-                                colors::fg_secondary(),
-                            ))
                         }),
                 ),
         )
@@ -267,109 +212,6 @@ fn model_frame(id: Option<Uuid>) -> impl IntoElement {
                 .color(colors::fg_secondary())
                 .into_element()
         }))
-        .into_element()
-}
-
-fn mutation_err_text<M>(mutation: &UseMutation<M>) -> Option<String>
-where
-    M: MutationCapability,
-    M::Err: std::fmt::Display,
-{
-    match &*mutation.read().state() {
-        MutationStateData::Settled { res: Err(err), .. } => Some(err.to_string()),
-        MutationStateData::Loading {
-            res: Some(Err(err)),
-        } => Some(err.to_string()),
-        _ => None,
-    }
-}
-
-fn offline_dialog(
-    username: State<String>,
-    uuid_preview: Option<String>,
-    error: Option<String>,
-    on_confirm: impl FnMut(Event<PressEventData>) + 'static,
-    mut show_offline: State<bool>,
-) -> impl IntoElement {
-    OverlayPopup::new()
-        .on_close(move |()| show_offline.set(false))
-        .child(
-            rect()
-                .width(Size::window_percent(100.))
-                .height(Size::window_percent(100.))
-                .center()
-                .child(
-                    rect()
-                        .vertical()
-                        .width(Size::px(380.))
-                        .max_width(Size::window_percent(90.))
-                        .spacing(16.)
-                        .padding(Gaps::new_all(20.))
-                        .corner_radius(CornerRadius::new_all(16.))
-                        .background(colors::page_elevated())
-                        .border(border_all_color(1., colors::component_border()))
-                        .child(
-                            label()
-                                .text("Add offline account")
-                                .font_size(18.)
-                                .font_weight(FontWeight::SEMI_BOLD)
-                                .color(colors::fg_primary()),
-                        )
-                        .child(
-                            rect()
-                                .vertical()
-                                .width(Size::fill())
-                                .spacing(6.)
-                                .child(field_label("Username"))
-                                .child(TextInput::new(username).placeholder("Offline username")),
-                        )
-                        .child(
-                            rect()
-                                .vertical()
-                                .width(Size::fill())
-                                .spacing(6.)
-                                .child(field_label("UUID"))
-                                .child(
-                                    label()
-                                        .text(uuid_preview.unwrap_or_else(|| "-".to_string()))
-                                        .font_size(12.)
-                                        .color(colors::fg_secondary()),
-                                ),
-                        )
-                        .map(error, |el, msg| {
-                            el.child(hint_line(IconType::AlertTriangle, msg, colors::danger()))
-                        })
-                        .child(
-                            rect()
-                                .horizontal()
-                                .width(Size::fill())
-                                .main_align(Alignment::End)
-                                .spacing(8.)
-                                .child(
-                                    Button::new()
-                                        .ghost()
-                                        .on_press(move |_| show_offline.set(false))
-                                        .text("Cancel"),
-                                )
-                                .child(
-                                    Button::new()
-                                        .primary()
-                                        .on_press(on_confirm)
-                                        .child(Icon::new(IconType::Plus).size(16.))
-                                        .text("Add account"),
-                                ),
-                        ),
-                ),
-        )
-        .into_element()
-}
-
-fn field_label(text: &str) -> impl IntoElement {
-    label()
-        .text(text.to_string())
-        .font_size(11.)
-        .font_weight(FontWeight::MEDIUM)
-        .color(colors::fg_secondary())
         .into_element()
 }
 

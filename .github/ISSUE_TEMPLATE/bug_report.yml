@@ -18,8 +18,7 @@ body:
       multiple: true
       options:
         - Core
-        - OneClient
-        - OneLauncher
+        - OneForAllLauncher
   - type: textarea
     attributes:
       label: Describe the bug

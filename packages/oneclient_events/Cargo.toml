@@ -1,6 +1,6 @@
 [package]
 name = "oneclient_events"
-description = "The OneClient event bus: notifications, progress, prompts and signals"
+description = "The OneForAllLauncher event bus: notifications, progress, prompts and signals"
 version.workspace = true
 license.workspace = true
 edition.workspace = true

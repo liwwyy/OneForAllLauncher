@@ -1,6 +1,6 @@
 [package]
 authors.workspace = true
-description = "OneClient launcher core"
+description = "OneForAllLauncher launcher core"
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true

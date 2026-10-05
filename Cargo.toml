@@ -8,13 +8,14 @@ resolver = "3"
 authors = [
   "Polyfrost",
   "Polyfrost Contributors",
+  "OneForAllLauncher contributors",
 ]
-documentation = "https://github.com/Polyfrost/OneLauncher"
+documentation = "https://github.com/liwwyy/OneForAllLauncher"
+homepage = "https://github.com/liwwyy/OneForAllLauncher"
+repository = "https://github.com/liwwyy/OneForAllLauncher"
 edition = "2024"
-homepage = "https://polyfrost.org/projects/oneclient"
 license = "GPL-3.0-only"
 readme = "README.md"
-repository = "https://github.com/Polyfrost/OneLauncher"
 rust-version = "1.97"
 version = "2.6.1"
 

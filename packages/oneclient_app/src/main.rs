@@ -17,13 +17,13 @@ use oneclient_app::{
 use std::cell::Cell;
 use tokio::runtime::Builder;
 
-struct OneClientApp {
+struct OneForAllLauncherApp {
     needs_location: bool,
     start_maximized: bool,
     boot_launch: Cell<Option<String>>,
 }
 
-impl App for OneClientApp {
+impl App for OneForAllLauncherApp {
     fn render(&self) -> impl IntoElement {
         let needs_location = self.needs_location;
 
@@ -190,7 +190,7 @@ fn main() {
     let start_maximized = settings.start_maximized;
     let show_tray_icon = settings.show_tray_icon;
 
-    let window_config = WindowConfig::new_app(OneClientApp {
+    let window_config = WindowConfig::new_app(OneForAllLauncherApp {
         needs_location,
         start_maximized,
         boot_launch: Cell::new(cli.launch),
@@ -243,8 +243,8 @@ fn main() {
                 .and_then(|v| v.parse::<usize>().ok())
                 .unwrap_or(96 * 1024 * 1024),
         )
-		.with_plugin(freya::borderless::BorderlessPlugin::new())
-		.with_plugin(freya::metrics::MetricsPlugin::default())
+        .with_plugin(freya::borderless::BorderlessPlugin::new())
+        .with_plugin(freya::metrics::MetricsPlugin::default())
         .with_default_font(theme::DEFAULT_FONT);
 
     if show_tray_icon && platform::tray::available() {

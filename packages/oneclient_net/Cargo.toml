@@ -1,6 +1,6 @@
 [package]
 name = "oneclient_net"
-description = "OneClient HTTP transport: retries, throttling, ETag caching and verified downloads"
+description = "OneForAllLauncher HTTP transport: retries, throttling, ETag caching and verified downloads"
 version.workspace = true
 license.workspace = true
 edition.workspace = true

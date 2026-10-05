@@ -238,13 +238,13 @@ fn redirect_page_html(page: RedirectPage) -> String {
             "#45de2b",
             r#"<svg viewBox="0 0 24 24" class="glyph"><path d="M20 6 9 17l-5-5"/></svg>"#,
             "You're signed in!",
-            "You can close this tab and return to OneClient.",
+            "You can close this tab and return to OneForAllLauncher.",
         ),
         RedirectPage::Failed => (
             "#ff0000",
             r#"<svg viewBox="0 0 24 24" class="glyph"><path d="M18 6 6 18M6 6l12 12"/></svg>"#,
             "Sign-in failed",
-            "Something went wrong. Close this tab and try again from OneClient.",
+            "Something went wrong. Close this tab and try again from OneForAllLauncher.",
         ),
     };
 
@@ -252,7 +252,7 @@ fn redirect_page_html(page: RedirectPage) -> String {
         r##"<!doctype html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OneClient</title>
+<title>OneForAllLauncher</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 :root{{--accent:{accent}}}

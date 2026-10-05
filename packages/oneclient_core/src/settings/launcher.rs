@@ -98,7 +98,7 @@ impl Default for LauncherSettings {
         Self {
             settings_version: 1,
             log_debug: false,
-            auto_update: true,
+            auto_update: false, // Fork updates stay disabled until a fork signing identity is configured.
             crash_reporting: true,
             discord_enabled: true,
             enable_gamemode: false,

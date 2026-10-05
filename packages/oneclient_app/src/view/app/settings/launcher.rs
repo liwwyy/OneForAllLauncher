@@ -81,7 +81,7 @@ impl Component for SettingsLauncher {
 
         // The only way back for someone who declined during onboarding
         let consent_summary = if settings.declined_tos {
-            "Declined. Poly+ and crash reporting stay off until you accept and restart OneClient."
+            "Declined. Poly+ and crash reporting stay off until you accept and restart OneForAllLauncher."
         } else {
             "Accepted. Review them again at any time."
         };
@@ -141,7 +141,7 @@ impl Component for SettingsLauncher {
             .child(settings_row(
                 IconType::Moon01,
                 "Run in Background",
-                "Closing the window keeps OneClient running. Open it again from the tray icon or by launching it.",
+                "Closing the window keeps OneForAllLauncher running. Open it again from the tray icon or by launching it.",
                 resettable(
                     toggle(run_in_background),
                     run_in_background,
@@ -151,7 +151,7 @@ impl Component for SettingsLauncher {
             .child(settings_row(
                 IconType::LayoutTop,
                 "Show Tray Icon",
-                "Show OneClient in the system tray or menu bar. Applies on restart.",
+                "Show OneForAllLauncher in the system tray or menu bar. Applies on restart.",
                 resettable(
                     toggle(show_tray_icon),
                     show_tray_icon,
@@ -301,7 +301,7 @@ fn plan(
         let picked = match source {
             Source::Picked => {
                 let mut dialog = rfd::AsyncFileDialog::new()
-                    .set_title("Choose where OneClient should store game data");
+                    .set_title("Choose where OneForAllLauncher should store game data");
 
                 if let Some(start) = oneclient_common::paths::picker_start_dir() {
                     dialog = dialog.set_directory(start);
@@ -410,7 +410,7 @@ fn confirm_move(
             label()
                 .text(
                     "Your settings and sign-in stay where they are. The old copy is kept until \
-                     you remove it, and OneClient has to restart before it uses the new folder. \
+                     you remove it, and OneForAllLauncher has to restart before it uses the new folder. \
                      The launcher shows the move on its own screen until it is done.",
                 )
                 .font_size(12.)

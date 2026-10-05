@@ -395,7 +395,7 @@ async fn start(
         .current_dir(&cwd);
 
     let header = format!(
-        "OneClient {} · {} · {version_name} · Java {}\n\n{}\n\n",
+        "OneForAllLauncher {} · {} · {version_name} · Java {}\n\n{}\n\n",
         env!("CARGO_PKG_VERSION"),
         cluster.name,
         java.major,

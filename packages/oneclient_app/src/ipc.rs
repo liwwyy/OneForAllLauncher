@@ -173,9 +173,9 @@ mod imp {
     use tokio::sync::mpsc::UnboundedSender;
 
     #[cfg(not(debug_assertions))]
-    const ENDPOINT: &str = r"\\.\pipe\org.polyfrost.OneClient.ipc";
+    const ENDPOINT: &str = r"\\.\pipe\com.oneforall.OneForAllLauncher.ipc";
     #[cfg(debug_assertions)]
-    const ENDPOINT: &str = r"\\.\pipe\org.polyfrost.OneClient-dev.ipc";
+    const ENDPOINT: &str = r"\\.\pipe\com.oneforall.OneForAllLauncher-dev.ipc";
 
     const ERROR_ACCESS_DENIED: i32 = 5;
     const ERROR_PIPE_BUSY: i32 = 231;

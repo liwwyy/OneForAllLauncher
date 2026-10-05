@@ -24,7 +24,7 @@ impl Component for OnboardingWelcome {
             .width(Size::fill())
             .spacing(16.)
             .child(step_heading(
-                "OneClient",
+                "OneForAllLauncher",
                 "Let's get you all set-up with the most advanced client.",
             ))
             .child(

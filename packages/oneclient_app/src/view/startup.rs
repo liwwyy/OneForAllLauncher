@@ -136,7 +136,7 @@ impl Component for Startup {
             if let Some(err) = launcher.error.as_deref() {
                 let step = if launcher.ready { 2 } else { 1 };
                 (
-                    "Couldn't start OneClient".to_string(),
+                    "Couldn't start OneForAllLauncher".to_string(),
                     Some(err.to_string()),
                     step,
                 )
@@ -151,7 +151,7 @@ impl Component for Startup {
             } else if launcher.ready {
                 ("Fetching versions and bundles...".to_string(), None, 2)
             } else {
-                ("Starting OneClient...".to_string(), None, 1)
+                ("Starting OneForAllLauncher...".to_string(), None, 1)
             };
 
         let is_error = launcher.error.is_some();

@@ -1,6 +1,6 @@
 [package]
 name = "oneclient_discord"
-description = "Discord rich presence for OneClient"
+description = "Discord rich presence for OneForAllLauncher"
 version.workspace = true
 license.workspace = true
 edition.workspace = true

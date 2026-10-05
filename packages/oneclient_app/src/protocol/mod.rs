@@ -19,9 +19,9 @@ use std::path::Path;
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 
 #[cfg(debug_assertions)]
-pub const SCHEME: &str = "oneclient-dev";
+pub const SCHEME: &str = "oneforall-dev";
 #[cfg(not(debug_assertions))]
-pub const SCHEME: &str = "oneclient";
+pub const SCHEME: &str = "oneforall";
 
 const LAUNCH_HOST: &str = "launch";
 
@@ -98,6 +98,20 @@ mod tests {
         assert_eq!(
             parse_launch_url(&format!("{}://LAUNCH/pack", SCHEME.to_uppercase())).as_deref(),
             Some("pack"),
+        );
+    }
+
+    #[test]
+    fn upstream_handlers_do_not_launch_this_fork() {
+        assert_eq!(parse_launch_url("oneclient://launch/pack"), None);
+        assert_eq!(parse_launch_url("oneclient-dev://launch/pack"), None);
+        assert_eq!(
+            SCHEME,
+            if cfg!(debug_assertions) {
+                "oneforall-dev"
+            } else {
+                "oneforall"
+            }
         );
     }
 

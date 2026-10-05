@@ -84,13 +84,13 @@ fn matches_filter(kind: GameVersionKind, filter: u8) -> bool {
     filter & kind_bit(kind) != 0
 }
 
-struct OneClientVersion {
+struct OneForAllLauncherVersion {
     id: String,
     loader: GameLoader,
 }
 
 struct Catalogue {
-    oneclient: Vec<OneClientVersion>,
+    oneclient: Vec<OneForAllLauncherVersion>,
     oneclient_settled: bool,
     vanilla: Option<Arc<[GameVersion]>>,
     java: HashMap<String, u32>,
@@ -115,12 +115,12 @@ fn use_catalogue(choice: TypeChoice) -> Catalogue {
     let vanilla_query = use_game_versions();
 
     let metadata = versions_metadata(&oneclient_query);
-    let mut oneclient: Vec<OneClientVersion> = metadata
+    let mut oneclient: Vec<OneForAllLauncherVersion> = metadata
         .clone()
         .unwrap_or_default()
         .into_iter()
         .filter_map(|entry| {
-            Some(OneClientVersion {
+            Some(OneForAllLauncherVersion {
                 id: oneclient_common::version::format_mc_version(
                     entry.major_version,
                     entry.minor_version?,
@@ -132,13 +132,13 @@ fn use_catalogue(choice: TypeChoice) -> Catalogue {
         .collect();
     oneclient.sort_by_key(|entry| std::cmp::Reverse(version_sort_key(&entry.id)));
 
-    let java_query = use_java_majors(if choice == TypeChoice::OneClient {
+    let java_query = use_java_majors(if choice == TypeChoice::OneForAllLauncher {
         oneclient.iter().map(|entry| entry.id.clone()).collect()
     } else {
         Vec::new()
     });
 
-    let error = if choice == TypeChoice::OneClient {
+    let error = if choice == TypeChoice::OneForAllLauncher {
         query_error(&oneclient_query)
     } else {
         query_error(&vanilla_query)
@@ -210,7 +210,7 @@ fn build_version_list(
 ) -> VersionList {
     let matches_needle = |id: &str| needle.is_empty() || id.to_lowercase().contains(needle);
 
-    if choice == TypeChoice::OneClient {
+    if choice == TypeChoice::OneForAllLauncher {
         return VersionList::Curated(
             catalogue
                 .oneclient
@@ -242,7 +242,7 @@ fn build_version_list(
 }
 
 fn default_version(choice: TypeChoice, catalogue: &Catalogue, filter: u8) -> Option<String> {
-    if choice == TypeChoice::OneClient {
+    if choice == TypeChoice::OneForAllLauncher {
         return catalogue.oneclient.first().map(|entry| entry.id.clone());
     }
 
@@ -259,7 +259,7 @@ fn default_version(choice: TypeChoice, catalogue: &Catalogue, filter: u8) -> Opt
 
 fn kind_for(choice: TypeChoice, loader: Option<GameLoader>) -> ClusterKind {
     match (choice, loader) {
-        (TypeChoice::OneClient, _) => ClusterKind::OneClient,
+        (TypeChoice::OneForAllLauncher, _) => ClusterKind::OneClient,
         (TypeChoice::Scratch, Some(GameLoader::Vanilla) | None) => ClusterKind::Vanilla,
         (TypeChoice::Scratch, Some(_)) | (TypeChoice::Modpack, _) => ClusterKind::Modded,
     }
@@ -303,7 +303,7 @@ pub fn resolve(w: Wizard) -> Picks {
     let needle = w.query.read().trim().to_lowercase();
     let versions = build_version_list(choice, &catalogue, filter, &needle);
 
-    let oneclient = choice == TypeChoice::OneClient;
+    let oneclient = choice == TypeChoice::OneForAllLauncher;
     let versions_settled = if oneclient {
         catalogue.oneclient_settled
     } else {
@@ -331,7 +331,7 @@ pub fn resolve(w: Wizard) -> Picks {
     let available_query = use_version_loaders(version.clone().unwrap_or_default());
     let available = settled_or_loading(&available_query);
     let loader = match choice {
-        TypeChoice::OneClient => version.as_ref().and_then(|id| catalogue.loader_for(id)),
+        TypeChoice::OneForAllLauncher => version.as_ref().and_then(|id| catalogue.loader_for(id)),
         TypeChoice::Scratch | TypeChoice::Modpack => {
             w.loader.read().resolve(available.as_deref().unwrap_or(&[]))
         }

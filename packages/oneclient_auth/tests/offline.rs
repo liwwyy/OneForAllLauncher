@@ -28,13 +28,19 @@ fn offline_uuid_matches_vanilla_algorithm() {
 }
 
 #[tokio::test]
-async fn offline_account_blocked_without_microsoft() {
+async fn offline_account_is_default_without_microsoft() {
     isolate_launcher_dir();
 
     let mut store = CredentialsStore::default();
-    let err = store.add_offline_account("Steve".into()).unwrap_err();
-
-    assert!(err.to_string().contains("Microsoft"));
+    let account = store.add_offline_account("Steve".into()).unwrap();
+    assert_eq!(account.kind, AccountKind::Offline);
+    assert_eq!(account.id, offline_uuid("Steve"));
+    assert_eq!(store.default_user, Some(account.id));
+    assert_eq!(
+        store.default_account().await.unwrap().unwrap().id,
+        account.id
+    );
+    assert!(!store.has_microsoft_account());
 }
 
 #[tokio::test]
@@ -51,7 +57,7 @@ async fn offline_account_allowed_when_microsoft_exists() {
 }
 
 #[tokio::test]
-async fn default_offline_fails_when_last_microsoft_removed() {
+async fn default_offline_survives_last_microsoft_removal() {
     isolate_launcher_dir();
 
     let mut store = CredentialsStore::default();
@@ -63,8 +69,9 @@ async fn default_offline_fails_when_last_microsoft_removed() {
     store.default_user = Some(offline.id);
     store.users.remove(&msa_id);
 
-    let err = store.default_account().await.unwrap_err();
-    assert!(err.to_string().contains("Microsoft"));
+    let account = store.default_account().await.unwrap().unwrap();
+    assert_eq!(account.id, offline.id);
+    assert_eq!(account.kind, AccountKind::Offline);
 }
 
 #[test]
@@ -104,4 +111,64 @@ async fn default_account_returns_expired_token_without_refreshing() {
 
     assert_eq!(account.id, msa_id);
     assert!(account.is_expired());
+}
+
+#[tokio::test]
+async fn offline_only_service_launches_and_refreshes_without_network() {
+    use oneclient_auth::AuthService;
+    use oneclient_events::EventBus;
+    use oneclient_net::{NetConfig, RequestClient};
+
+    let mut store = CredentialsStore::default();
+    let offline = store.add_offline_account("Alex".into()).unwrap();
+    // Offline accounts must remain usable even if their timestamp is expired.
+    store.users.get_mut(&offline.id).unwrap().expires = Utc::now() - TimeDelta::days(1);
+    let (events, _rx) = EventBus::channel();
+    let service = AuthService::with_store(
+        store,
+        RequestClient::new(NetConfig::default()).unwrap(),
+        events,
+    );
+    for account in [
+        service.account_for_launch(offline.id).await.unwrap(),
+        service.default_account_for_launch().await.unwrap().unwrap(),
+        service.refresh_account(offline.id).await.unwrap(),
+    ] {
+        assert_eq!(account.id, offline_uuid("Alex"));
+        assert_eq!(account.kind, AccountKind::Offline);
+        assert!(account.refresh_token.is_empty());
+    }
+}
+
+#[test]
+fn offline_only_store_round_trips_and_validates_usernames() {
+    let mut store = CredentialsStore::default();
+    assert!(store.add_offline_account("bad name".into()).is_err());
+    let account = store.add_offline_account("Steve".into()).unwrap();
+    assert!(store.add_offline_account("steve".into()).is_err());
+    let saved = serde_json::to_string(&store).unwrap();
+    let restored: CredentialsStore = serde_json::from_str(&saved).unwrap();
+    assert_eq!(restored.default_user, Some(account.id));
+    assert_eq!(restored.users[&account.id].kind, AccountKind::Offline);
+    assert!(!restored.has_microsoft_account());
+}
+
+#[tokio::test]
+async fn empty_store_cannot_supply_launch_account() {
+    use oneclient_auth::AuthService;
+    use oneclient_events::EventBus;
+    use oneclient_net::{NetConfig, RequestClient};
+    let (events, _rx) = EventBus::channel();
+    let service = AuthService::with_store(
+        CredentialsStore::default(),
+        RequestClient::new(NetConfig::default()).unwrap(),
+        events,
+    );
+    assert!(
+        service
+            .default_account_for_launch()
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
