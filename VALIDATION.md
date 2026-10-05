@@ -3,7 +3,7 @@
 OneForAllLauncher, a fork of OneClient by Polyfrost.
 Upstream base: `7683651ad4d5a74682c23c624341f278bb047bc8`.
 Local branch: `oneforall`. Origin: https://github.com/liwwyy/OneForAllLauncher.
-No commits or pushes were made by the implementation session.
+Initial local validation preceded publication. GitHub publication results are recorded below.
 
 ## Completed checks
 
@@ -90,3 +90,21 @@ libayatana deprecation warning. AppImageLauncher desktop integration was bypasse
 for the smoke test using `APPIMAGELAUNCHER_DISABLE=1`; test XDG directories were
 under `target/smoke-appimage`. These local artifacts still use the development
 binary; optimized release binaries are built separately by GitHub Actions.
+
+The first optimized prerelease is published at
+https://github.com/liwwyy/OneForAllLauncher/releases/tag/oneforall-2.6.1
+from source commit `77f3e305efe350e0107e5408a2ddee0943de52d9`. All jobs in
+https://github.com/liwwyy/OneForAllLauncher/actions/runs/37376223222
+succeeded, including Windows installer layout and runtime-DLL checks. The release
+contains eight packages plus SHA256SUMS.txt and GitHub's corresponding source
+archives. Windows/macOS fork builds are unsigned; macOS is not notarized.
+
+The published Linux AppImage was downloaded, checked against its published
+SHA-256 checksum, and launched using isolated directories under
+`target/smoke-release`. It opened a window with app ID `oneforall_app`, title
+`OneForAllLauncher`, and Vulkan graphics initialized. The 25-second smoke test
+ended with its expected timeout, without a startup crash. This host logged
+nonfatal XKB Compose keysym compatibility warnings from the bundled older
+xkbcommon library, a desktop settings portal theme-query timeout, and a notice
+that disabled Sentry reporting did not start. These messages did not prevent
+startup. Windows and macOS interactive GUI launches remain untested locally.
