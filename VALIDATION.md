@@ -192,3 +192,11 @@ Packages were inspected without executing the launcher or opening any GUI.
 Source commit `6320e97d` was pushed to `origin/main`. Release workflow
 https://github.com/liwwyy/OneForAllLauncher/actions/runs/37453299740 was started to
 produce optimized Windows, Linux and macOS packages as a 2.6.3 prerelease.
+
+The release workflow completed successfully on all four platform builds and
+published https://github.com/liwwyy/OneForAllLauncher/releases/tag/oneforall-2.6.3.
+The release contains eight binaries: Windows x86_64 EXE; Linux x86_64 AppImage,
+DEB and RPM; and Intel/Apple Silicon macOS DMG and app.tar.gz packages.
+All eight SHA256SUMS.txt entries match GitHub's uploaded asset digests, and the
+downloaded checksum file itself matches its GitHub asset digest. The release
+remains marked as a prerelease and its binaries are unsigned.
