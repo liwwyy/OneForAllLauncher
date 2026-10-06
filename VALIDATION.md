@@ -108,3 +108,44 @@ nonfatal XKB Compose keysym compatibility warnings from the bundled older
 xkbcommon library, a desktop settings portal theme-query timeout, and a notice
 that disabled Sentry reporting did not start. These messages did not prevent
 startup. Windows and macOS interactive GUI launches remain untested locally.
+
+
+## 2.6.2 exports and transparent artwork — 2026-10-06
+
+`cargo build -j2` passed for the entire workspace. The supplied transparent PNG
+was converted into every shipped PNG, ICO and ICNS launcher icon and embedded
+logo SVG. All nine PNG variants have alpha values spanning 0–255. The original
+PNG, export SVG and example Prism ZIP are ignored; their production assets are tracked.
+LICENSE and ATTRIBUTION.md remain unchanged.
+
+The opt-in `export_sample` integration test opened the supplied upstream
+OneClient SQLite database strictly read-only and exported its `1.8.9 OC` instance.
+The resulting mods.zip contains 71 mods (241.1 MiB). Its Prism ZIP contains
+256 files (265.9 MiB), including 71 mods and 169 config/OneConfig files, plus
+Minecraft options, portable memory/window preferences and the supplied Ornithe
+patches. Both archives passed Python zipfile CRC validation.
+
+Prism Launcher 11.0.3 imported the ZIP into an isolated directory under
+`target/prism-export-check`. All 254 payload files matched the ZIP byte-for-byte;
+Prism rewrote instance.cfg and mmc-pack.json. The imported metadata retains
+Minecraft 1.8.9 and Fabric loader 0.19.5. No Minecraft launch was attempted from
+Prism. Other supported loader metadata is covered by unit tests.
+
+A local development-binary AppImage was built with cargo-packager and launched
+successfully using isolated data directories. The launcher initialized OpenGL
+and its database without a startup crash. The local package is
+`target/packages-2.6.2/oneforall_app_2.6.2_x86_64.AppImage`.
+
+Automated GUI interactions and screenshots stopped at the user's request.
+Final save-dialog behavior and visual acceptance will be confirmed manually
+by the user. The local AppImage uses a development binary; GitHub release
+packages use optimized release binaries.
+
+`cargo test -p oneclient_core -p oneclient_auth -j1` passed: 195 core unit tests,
+13 authentication tests and one enabled provider integration test (209 total).
+The supplied-data export test also passed separately. Tests requiring explicit
+external services/data remain ignored. The first core run exposed an inherited
+GPU test that probed the host's real render node; its unavailable-driver fixture
+now has no render node. Production GPU behavior is unchanged. All nine export
+regression tests passed, covering symlinks, disabled/cached mods, shared folders,
+Prism metadata/settings, invalid paths and failed-save cleanup.

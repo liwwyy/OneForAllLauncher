@@ -4,7 +4,7 @@ OneForAllLauncher, a fork of OneClient by Polyfrost.
 
 Modified on **2026-10-06** to support standalone offline accounts, independent
 branding and side-by-side installation with upstream. Original copyright and
-third-party notices are preserved in [LICENSE](LICENSE) and [ATTRIBUTION.md).
+third-party notices are preserved in [LICENSE](LICENSE) and [ATTRIBUTION.md](ATTRIBUTION.md).
 This project remains **GPL-3.0-only**, without warranty. When distributing binaries,
 make the corresponding source for that exact build available alongside them.
 
@@ -39,6 +39,27 @@ macOS packaging uses the supplied ICNS icon. Upstream service endpoints are reta
 for game metadata and Microsoft login. Crash reporting requires an explicit
 `ONEFORALL_SENTRY_DSN` at build time.
 
+## Export instances
+
+Open an instance's **Settings → Exporting**:
+
+- **Export mods.zip** saves installed mods at the ZIP root, copying actual bytes
+  from symlinked/cached mods and excluding disabled database entries.
+- **Export prism instance** creates a ZIP to import with Prism Launcher's
+  **Add Instance → Import**. Mods are under `.minecraft/mods`; Minecraft options,
+  `config`, `defaultconfigs`, `oneconfig`, and `OneConfig` files are included.
+  Memory and window preferences are included in `instance.cfg`.
+
+Ornithe Gen2 Minecraft 1.8.9 exports preserve the supplied Prism template's
+custom patches and icon. Other Ornithe versions can export mods.zip; the Prism
+button explains the template's version limit. Standard Vanilla, Fabric, Quilt,
+Forge and NeoForge instances use their actual Minecraft and loader versions.
+A loader set to Latest is resolved before exporting Prism metadata.
+Close games using the instance's shared or dedicated game directory before
+exporting. Choose a destination outside the game/mods folders. Exporting does not
+change the instance or include launcher accounts, databases, caches, logs or worlds.
+Prism may need to download Minecraft and its loader when the archive is imported.
+
 ## Package
 
 ```sh
@@ -52,8 +73,9 @@ linuxdeploy does not run its older strip tool on system libraries. Cargo already
 strips the release executable.
 
 Packaging metadata lives in `packages/oneclient_app/Cargo.toml`.
-The original `icon.jpg` is ignored; converted icons and the embedded SVG logo are
-tracked. No generated Apple `Assets.car` is needed or shipped.
+The original `icon.jpg`, `icon-transparent.png`, `export.svg`, and example Prism
+ZIP are ignored; converted icons, embedded SVGs, and bundled Prism template files
+are tracked. No generated Apple `Assets.car` is needed or shipped.
 
 ## GitHub releases
 
@@ -74,7 +96,7 @@ four platform builds succeed:
 - macOS Apple Silicon and Intel: `.dmg` and `.app.tar.gz`.
 - `SHA256SUMS.txt` and GitHub's source archives for the exact release tag.
 
-Fork releases use tags like `oneforall-2.6.1`. Increase `workspace.package.version`
+Fork releases use tags like `oneforall-2.6.2`. Increase `workspace.package.version`
 in `Cargo.toml`, update `Cargo.lock` (`cargo check`), and update `FORK_CHANGELOG.md`
 before the next release. The workflow refuses to overwrite an existing release.
 Use `prerelease=false` when a build has been validated for general release.

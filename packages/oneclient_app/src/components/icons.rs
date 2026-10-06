@@ -112,6 +112,7 @@ pub enum IconType {
     DotsVertical,
     Download01,
     DownloadCloud02,
+    Export,
     Eye,
     File02,
     FilePlus02,

@@ -524,10 +524,13 @@ mod tests {
     #[test]
     fn a_driver_that_will_not_answer_is_never_called_discrete() {
         let mut apu = gpu(AMD_INTEGRATED, Driver::AmdGpu, Some(false));
+        // Never probe the host GPU: this case models an unavailable driver.
+        apu.render_node = None;
         apu.discrete = probe_discrete(&apu);
         assert!(!apu.discrete);
 
         let mut dgpu = gpu("0000:03:00.0", Driver::AmdGpu, Some(true));
+        dgpu.render_node = None;
         dgpu.discrete = probe_discrete(&dgpu);
         assert!(!dgpu.discrete);
 

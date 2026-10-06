@@ -150,6 +150,11 @@ impl InstallState {
     }
 
     #[must_use]
+    pub fn cluster_busy(&self, cluster_id: i64) -> bool {
+        self.is_modpack_job(cluster_id) || self.pending.iter().any(|(id, _, _)| *id == cluster_id)
+    }
+
+    #[must_use]
     pub fn is_modpack_job(&self, cluster_id: i64) -> bool {
         self.modpack_cluster == Some(cluster_id)
     }

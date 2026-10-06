@@ -17,7 +17,7 @@ edition = "2024"
 license = "GPL-3.0-only"
 readme = "README.md"
 rust-version = "1.97"
-version = "2.6.1"
+version = "2.6.2"
 
 [workspace.dependencies]
 # core
