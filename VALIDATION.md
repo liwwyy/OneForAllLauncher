@@ -236,3 +236,52 @@ staged executable build ID, .text and .rodata match the final stripped binary.
 The staged license/notices also match source files. Local SHA256SUMS.txt was
 generated. These development packages use the development data namespace;
 the production release workflow remains pending the user's manual check.
+
+## Version 2.6.5
+
+The user successfully reached Minecraft with the 2.6.4 Ely.by account, then
+reported automatic browser reopening in account settings and the OneConfig
+crash at https://hst.sh/eluxizeyuh. The account hook replayed a shared cached
+BeginElybyLogin result on remount. The new flow awaits results only within a
+fresh button-triggered request and keeps pending/error/cancellation state local.
+
+The crash's null `GameProfile.getName()` occurs in the legacy tab renderer.
+VanillaHUD's editor populates preview entries with Mojang developer UUIDs via
+the active session service. The Ely.by profile endpoint returned HTTP 204 for
+the first fallback preview UUID, leaving its name null. Inspection of the
+matching patched Ely.by authlib also showed that it returns the input unnamed
+profile on this response, so simply replacing the authentication library would
+not fix this crash.
+
+The new embedded Java 8 compatibility agent transforms only
+`VanillaHUD TabListManager.getProfile(UUID)` return values on Ely.by 1.8.9
+launches. Named profiles are unchanged; missing preview profiles resolve through
+Mojang's public profile API or receive a safe stable preview label if unavailable.
+UUIDs are preserved, successful public lookups copy texture properties, and
+account credentials/server-session authentication are not involved. The JAR is
+added to that launch's classpath for Fabric isolation compatibility, uses a
+relocated pinned ASM dependency, and includes GPL/ASM license notices. The mod
+JARs on disk remain unchanged. Source, rebuild script and console-only regression
+fixtures are in `distribution/elyby-preview-compat/`.
+
+- `cargo check -p oneclient_app -j1`: passed during implementation.
+- `cargo test -p oneclient_auth -p oneclient_core -p oneclient_events -j1`: **274 enabled tests passed** (21 auth, 243 core, 10 events).
+- Console-only agent tests passed on Java 8 and Java 25 against real authlib 1.5.21 classes, mocked public HTTPS responses and the installed VanillaHUD 3.5.7 class. Checks cover transformed return values, valid Ely.by profiles remaining identical, resolved names/textures, cache reuse, missing/mismatched profiles and isolated mod class loading.
+- Rebuilding the agent produced identical bytes: SHA-256 `80419d9b4c18b7ba3f2c76d175d08f0098c66248f9dba098f1448126cbc24018`. No original `org/objectweb/asm` class entries remain; relocated classes and both license texts were verified.
+- The original LICENSE/ATTRIBUTION.md and empty README.md are preserved; the lockfile changes only workspace versions to 2.6.5.
+
+No screenshots, GUI interaction, launcher execution or Minecraft launch were
+performed by the agent. Reopening account settings and opening OneConfig in a
+real Ely.by game remain for the user's manual confirmation.
+
+The final `cargo build -j1` passed without warnings, and the executable embeds
+the verified compatibility JAR. Local development packages were built:
+
+- `target/packages-2.6.5/oneforall_app_2.6.5_x86_64.AppImage`
+- `target/packages-2.6.5/oneforall_app_2.6.5_amd64.deb`
+
+Static inspection verified the DEB's 2.6.5/amd64 metadata, exact executable
+payload and license/notices. The AppImage ELF/type-2 header and staged binary
+build ID, .text and .rodata match the stripped build; its notices match source.
+Local SHA256SUMS.txt was generated. These packages use the development data
+namespace. Publishing production installers awaits the user's manual check.

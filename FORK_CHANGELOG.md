@@ -1,4 +1,14 @@
-# OneForAllLauncher 2.6.4 — 2026-10-06
+# OneForAllLauncher 2.6.5 — 2026-10-06
+
+OneForAllLauncher, a fork of OneClient by Polyfrost.
+
+- Start Ely.by browser authorization only from an explicit Add Ely.by click; reopening account settings no longer replays a cached sign-in result.
+- Keep sign-in progress/errors local to the requested flow, ignore cancelled attempts, and cancel active authorization when leaving its screen.
+- Fix the VanillaHUD tab preview crash exposed when opening OneConfig with an Ely.by account on Minecraft 1.8.9. Resolve missing preview names through Mojang's public profile lookup, or use stable safe preview labels when unavailable.
+- Scope the compatibility agent to VanillaHUD's preview profile method and Ely.by 1.8.9 launches; preserve named profiles, UUIDs, textures and normal account/server authentication.
+- Include auditable Java 8 agent source, a deterministic rebuild script, console-only regression tests and the bundled ASM license.
+
+## OneForAllLauncher 2.6.4 — 2026-10-06
 
 OneForAllLauncher, a fork of OneClient by Polyfrost.
 

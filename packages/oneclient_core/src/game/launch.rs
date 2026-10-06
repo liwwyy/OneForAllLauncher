@@ -313,13 +313,24 @@ async fn start(
 
     let arg_map = version_info.arguments.clone().unwrap_or_default();
 
-    let classpaths = arguments::classpaths(
+    let mut classpaths = arguments::classpaths(
         &libraries,
         &version_info.libraries,
         &client_jar,
         &java.os_arch,
         updated,
     )?;
+
+    let preview_agent = if account.is_elyby() {
+        super::elyby::preview_jar(&cluster.mc_version).await?
+    } else {
+        None
+    };
+    if let Some(jar) = &preview_agent {
+        // Fabric's isolated mod loader must be able to resolve the preview bridge.
+        classpaths.push(if cfg!(windows) { ';' } else { ':' });
+        classpaths.push_str(&jar.to_string_lossy());
+    }
 
     let mut jvm_args = arguments::java_arguments(
         arg_map.get(&ArgumentType::Jvm).map(Vec::as_slice),
@@ -348,6 +359,9 @@ async fn start(
 
     if account.is_elyby() {
         jvm_args.push(super::elyby::java_argument(state).await?);
+        if let Some(jar) = preview_agent {
+            jvm_args.push(format!("-javaagent:{}", jar.display()));
+        }
     }
 
     let mut mc_args = arguments::minecraft_arguments(

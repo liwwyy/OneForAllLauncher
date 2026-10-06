@@ -6,6 +6,21 @@ use sha2::{Digest, Sha256};
 const VERSION: &str = "1.2.8";
 const SHA256: &str = "9c7f4343e6c82034958ffb48c14a2cb0c85928be7283103ce17da00c6d5a7b10";
 const URL: &str = "https://authlib-injector.yushi.moe/artifact/56/authlib-injector-1.2.8.jar";
+const PREVIEW_AGENT: &[u8] = include_bytes!("../../assets/elyby-preview-compat.jar");
+
+pub(super) async fn preview_jar(version: &str) -> LauncherResult<Option<std::path::PathBuf>> {
+    if version != "1.8.9" {
+        return Ok(None);
+    }
+    let jar = paths::libraries_dir()?.join("oneforall/elyby/preview-compat-1.jar");
+    if !tokio::fs::read(&jar)
+        .await
+        .is_ok_and(|bytes| bytes == PREVIEW_AGENT)
+    {
+        polyio::write_atomic(&jar, PREVIEW_AGENT).await?;
+    }
+    Ok(Some(jar))
+}
 
 pub(super) async fn java_argument(state: &LauncherState) -> LauncherResult<String> {
     let jar = paths::libraries_dir()?

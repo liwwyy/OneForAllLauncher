@@ -6,27 +6,89 @@ use crate::{
     ui::border_all_color,
 };
 use freya::prelude::*;
-use freya::query::{MutationCapability, MutationStateData, UseMutation};
+use freya::query::{MutationStateData, UseMutation};
 use freya::text_edit::Clipboard;
 use oneclient_auth::ElybyLoginSession;
 
 #[derive(Clone)]
 pub struct ElybyLogin {
     begin: UseMutation<BeginElybyLoginMutation>,
+    finish: UseMutation<FinishElybyLoginMutation>,
     cancel: UseMutation<CancelElybyLoginMutation>,
     session: State<Option<ElybyLoginSession>>,
+    busy: State<bool>,
+    attempt: State<u64>,
+    failure: State<Option<String>>,
     pub pending: bool,
     pub error: Option<String>,
 }
 impl ElybyLogin {
     pub fn start(&self) {
-        self.begin.mutate(());
+        if *self.busy.peek() {
+            return;
+        }
+        let mut handle = self.clone();
+        let attempt = *handle.attempt.peek() + 1;
+        handle.attempt.set(attempt);
+        handle.busy.set(true);
+        handle.failure.set(None);
+        // Only an explicit click starts a flow. Never replay shared mutation
+        // results when this hook mounts on another account screen.
+        spawn(async move {
+            let result = handle.begin.mutate_async(()).await;
+            let login = match &*result.state() {
+                MutationStateData::Settled { res: Ok(login), .. } => Some(login.clone()),
+                MutationStateData::Settled {
+                    res: Err(error), ..
+                } => {
+                    if *handle.attempt.peek() == attempt {
+                        handle.failure.set(Some(error.to_string()));
+                    }
+                    None
+                }
+                _ => None,
+            };
+            let Some(login) = login else {
+                if *handle.attempt.peek() == attempt {
+                    handle.busy.set(false);
+                }
+                return;
+            };
+            if *handle.attempt.peek() != attempt {
+                handle.cancel.mutate(login.device.device_code);
+                return;
+            }
+            handle.session.set(Some(login.clone()));
+            platform::open_url(&login.device.verification_uri);
+            let result = handle.finish.mutate_async(login).await;
+            if *handle.attempt.peek() != attempt {
+                return;
+            }
+            if let MutationStateData::Settled {
+                res: Err(error), ..
+            } = &*result.state()
+            {
+                if !error.is_login_cancelled() {
+                    handle.failure.set(Some(error.to_string()));
+                } else {
+                    handle.session.set(None);
+                }
+            } else {
+                handle.session.set(None);
+            }
+            handle.busy.set(false);
+        });
     }
     pub fn popup(&self) -> Option<Element> {
         let login = self.session.read().clone()?;
         let mut session = self.session;
         let cancel = self.cancel;
+        let mut attempt = self.attempt;
+        let mut busy = self.busy;
         let close = move || {
+            let next = *attempt.peek() + 1;
+            attempt.set(next);
+            busy.set(false);
             if let Some(login) = session.peek().clone() {
                 cancel.mutate(login.device.device_code);
             }
@@ -57,42 +119,26 @@ pub fn use_elyby_login() -> ElybyLogin {
     let begin = use_begin_elyby_login();
     let finish = use_finish_elyby_login();
     let cancel = use_cancel_elyby_login();
-    let mut session = use_state(|| None::<ElybyLoginSession>);
-    let mut handled = use_state(|| None::<String>);
-    use_side_effect(move || {
-        if let Some(login) = mutation_ok(&begin) {
-            if handled.peek().as_deref() == Some(login.device.device_code.as_str()) {
-                return;
-            }
-            handled.set(Some(login.device.device_code.clone()));
-            platform::open_url(&login.device.verification_uri);
-            finish.mutate(login.clone());
-            session.set(Some(login));
+    let session = use_state(|| None::<ElybyLoginSession>);
+    let busy = use_state(|| false);
+    let attempt = use_state(|| 0u64);
+    let failure = use_state(|| None::<String>);
+    use_drop(move || {
+        if let Some(login) = session.peek().clone() {
+            cancel.mutate(login.device.device_code);
         }
     });
-    use_side_effect(move || {
-        if mutation_ok(&finish).is_some() && session.peek().is_some() {
-            session.set(None);
-        }
-    });
-    let pending = mutation_is_running(&begin) || mutation_is_running(&finish);
-    let error = login_error(&finish).or_else(|| login_error(&begin));
+    let pending = *busy.read();
+    let error = failure.read().clone();
     ElybyLogin {
         begin,
+        finish,
         cancel,
         session,
+        busy,
+        attempt,
+        failure,
         pending,
         error,
-    }
-}
-
-fn login_error<M: MutationCapability<Err = oneclient_core::LauncherError>>(
-    mutation: &UseMutation<M>,
-) -> Option<String> {
-    match &*mutation.read().state() {
-        MutationStateData::Settled {
-            res: Err(error), ..
-        } if !error.is_login_cancelled() => Some(error.to_string()),
-        _ => None,
     }
 }
