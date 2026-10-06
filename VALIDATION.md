@@ -170,9 +170,9 @@ disabled upstream updater and disabled OneClient v1 migration.
 - LICENSE and ATTRIBUTION.md remain unchanged. Supplied raw icons are ignored under root `/icons/`; production assets are tracked.
 
 No screenshots, GUI interactions, launcher executions or Minecraft launches were
-performed for 2.6.3. Manual validation remains for the header/glow, equal onboarding
-buttons, Ely.by browser authorization/game launch/skins, Prism file picker, saved
-choices, live notifications and optional Prism import.
+performed by the agent for 2.6.3. The user manually tested the AppImage and
+reported "everything seems to work" after the requested header/glow, Ely.by
+sign-in and Ornithe export-picker/saved-selection checks.
 
 
 Local 2.6.3 development packages were built successfully with cargo-packager:
