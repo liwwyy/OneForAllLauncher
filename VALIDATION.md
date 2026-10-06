@@ -173,3 +173,22 @@ No screenshots, GUI interactions, launcher executions or Minecraft launches were
 performed for 2.6.3. Manual validation remains for the header/glow, equal onboarding
 buttons, Ely.by browser authorization/game launch/skins, Prism file picker, saved
 choices, live notifications and optional Prism import.
+
+
+Local 2.6.3 development packages were built successfully with cargo-packager:
+
+- `target/packages-2.6.3/oneforall_app_2.6.3_x86_64.AppImage`
+- `target/packages-2.6.3/oneforall_app_2.6.3_amd64.deb`
+
+The DEB identifies itself as `one-for-all-launcher`, version 2.6.3, amd64. Its
+payload executable matches the final stripped development binary by SHA-256;
+LICENSE, ATTRIBUTION.md and FORK_CHANGELOG.md match the source files exactly.
+The AppImage has a valid ELF/type-2 AppImage header. Its staged executable's ELF
+build ID, `.text` and `.rodata` match the final binary; linuxdeploy changes runtime
+metadata during packaging. The staged AppImage includes the same license/notices
+and uses `oneforall_app` and the `oneforall` protocol in its desktop entry.
+Packages were inspected without executing the launcher or opening any GUI.
+
+Source commit `6320e97d` was pushed to `origin/main`. Release workflow
+https://github.com/liwwyy/OneForAllLauncher/actions/runs/37453299740 was started to
+produce optimized Windows, Linux and macOS packages as a 2.6.3 prerelease.
