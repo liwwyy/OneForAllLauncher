@@ -247,6 +247,9 @@ impl AuthService {
         if cancel.is_cancelled() {
             return Err(AuthError::LoginCancelled);
         }
+        if let Err(error) = &result {
+            tracing::warn!(%error, "Ely.by sign-in failed");
+        }
         self.store
             .lock()
             .await

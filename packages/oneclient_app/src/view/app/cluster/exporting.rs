@@ -9,7 +9,7 @@ use crate::view::app::settings::{section_header, settings_row};
 use freya::prelude::*;
 use oneclient_common::domain::GameLoader;
 use oneclient_core::export::{
-    ExportFormat, ExportItem, ExportSelection, export_cluster_with_options,
+    ExportFormat, ExportItem, ExportPreset, ExportSelection, export_cluster_with_options,
     list_cluster_export_items,
 };
 use oneclient_events::GroupedProgressSession;
@@ -112,13 +112,76 @@ impl Component for PrismExportDialog {
         for row in tree_rows(cluster_id, "", 0, items, expanded, selection, error) {
             rows = rows.child(row);
         }
+        let roots = items.read().get("").cloned().unwrap_or_default();
+        let mut presets = rect()
+            .horizontal()
+            .width(Size::fill())
+            .content(Content::Flex)
+            .spacing(8.);
+        for (preset, title) in [
+            (ExportPreset::All, "Choose all"),
+            (
+                ExportPreset::Personal,
+                "Choose recommended for personal use",
+            ),
+            (
+                ExportPreset::Distribution,
+                "Choose recommended for distribution",
+            ),
+        ] {
+            let recommended = ExportSelection::preset(preset, &roots);
+            let active = *loaded.read() && selection.read().rules == recommended.rules;
+            presets = presets.child(
+                Button::new()
+                    .secondary()
+                    .width(Size::flex(1.))
+                    .height(Size::px(96.))
+                    .enabled(*loaded.read())
+                    .on_press(move |_| {
+                        let open_in_prism = selection.peek().open_in_prism;
+                        selection.set(ExportSelection {
+                            open_in_prism,
+                            ..recommended.clone()
+                        });
+                    })
+                    .child(
+                        rect()
+                            .vertical()
+                            .width(Size::fill())
+                            .spacing(6.)
+                            .cross_align(Alignment::Center)
+                            .child(
+                                Icon::new(if active {
+                                    IconType::CheckCircle
+                                } else {
+                                    IconType::Square
+                                })
+                                .size(18.)
+                                .color(if active {
+                                    colors::brand()
+                                } else {
+                                    colors::fg_secondary()
+                                }),
+                            )
+                            .child(
+                                label()
+                                    .text(title)
+                                    .font_size(11.)
+                                    .max_lines(3)
+                                    .width(Size::fill())
+                                    .text_align(TextAlign::Center),
+                            ),
+                    ),
+            );
+        }
         OverlayPopup::new().on_close(move |()| open.set(false)).child(
             rect().width(Size::window_percent(100.)).height(Size::window_percent(100.)).center().child(
-                rect().vertical().width(Size::px(620.)).max_width(Size::window_percent(90.)).max_height(Size::window_percent(90.))
+                rect().vertical().width(Size::px(620.)).max_width(Size::window_percent(90.)).height(Size::window_percent(90.)).content(Content::Flex)
                     .padding(Gaps::new_all(24.)).spacing(16.).corner_radius(CornerRadius::new_all(16.)).background(colors::page_elevated())
                     .child(label().text("Export Prism instance").font_size(20.).font_weight(FontWeight::SEMI_BOLD))
                     .child(label().text("Select files and folders to include. Folder selections include their contents; expand a folder to exclude individual files.").font_size(12.).color(colors::fg_secondary()))
-                    .child(ScrollView::new().width(Size::fill()).height(Size::px(350.)).child(rows))
+                    .child(presets)
+                    .child(ScrollView::new().width(Size::fill()).height(Size::flex(1.)).child(rows))
                     .maybe_child(error.read().clone().map(|error| label().text(error).font_size(12.).color(colors::danger()).into_element()))
                     .child(checkbox_controlled(selection.read().open_in_prism, "Open ZIP in Prism after export", move |()| {
                         let value = selection.peek().open_in_prism;
@@ -196,7 +259,9 @@ fn tree_rows(
         } else {
             row = row.child(rect().width(Size::px(30.)));
         }
+        let row_key = path.clone();
         row = row.child(checkbox_controlled(checked, item.name, move |()| {
+            let checked = selection.peek().selected(&path);
             selection.write().set(path.clone(), !checked)
         }));
         if !item.folder {
@@ -207,7 +272,7 @@ fn tree_rows(
                     .color(colors::fg_secondary()),
             );
         }
-        rows.push(row.into_element());
+        rows.push(row.key(row_key).into_element());
         if item.folder && is_expanded {
             rows.extend(tree_rows(
                 cluster_id,

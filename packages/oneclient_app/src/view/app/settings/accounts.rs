@@ -67,6 +67,8 @@ impl Component for SettingsAccounts {
                 default_account,
                 msa.pending,
                 msa.error.clone(),
+                elyby.pending,
+                elyby.error.clone(),
                 {
                     let offline = offline.clone();
                     move |_| offline.open()
@@ -75,21 +77,11 @@ impl Component for SettingsAccounts {
                     let msa = msa.clone();
                     move |_| msa.start()
                 },
+                {
+                    let elyby = elyby.clone();
+                    move |_| elyby.start()
+                },
             ))
-            .child(
-                Button::new()
-                    .secondary()
-                    .enabled(!elyby.pending)
-                    .on_press({
-                        let elyby = elyby.clone();
-                        move |_| elyby.start()
-                    })
-                    .child(Icon::new(IconType::Elyby).size(18.))
-                    .text("Add Ely.by"),
-            )
-            .maybe_child(elyby.error.clone().map(|error| {
-                hint_line(IconType::AlertTriangle, error, colors::danger()).into_element()
-            }))
             .child(section_header("YOUR ACCOUNTS"))
             .children(rows)
             .maybe_child(offline.popup())
@@ -103,8 +95,11 @@ fn hero(
     account: Option<MinecraftAccount>,
     microsoft_pending: bool,
     error: Option<String>,
+    elyby_pending: bool,
+    elyby_error: Option<String>,
     on_open_offline: impl FnMut(Event<PressEventData>) + 'static,
     on_add_microsoft: impl FnMut(Event<PressEventData>) + 'static,
+    on_add_elyby: impl FnMut(Event<PressEventData>) + 'static,
 ) -> impl IntoElement {
     let (name, subtitle) = match &account {
         Some(account) => (account.username.clone(), kind_label(account.kind)),
@@ -164,7 +159,7 @@ fn hero(
                         .width(Size::fill())
                         .spacing(8.)
                         .child(
-                            // The two buttons overflow the ~245px beside the model at the 800px minimum so they wrap
+                            // Keep all account providers together, wrapping at narrow widths.
                             rect()
                                 .horizontal()
                                 .width(Size::fill())
@@ -188,9 +183,24 @@ fn hero(
                                         .on_press(on_open_offline)
                                         .child(Icon::new(IconType::Offline).size(16.))
                                         .text("Add offline"),
+                                )
+                                .child(
+                                    Button::new()
+                                        .secondary()
+                                        .enabled(!elyby_pending)
+                                        .on_press(on_add_elyby)
+                                        .child(Icon::new(IconType::Elyby).size(16.))
+                                        .text(if elyby_pending {
+                                            "Signing in…"
+                                        } else {
+                                            "Add Ely.by"
+                                        }),
                                 ),
                         )
                         .map(error, |el, msg| {
+                            el.child(hint_line(IconType::AlertTriangle, msg, colors::danger()))
+                        })
+                        .map(elyby_error, |el, msg| {
                             el.child(hint_line(IconType::AlertTriangle, msg, colors::danger()))
                         }),
                 ),

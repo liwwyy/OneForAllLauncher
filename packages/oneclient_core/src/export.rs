@@ -11,7 +11,7 @@ use tokio::io::AsyncWriteExt;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
 mod selection;
-pub use selection::{ExportItem, ExportSelection};
+pub use selection::{ExportItem, ExportPreset, ExportSelection};
 
 use crate::{Cluster, LauncherState, settings::GameSettingsProfile};
 
@@ -650,6 +650,55 @@ mod tests {
             assert!(entries.insert(name, bytes).is_none(), "duplicate ZIP entry");
         }
         entries
+    }
+
+    #[tokio::test]
+    async fn recommended_exports_include_personal_data_only_for_personal_use() {
+        let root = ScratchDir::new("recommended-exports");
+        let source = source(&root);
+        for (name, bytes) in [
+            ("config/mod.json", b"config".as_slice()),
+            ("saves/world/level.dat", b"world".as_slice()),
+            ("resourcepacks/pack.zip", b"pack".as_slice()),
+            ("shaderpacks/shader.zip", b"shader".as_slice()),
+            ("texturepacks/texture.zip", b"texture".as_slice()),
+            ("servers.dat", b"servers".as_slice()),
+            ("options.txt", b"options".as_slice()),
+        ] {
+            let path = source.game_dir.join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, bytes).unwrap();
+        }
+        std::fs::write(source.mods_dir.join("mod.jar"), b"mod").unwrap();
+        let roots = selection::list_items(&source, "").unwrap();
+        for preset in [ExportPreset::Personal, ExportPreset::Distribution] {
+            let output = root.join(format!("{preset:?}.zip"));
+            export_instance_selected(
+                source.clone(),
+                &output,
+                ExportSelection::preset(preset, &roots),
+                None,
+            )
+            .await
+            .unwrap();
+            let files = archive(&output).await;
+            assert_eq!(files[".minecraft/mods/mod.jar"], b"mod");
+            assert_eq!(files[".minecraft/config/mod.json"], b"config");
+            for personal in [
+                "saves/world/level.dat",
+                "servers.dat",
+                "options.txt",
+                "resourcepacks/pack.zip",
+                "texturepacks/texture.zip",
+                "shaderpacks/shader.zip",
+            ] {
+                assert_eq!(
+                    files.contains_key(&format!(".minecraft/{personal}")),
+                    preset == ExportPreset::Personal,
+                    "{personal}"
+                );
+            }
+        }
     }
 
     #[tokio::test]

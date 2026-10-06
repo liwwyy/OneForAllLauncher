@@ -7,18 +7,36 @@ pub use onboarding_navbar::OnboardingNavbar;
 use freya::prelude::*;
 
 use crate::components::{Button, Icon, IconType};
+use crate::theme::colors;
 
 fn brand_wordmark() -> impl IntoElement {
-    label()
-        .text("AllForOne")
-        .font_size(24.)
-        .font_weight(FontWeight::BOLD)
-        .color(Color::from_rgb(255, 251, 224))
-        .text_shadow(TextShadow::new(
-            Color::from_rgb(255, 240, 166),
-            (0., 0.),
-            5.,
-        ))
+    brand_wordmark_sized(24.)
+}
+
+pub(crate) fn brand_wordmark_sized(size: f32) -> impl IntoElement {
+    rect()
+        .horizontal()
+        .cross_align(Alignment::Center)
+        .child(
+            label()
+                .text("One")
+                .font_size(size)
+                .font_weight(FontWeight::BOLD)
+                .color(colors::brand())
+                .text_shadow(TextShadow::new(colors::brand(), (0., 0.), 4.)),
+        )
+        .child(
+            label()
+                .text("ForAll")
+                .font_size(size)
+                .font_weight(FontWeight::BOLD)
+                .color(Color::from_rgb(255, 231, 140))
+                .text_shadow(TextShadow::new(
+                    Color::from_rgb(255, 240, 166),
+                    (0., 0.),
+                    5.,
+                )),
+        )
 }
 
 pub(super) fn navbar_button() -> Button {

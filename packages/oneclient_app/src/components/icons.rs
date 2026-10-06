@@ -50,7 +50,11 @@ impl Icon {
 
 impl Component for Icon {
     fn render(&self) -> impl IntoElement {
-        let path = self.icon.path();
+        let path = if self.icon == IconType::IconLogo {
+            "brand-icon.png"
+        } else {
+            self.icon.path()
+        };
         let load = move || (path, AppAssets::get_bytes(path).unwrap_or_default());
         let mut bytes = use_state(load);
         if bytes.peek().0 != path {
@@ -63,12 +67,21 @@ impl Component for Icon {
             .or_else(|| tint.map(|tint| *tint.0.read()))
             .unwrap_or_else(colors::fg_primary);
 
+        if self.icon == IconType::IconLogo {
+            return ImageViewer::new((path, bytes.peek().1.clone()))
+                .width(Size::px(self.size_px))
+                .height(Size::px(self.size_px))
+                .sampling_mode(SamplingMode::Trilinear)
+                .into_element();
+        }
+
         SvgViewer::new((path, bytes.peek().1.clone()))
             .show_loader(false)
             .width(Size::px(self.size_px))
             .height(Size::px(self.size_px))
             .color(color)
             .map(self.rotation, |svg, degrees| svg.rotation(degrees))
+            .into_element()
     }
 }
 

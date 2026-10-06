@@ -14,6 +14,13 @@ pub struct ExportSelection {
     pub open_in_prism: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExportPreset {
+    All,
+    Personal,
+    Distribution,
+}
+
 impl ExportSelection {
     pub fn selected(&self, path: &str) -> bool {
         self.rules
@@ -37,13 +44,32 @@ impl ExportSelection {
     }
 
     pub fn initial(items: &[ExportItem]) -> Self {
+        Self::preset(ExportPreset::Personal, items)
+    }
+
+    pub fn preset(preset: ExportPreset, items: &[ExportItem]) -> Self {
+        if preset == ExportPreset::All {
+            return Self {
+                rules: BTreeMap::from([(String::new(), true)]),
+                open_in_prism: false,
+            };
+        }
         let rules = items
             .iter()
             .filter(|item| {
                 matches!(
                     item.path.as_str(),
                     "mods" | "config" | "defaultconfigs" | "oneconfig" | "OneConfig"
-                ) || (item.name.starts_with("options") && item.name.ends_with(".txt"))
+                ) || (preset == ExportPreset::Personal
+                    && (matches!(
+                        item.path.as_str(),
+                        "shaderpacks"
+                            | "resourcepacks"
+                            | "texturepacks"
+                            | "saves"
+                            | "servers.dat"
+                            | "servers.dat_old"
+                    ) || (item.name.starts_with("options") && item.name.ends_with(".txt"))))
             })
             .map(|item| (item.path.clone(), true))
             .collect();
@@ -60,6 +86,87 @@ fn descendant(path: &str, parent: &str) -> bool {
         || path
             .strip_prefix(parent)
             .is_some_and(|suffix| suffix.starts_with('/'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn roots() -> Vec<ExportItem> {
+        [
+            "mods",
+            "config",
+            "defaultconfigs",
+            "oneconfig",
+            "OneConfig",
+            "options.txt",
+            "optionsof.txt",
+            "shaderpacks",
+            "resourcepacks",
+            "texturepacks",
+            "saves",
+            "servers.dat",
+            "servers.dat_old",
+            "logs",
+            "screenshots",
+            "session.json",
+        ]
+        .into_iter()
+        .map(|path| ExportItem {
+            path: path.into(),
+            name: path.into(),
+            folder: !path.contains('.'),
+            bytes: 0,
+        })
+        .collect()
+    }
+
+    #[test]
+    fn personal_and_distribution_presets_separate_game_data() {
+        let personal = ExportSelection::preset(ExportPreset::Personal, &roots());
+        let distribution = ExportSelection::preset(ExportPreset::Distribution, &roots());
+        for path in [
+            "mods/example.jar",
+            "config/nested/settings.json",
+            "defaultconfigs/mod.toml",
+            "oneconfig/settings.json",
+            "OneConfig/settings.json",
+        ] {
+            assert!(personal.selected(path), "{path}");
+            assert!(distribution.selected(path), "{path}");
+        }
+        for path in [
+            "shaderpacks/shader.zip",
+            "resourcepacks/pack.zip",
+            "texturepacks/pack.zip",
+            "saves/world/level.dat",
+            "servers.dat",
+            "servers.dat_old",
+            "options.txt",
+            "optionsof.txt",
+        ] {
+            assert!(personal.selected(path), "{path}");
+            assert!(!distribution.selected(path), "{path}");
+        }
+        for path in ["logs/latest.log", "screenshots/image.png", "session.json"] {
+            assert!(!personal.selected(path));
+            assert!(!distribution.selected(path));
+        }
+    }
+
+    #[test]
+    fn choose_all_includes_unloaded_folders_and_retains_nested_exclusions() {
+        let mut all = ExportSelection::preset(ExportPreset::All, &roots());
+        assert!(all.selected("new-folder/not-yet-loaded.txt"));
+        all.set("saves".into(), false);
+        all.set("config/private.json".into(), false);
+        assert!(!all.selected("saves/world/level.dat"));
+        assert!(!all.selected("config/private.json"));
+        assert!(all.selected("config/public.json"));
+        let saved: ExportSelection =
+            serde_json::from_str(&serde_json::to_string(&all).unwrap()).unwrap();
+        assert_eq!(saved, all);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

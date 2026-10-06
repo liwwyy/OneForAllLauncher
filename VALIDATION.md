@@ -200,3 +200,39 @@ DEB and RPM; and Intel/Apple Silicon macOS DMG and app.tar.gz packages.
 All eight SHA256SUMS.txt entries match GitHub's uploaded asset digests, and the
 downloaded checksum file itself matches its GitHub asset digest. The release
 remains marked as a prerelease and its binaries are unsigned.
+
+## Version 2.6.4
+
+Investigated both local release logs under
+`~/.local/share/OneForAll/OneForAllLauncher/logs/`; they contained startup logs
+but no Ely.by failure details. The reported `token expiry` error came from the
+launcher's one-year lifetime limit after a successful token response.
+Ely.by's server source (`elyby/accounts`,
+`api/modules/oauth/models/OauthProcess.php::getToken`) assigns non-expiring
+offline-access tokens a compatibility lifetime ending at Unix timestamp 2^31
+(2038). The fork now accepts that lifetime and uses checked date arithmetic;
+missing/zero lifetimes are treated as non-expiring. Sign-in failures now emit
+sanitized warnings without tokens or device codes.
+
+- `cargo check -p oneclient_app -j1`: passed during implementation.
+- `cargo test -p oneclient_auth -p oneclient_core -p oneclient_events -j1`: **274 enabled tests passed** (21 auth, 243 core, 10 events), including long-lived device-code login/refresh, non-expiring/overflowing expiry cases, preset selections and real ZIP contents.
+- `cargo build -j1`: passed without warnings.
+- Export regression checks verify personal exports include worlds, server lists, options and packs, while distribution exports include mods/configs and omit those personal files. Choose all includes unloaded folders and preserves nested exclusions through JSON round-tripping.
+- The compact brand image matches the user's original 2048x2048 transparent PNG byte-for-byte and now uses the image renderer's smooth trilinear sampling instead of an embedded raster inside an SVG.
+- The lockfile only changes workspace package versions to 2.6.4; original LICENSE/ATTRIBUTION.md and the empty README.md are preserved.
+
+No screenshots, GUI interaction, launcher execution or Minecraft launch were
+performed by the agent. Browser-authorized Ely.by sign-in and visual checks of
+the new branding/buttons/picker require the user's manual validation.
+
+Local development packages were built successfully with cargo-packager:
+
+- `target/packages-2.6.4/oneforall_app_2.6.4_x86_64.AppImage`
+- `target/packages-2.6.4/oneforall_app_2.6.4_amd64.deb`
+
+Static inspection verified the DEB's 2.6.4/amd64 metadata, exact executable
+payload and original license/notices; the AppImage's ELF/type-2 header and
+staged executable build ID, .text and .rodata match the final stripped binary.
+The staged license/notices also match source files. Local SHA256SUMS.txt was
+generated. These development packages use the development data namespace;
+the production release workflow remains pending the user's manual check.

@@ -1,6 +1,6 @@
 //! Ely.by's public device-code OAuth flow, as used by FreesmLauncher.
 //! Passwords and OAuth client secrets never enter the launcher.
-use chrono::{TimeDelta, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use reqwest::Client;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -60,7 +60,24 @@ struct DeviceResponse {
 struct TokenResponse {
     access_token: String,
     refresh_token: Option<String>,
-    expires_in: u64,
+    expires_in: Option<u64>,
+}
+
+fn token_expiry(
+    expires_in: Option<u64>,
+    now: DateTime<Utc>,
+) -> Result<DateTime<Utc>, ElybyAuthError> {
+    // Ely.by tokens can be non-expiring. With offline_access the server supplies
+    // a compatibility lifetime ending in 2038, rather than a short OAuth TTL.
+    // See elyby/accounts api/modules/oauth/models/OauthProcess.php::getToken.
+    match expires_in {
+        None | Some(0) => Ok(DateTime::<Utc>::MAX_UTC),
+        Some(seconds) => i64::try_from(seconds)
+            .ok()
+            .and_then(TimeDelta::try_seconds)
+            .and_then(|duration| now.checked_add_signed(duration))
+            .ok_or(ElybyAuthError::InvalidResponse("token expiry")),
+    }
 }
 
 #[derive(Deserialize)]
@@ -219,10 +236,10 @@ async fn account(
     token: TokenResponse,
     old_refresh: Option<&str>,
 ) -> Result<MinecraftAccount, ElybyAuthError> {
-    let expires_in = i64::try_from(token.expires_in)
-        .ok()
-        .filter(|expires| *expires > 0 && *expires <= 31_536_000)
-        .ok_or(ElybyAuthError::InvalidResponse("token expiry"))?;
+    let expires = token_expiry(token.expires_in, Utc::now()).map_err(|error| {
+        tracing::warn!(expires_in = ?token.expires_in, "Ely.by returned an unrepresentable token lifetime");
+        error
+    })?;
     if token.access_token.is_empty() {
         return Err(ElybyAuthError::InvalidResponse("token"));
     }
@@ -250,7 +267,7 @@ async fn account(
         username: profile.name,
         access_token: token.access_token,
         refresh_token,
-        expires: Utc::now() + TimeDelta::seconds(expires_in),
+        expires,
         kind: AccountKind::Elyby,
         elyby_client_id: Some(client_id.to_owned()),
     })
@@ -358,6 +375,57 @@ mod tests {
         json!({"id":id,"name":"ElyPlayer"})
     }
 
+    #[test]
+    fn token_expiry_accepts_elyby_2038_compatibility_lifetime() {
+        let now = DateTime::from_timestamp(1_791_244_800, 0).unwrap();
+        let compatibility_lifetime = (2_i64.pow(31) - now.timestamp()) as u64;
+        assert!(compatibility_lifetime > 31_536_000);
+        assert_eq!(
+            token_expiry(Some(compatibility_lifetime), now)
+                .unwrap()
+                .timestamp(),
+            2_i64.pow(31)
+        );
+        assert_eq!(
+            token_expiry(Some(3600), now).unwrap(),
+            now + TimeDelta::hours(1)
+        );
+    }
+
+    #[test]
+    fn non_expiring_tokens_and_unrepresentable_lifetimes_are_handled() {
+        for expiry in [None, Some(0)] {
+            let token: TokenResponse = serde_json::from_value(
+                json!({"access_token":"test", "refresh_token":"refresh", "expires_in":expiry}),
+            )
+            .unwrap();
+            assert_eq!(
+                token_expiry(token.expires_in, Utc::now()).unwrap(),
+                DateTime::<Utc>::MAX_UTC
+            );
+        }
+        let omitted: TokenResponse =
+            serde_json::from_value(json!({"access_token":"test", "refresh_token":"refresh"}))
+                .unwrap();
+        assert_eq!(
+            token_expiry(omitted.expires_in, Utc::now()).unwrap(),
+            DateTime::<Utc>::MAX_UTC
+        );
+        for seconds in [u64::MAX, i64::MAX as u64] {
+            assert!(matches!(
+                token_expiry(Some(seconds), Utc::now()),
+                Err(ElybyAuthError::InvalidResponse("token expiry"))
+            ));
+        }
+        assert!(token_expiry(Some(1), DateTime::<Utc>::MAX_UTC).is_err());
+    }
+
+    fn compatibility_token(refresh: Option<&str>) -> serde_json::Value {
+        let mut value = token(refresh);
+        value["expires_in"] = json!(2_i64.pow(31) - Utc::now().timestamp());
+        value
+    }
+
     #[tokio::test]
     async fn device_login_uses_public_client_scopes_and_ely_profile() {
         let (api, task) = server(vec![
@@ -380,7 +448,7 @@ mod tests {
             ),
             (
                 200,
-                token(Some("test-refresh")),
+                compatibility_token(Some("test-refresh")),
                 vec!["POST /oauth2/v1/token"],
             ),
             (
@@ -411,6 +479,7 @@ mod tests {
         );
         assert_eq!(account.skin_profile_key(), "elyby:ElyPlayer");
         assert!(!account.is_expired());
+        assert!((account.expires.timestamp() - 2_i64.pow(31)).abs() < 10);
         task.await.unwrap();
     }
     #[tokio::test]
@@ -418,7 +487,7 @@ mod tests {
         let (api, task) = server(vec![
             (
                 200,
-                token(None),
+                compatibility_token(None),
                 vec![
                     "grant_type=refresh_token",
                     "refresh_token=old-refresh",

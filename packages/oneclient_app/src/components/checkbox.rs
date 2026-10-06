@@ -152,13 +152,53 @@ struct ControlledCheck {
 }
 impl Component for ControlledCheck {
     fn render(&self) -> impl IntoElement {
-        let mut value = use_state(|| self.checked);
-        value.set_if_modified(self.checked);
-        Check {
-            value,
-            label: Some(self.text.clone()),
-            on_press: self.on_press.clone(),
-            disabled: false,
-        }
+        // The selection model is the sole source of truth. Mirroring props into
+        // hook state during render briefly shows a recycled row's previous value.
+        let checked = self.checked;
+        let on_press = self.on_press.clone();
+        let a11y_id = use_a11y();
+        let focus = use_focus(a11y_id);
+        rect()
+            .horizontal()
+            .cross_align(Alignment::Center)
+            .spacing(8.)
+            .a11y_id(a11y_id)
+            .a11y_focusable(true)
+            .a11y_role(AccessibilityRole::CheckBox)
+            .cursor(CursorIcon::Pointer)
+            .on_press(move |_| on_press.call(()))
+            .child(
+                rect()
+                    .width(Size::px(BOX_SIZE))
+                    .height(Size::px(BOX_SIZE))
+                    .corner_radius(CornerRadius::new_all(5.))
+                    .center()
+                    .background(if checked {
+                        colors::brand()
+                    } else {
+                        colors::component_bg()
+                    })
+                    .border(ui::border_all_color(
+                        1.,
+                        if focus().is_focused() {
+                            colors::fg_primary()
+                        } else if checked {
+                            colors::brand()
+                        } else {
+                            colors::component_border()
+                        },
+                    ))
+                    .maybe_child(checked.then(|| {
+                        Icon::new(IconType::Check)
+                            .size(MARK_SIZE)
+                            .color(Color::WHITE)
+                    })),
+            )
+            .child(
+                label()
+                    .text(self.text.to_string())
+                    .font_size(12.)
+                    .color(colors::fg_primary()),
+            )
     }
 }

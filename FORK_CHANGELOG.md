@@ -1,4 +1,18 @@
-# OneForAllLauncher 2.6.3 — 2026-10-06
+# OneForAllLauncher 2.6.4 — 2026-10-06
+
+OneForAllLauncher, a fork of OneClient by Polyfrost.
+
+- Fix Ely.by sign-in rejecting the server's long-lived compatibility token expiry; accept non-expiring tokens and validate expiry arithmetic without an arbitrary one-year limit.
+- Log Ely.by sign-in failures without logging access tokens, refresh tokens or device codes.
+- Keep Add Ely.by beside the Microsoft and offline account buttons in account settings.
+- Correct the header and onboarding wordmark to OneForAll, with blue One and yellow ForAll and matching glow.
+- Render the original transparent launcher icon directly with smooth image sampling at small sizes.
+- Add boxed Choose all, recommended for personal use and recommended for distribution presets to the Prism export picker.
+- Personal exports select mods/configs, options, shader/texture/resource packs, worlds and server lists. Distribution presets select mods and configs, excluding worlds, server lists and personal options.
+- Fix checkbox flicker when expanding export folders by using the selection model directly and giving file rows stable keys.
+- Preserve saved custom export selections and the optional Prism import preference.
+
+## OneForAllLauncher 2.6.3 — 2026-10-06
 
 OneForAllLauncher, a fork of OneClient by Polyfrost.
 
