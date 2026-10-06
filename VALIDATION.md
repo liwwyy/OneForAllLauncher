@@ -142,7 +142,7 @@ by the user. The local AppImage uses a development binary; GitHub release
 packages use optimized release binaries.
 
 `cargo test -p oneclient_core -p oneclient_auth -j1` passed: 195 core unit tests,
-13 authentication tests and one enabled provider integration test (209 total).
+13 authentication tests and 35 enabled core integration tests (243 total).
 The supplied-data export test also passed separately. Tests requiring explicit
 external services/data remain ignored. The first core run exposed an inherited
 GPU test that probed the host's real render node; its unavailable-driver fixture
