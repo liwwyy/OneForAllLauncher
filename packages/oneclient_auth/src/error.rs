@@ -109,6 +109,8 @@ pub type AuthResult<T> = Result<T, AuthError>;
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error(transparent)]
+    Elyby(#[from] crate::elyby::ElybyAuthError),
+    #[error(transparent)]
     Minecraft(#[from] MinecraftAuthError),
 
     #[error(transparent)]

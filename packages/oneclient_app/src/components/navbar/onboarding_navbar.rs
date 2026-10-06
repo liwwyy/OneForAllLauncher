@@ -1,7 +1,7 @@
 use freya::prelude::*;
 
 use crate::components::window_controls;
-use crate::theme::{self, colors};
+use crate::theme;
 
 #[derive(PartialEq)]
 pub struct OnboardingNavbar;
@@ -34,11 +34,5 @@ impl Component for OnboardingNavbar {
 }
 
 fn logo() -> impl IntoElement {
-    let bytes = use_memo(|| crate::AppAssets::get_bytes("logo.svg").unwrap_or_default());
-
-    SvgViewer::new(("logo.svg", bytes.read().cloned()))
-        .show_loader(false)
-        .height(Size::px(36.))
-        .width(Size::px(170.))
-        .color(colors::fg_primary())
+    super::brand_wordmark()
 }

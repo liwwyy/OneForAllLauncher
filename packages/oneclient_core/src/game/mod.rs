@@ -1,7 +1,8 @@
 mod analytics;
 mod error;
+mod elyby;
 pub mod fabric;
-mod gpu;
+pub mod gpu;
 mod heal;
 mod launch;
 mod log_replay;
@@ -40,5 +41,5 @@ pub use process::{
 pub use reattach::recover_sessions;
 pub use shared_dir::{
     dematerialize_content, import_manual_content, link_cluster_logs, materialize_content,
-    unlink_cluster_logs, write_allowed_symlinks,
+    shadowed_bundle_mods, sync_cluster_mods, unlink_cluster_logs, write_allowed_symlinks,
 };

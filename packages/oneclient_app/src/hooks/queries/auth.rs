@@ -419,3 +419,58 @@ where
 pub fn accounts_have_microsoft(accounts: &[MinecraftAccount]) -> bool {
     accounts.iter().any(|a| a.kind == AccountKind::Microsoft)
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct BeginElybyLoginMutation;
+impl MutationCapability for BeginElybyLoginMutation {
+    type Ok = oneclient_auth::ElybyLoginSession;
+    type Err = LauncherError;
+    type Keys = ();
+    async fn run(&self, _: &()) -> Result<Self::Ok, Self::Err> {
+        Ok(crate::launcher::state()?
+            .auth
+            .begin_elyby_login(oneclient_auth::DEFAULT_ELYBY_CLIENT_ID.to_owned())
+            .await?)
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct FinishElybyLoginMutation;
+impl MutationCapability for FinishElybyLoginMutation {
+    type Ok = MinecraftAccount;
+    type Err = LauncherError;
+    type Keys = oneclient_auth::ElybyLoginSession;
+    async fn run(&self, session: &Self::Keys) -> Result<Self::Ok, Self::Err> {
+        Ok(crate::launcher::state()?
+            .auth
+            .finish_elyby_login(session.clone())
+            .await?)
+    }
+    async fn on_settled(&self, _: &Self::Keys, result: &Result<Self::Ok, Self::Err>) {
+        if let Ok(account) = result {
+            invalidate_auth_queries(Some(account.id)).await;
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct CancelElybyLoginMutation;
+impl MutationCapability for CancelElybyLoginMutation {
+    type Ok = ();
+    type Err = LauncherError;
+    type Keys = String;
+    async fn run(&self, device_code: &String) -> Result<(), Self::Err> {
+        crate::launcher::state()?
+            .auth
+            .cancel_elyby_login(device_code)
+            .await;
+        Ok(())
+    }
+}
+pub fn use_begin_elyby_login() -> UseMutation<BeginElybyLoginMutation> {
+    use_mutation(Mutation::new(BeginElybyLoginMutation))
+}
+pub fn use_finish_elyby_login() -> UseMutation<FinishElybyLoginMutation> {
+    use_mutation(Mutation::new(FinishElybyLoginMutation))
+}
+pub fn use_cancel_elyby_login() -> UseMutation<CancelElybyLoginMutation> {
+    use_mutation(Mutation::new(CancelElybyLoginMutation))
+}

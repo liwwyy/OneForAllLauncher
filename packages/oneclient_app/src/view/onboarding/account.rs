@@ -1,7 +1,9 @@
 use freya::prelude::*;
 use oneclient_auth::MinecraftAccount;
 
-use crate::components::{Avatar, Button, Icon, IconType, use_microsoft_login, use_offline_login};
+use crate::components::{
+    Avatar, Button, Icon, IconType, use_elyby_login, use_microsoft_login, use_offline_login,
+};
 use crate::hooks::{try_default_account, use_current_account};
 use crate::routes::Route;
 use crate::theme::colors;
@@ -17,6 +19,7 @@ impl Component for OnboardingAccount {
         let account_query = use_current_account();
         let msa = use_microsoft_login();
         let offline = use_offline_login();
+        let elyby = use_elyby_login();
 
         let account = try_default_account(&account_query);
         let has_account = account.is_some();
@@ -27,25 +30,17 @@ impl Component for OnboardingAccount {
             .spacing(24.)
             .child(step_heading(
                 "Account",
-                "Add a Microsoft or offline account to start playing Minecraft: Java Edition.",
+                "Add a Microsoft, offline or Ely.by account to start playing Minecraft: Java Edition.",
             ))
-            .child(match &account {
-                Some(account) => account_preview(account).into_element(),
-                None => {
-                    let start = msa.clone();
-                    sign_in_card(msa.pending, msa.error.clone(), move |_| start.start())
-                        .into_element()
-                }
-            })
-            .child(
-                Button::new()
-                    .secondary()
-                    .on_press({
-                        let offline = offline.clone();
-                        move |_| offline.open()
-                    })
-                    .text("Add an offline account"),
-            )
+            .maybe_child(account.as_ref().map(|account| account_preview(account).into_element()))
+            .child(sign_in_card(msa.pending, msa.error.clone(), { let msa = msa.clone(); move |_| msa.start() }))
+            .child(Button::new().secondary().large().width(Size::fill())
+                .on_press({ let offline = offline.clone(); move |_| offline.open() })
+                .child(Icon::new(IconType::Offline).size(22.)).text("Add an offline account"))
+            .child(Button::new().secondary().large().width(Size::fill()).enabled(!elyby.pending)
+                .on_press({ let elyby = elyby.clone(); move |_| elyby.start() })
+                .child(Icon::new(IconType::Elyby).size(22.)).text("Add an Ely.by account"))
+            .maybe_child(elyby.error.clone().map(|error| label().text(error).font_size(12.).color(colors::danger()).into_element()))
             .into_element();
 
         let page = onboarding_page(
@@ -64,6 +59,7 @@ impl Component for OnboardingAccount {
             .child(page)
             .maybe_child(msa.popup())
             .maybe_child(offline.popup())
+            .maybe_child(elyby.popup())
     }
 }
 
@@ -78,7 +74,7 @@ fn account_preview(account: &MinecraftAccount) -> impl IntoElement {
                 .spacing(12.)
                 .cross_align(Alignment::Center)
                 .child(
-                    Avatar::new(account.id.to_string())
+                    Avatar::new(account.skin_profile_key())
                         .width(Size::px(48.))
                         .height(Size::px(48.)),
                 )
@@ -112,18 +108,20 @@ fn sign_in_card(
     rect()
         .vertical()
         .spacing(12.)
+        .width(Size::fill())
         .cross_align(Alignment::Start)
         .child(
             Button::new()
                 .primary()
                 .large()
+                .width(Size::fill())
                 .enabled(!pending)
                 .on_press(on_add)
-                .child(Icon::new(IconType::Globe01).size(16.))
+                .child(Icon::new(IconType::Globe01).size(22.))
                 .text(if pending {
                     "Signing in..."
                 } else {
-                    "Add Account"
+                    "Add a Microsoft account"
                 }),
         )
         .maybe_child(error.map(|message| {

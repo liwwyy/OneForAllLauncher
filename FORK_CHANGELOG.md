@@ -1,4 +1,19 @@
-# OneForAllLauncher 2.6.2 — 2026-10-06
+# OneForAllLauncher 2.6.3 — 2026-10-06
+
+OneForAllLauncher, a fork of OneClient by Polyfrost.
+
+- Replace the duplicated header emblem with the AllForOne wordmark and a warm white glow.
+- Add Ely.by device-code sign-in, refresh, profile skins and Minecraft authentication through authlib-injector.
+- Use the launcher's registered public Ely.by client ID `oneforalllauncher`; override at build time with `ONEFORALL_ELYBY_CLIENT_ID` if needed.
+- Give Microsoft, offline and Ely.by onboarding buttons equal widths and sizes, with the supplied offline and themed Ely.by icons.
+- Show Prism exporting only for Ornithe 1.8.9; use oneclient.png as the exported instance icon.
+- Add an expandable file/folder picker, per-instance saved selections, and optional automatic ZIP import in Prism.
+- Export in the background with filenames, file counts, bytes, rate and ZIP finalization in live notifications.
+- Name exported ZIPs after the instance and Minecraft version.
+- Integrate the five upstream commits through 0f21171f: opt-in bundle fixes, mods folder synchronization, URL/GPU fixes, and custom game arguments.
+- Preserve the previous README as README_LOCAL.md and leave README.md empty for replacement.
+
+## OneForAllLauncher 2.6.2 — 2026-10-06
 
 OneForAllLauncher, a fork of OneClient by Polyfrost.
 

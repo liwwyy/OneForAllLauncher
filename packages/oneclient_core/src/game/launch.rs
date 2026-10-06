@@ -346,6 +346,10 @@ async fn start(
         jvm_args.push(arg);
     }
 
+    if account.is_elyby() {
+        jvm_args.push(super::elyby::java_argument(state).await?);
+    }
+
     let mut mc_args = arguments::minecraft_arguments(
         arg_map.get(&ArgumentType::Game).map(Vec::as_slice),
         version_info.minecraft_arguments.as_deref(),
@@ -360,7 +364,18 @@ async fn start(
         profile.resolution.unwrap_or_default(),
         &java.os_arch,
     )?;
-    arguments::append_profile_game_arguments(&mut mc_args, profile.force_fullscreen, None);
+    if account.is_elyby() {
+        for index in 1..mc_args.len() {
+            if mc_args[index - 1] == "--userType" {
+                mc_args[index] = "mojang".into();
+            }
+        }
+    }
+    arguments::append_profile_game_arguments(
+        &mut mc_args,
+        profile.force_fullscreen,
+        profile.game_args.as_deref(),
+    );
 
     if let Some(reason) = run_hook(profile.hook_pre.as_deref(), &cwd).await {
         events
@@ -382,8 +397,8 @@ async fn start(
 
     let (mut command, wrapper) = base_command(&profile, &java.absolute_path);
 
-    if profile.use_discrete_gpu() {
-        crate::game::gpu::prefer_discrete(&mut command, &java.absolute_path).await;
+    if let Some(gpu) = profile.gpu() {
+        crate::game::gpu::select(&mut command, &java.absolute_path, gpu).await;
     }
 
     apply_env(&mut command, &profile);

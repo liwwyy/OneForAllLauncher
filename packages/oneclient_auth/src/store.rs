@@ -113,7 +113,7 @@ impl CredentialsStore {
     pub async fn commit_refreshed_account(&mut self, account: MinecraftAccount) -> AuthResult<()> {
         self.users.insert(account.id, account);
         self.save().await?;
-        tracing::debug!("stored refreshed Microsoft account");
+        tracing::debug!("stored refreshed account");
         Ok(())
     }
 
@@ -182,6 +182,9 @@ impl CredentialsStore {
 /// A transient failure must keep the existing token discarding it because
 /// Wi-Fi dropped would sign the user out of a working account
 pub(crate) fn is_transient_auth_error(err: &AuthError) -> bool {
+    if let AuthError::Elyby(error) = err {
+        return error.is_transient();
+    }
     matches!(
         err,
         AuthError::Minecraft(crate::error::MinecraftAuthError::RequestError { source, .. })

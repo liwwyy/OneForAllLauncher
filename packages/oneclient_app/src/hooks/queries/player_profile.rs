@@ -27,6 +27,44 @@ impl QueryCapability for FetchPlayerProfileQuery {
         let state = crate::launcher::state()?;
         let client = &state.services.requester;
 
+        if let Some(username) = keys.uuid.strip_prefix("elyby:") {
+            let mut url = url::Url::parse("https://skinsystem.ely.by/textures/")?;
+            url.path_segments_mut()
+                .map_err(|_| LauncherError::Minecraft("Invalid Ely.by skin URL".into()))?
+                .push(username);
+            let response = client
+                .http()
+                .get(url)
+                .send()
+                .await
+                .map_err(oneclient_net::RequestError::from)?;
+            if response.status().as_u16() == 204 {
+                return Ok(PlayerProfileView::placeholder());
+            }
+            let value = response
+                .error_for_status()
+                .map_err(oneclient_net::RequestError::from)?
+                .json::<serde_json::Value>()
+                .await
+                .map_err(oneclient_net::RequestError::from)?;
+            return Ok(PlayerProfileView {
+                uuid: keys.uuid.clone(),
+                username: username.into(),
+                skin_url: value
+                    .pointer("/SKIN/url")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                cape_url: value
+                    .pointer("/CAPE/url")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                is_slim: value
+                    .pointer("/SKIN/metadata/model")
+                    .and_then(|v| v.as_str())
+                    == Some("slim"),
+                ..Default::default()
+            });
+        }
         Ok(
             minecraft::fetch_player_profile_view(client, &keys.uuid, access_token.as_deref())
                 .await?,

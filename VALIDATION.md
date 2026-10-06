@@ -71,7 +71,7 @@ smoke-test configuration, not a tracked release configuration:
 ~/.cargo/bin/cargo-packager --config "$PWD/target/package-config.json" --formats deb,pacman
 ```
 
-See README.md for standard release packaging, pushing the fork, and future upstream merges.
+See README_LOCAL.md for standard release packaging, pushing the fork, and future upstream merges.
 
 ## GitHub publication and additional packaging checks
 
@@ -149,3 +149,27 @@ GPU test that probed the host's real render node; its unavailable-driver fixture
 now has no render node. Production GPU behavior is unchanged. All nine export
 regression tests passed, covering symlinks, disabled/cached mods, shared folders,
 Prism metadata/settings, invalid paths and failed-save cleanup.
+
+
+## Version 2.6.3
+
+The fork integrates the five upstream commits through `0f21171f` (upstream 2.7.0)
+while retaining its independent 2.6.3 version, app/data/IPC/protocol identities,
+disabled upstream updater and disabled OneClient v1 migration.
+
+- `cargo check -p oneclient_app -j1`: passed during implementation.
+- `cargo build -j1`: passed without warnings.
+- `cargo test -p oneclient_auth -p oneclient_core -p oneclient_events -j1`: **269 enabled tests passed** (19 auth, 240 core, 10 events). Network/user-data opt-in tests remained ignored.
+- `cargo test -p oneclient_app --lib exporting_notifications_show_filename_progress_and_finalization -j1`: passed (1 notification regression test; no GUI execution). Total enabled tests run for 2.6.3: **270**.
+- New auth tests cover public device-code OAuth requests/scopes, browser URL validation and HTTPS upgrading, pending authorization, denied/expired flows, cancellation, refresh token retention/rotation, identity mismatches, error redaction and old account schema compatibility.
+- New export tests cover nested selections/exclusions, cached/disabled mods, preference JSON round-tripping, selected world/config/options files, the oneclient.png icon, invalid paths, broken/cyclic links, filename progress and ZIP finalization events.
+- Ely.by accepted the registered public client ID `oneforalllauncher` in an anonymous device-code request. Its token endpoint returned HTTP 400 `authorization_pending` before browser approval, matching the polling implementation. No account was authorized or account token obtained by this check.
+- The official authlib-injector 1.2.8 artifact matched SHA-256 `9c7f4343e6c82034958ffb48c14a2cb0c85928be7283103ce17da00c6d5a7b10`; base class versions include Java 8 support.
+- A console-only `java -javaagent:…=https://account.ely.by/api/authlib-injector -version` check succeeded on Temurin 25.0.4.1. This loaded the authentication server metadata without starting Minecraft or any GUI.
+- `README_LOCAL.md` is an exact copy of the previous README; `README.md` is zero bytes.
+- LICENSE and ATTRIBUTION.md remain unchanged. Supplied raw icons are ignored under root `/icons/`; production assets are tracked.
+
+No screenshots, GUI interactions, launcher executions or Minecraft launches were
+performed for 2.6.3. Manual validation remains for the header/glow, equal onboarding
+buttons, Ely.by browser authorization/game launch/skins, Prism file picker, saved
+choices, live notifications and optional Prism import.

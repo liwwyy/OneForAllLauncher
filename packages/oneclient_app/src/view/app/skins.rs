@@ -12,7 +12,8 @@ pub struct AccountSkins;
 
 impl Component for AccountSkins {
     fn render(&self) -> impl IntoElement {
-        let account_uuid = try_default_account(&use_current_account()).map(|a| a.id.to_string());
+        let account_uuid =
+            try_default_account(&use_current_account()).map(|a| a.skin_profile_key());
 
         rect()
             .horizontal()

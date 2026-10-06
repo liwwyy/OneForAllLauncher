@@ -113,6 +113,8 @@ pub enum IconType {
     Download01,
     DownloadCloud02,
     Export,
+    Offline,
+    Elyby,
     Eye,
     File02,
     FilePlus02,

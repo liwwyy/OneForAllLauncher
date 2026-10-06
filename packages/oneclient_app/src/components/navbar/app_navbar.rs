@@ -102,13 +102,7 @@ struct NavbarLogo;
 
 impl Component for NavbarLogo {
     fn render(&self) -> impl IntoElement {
-        let bytes = use_memo(|| crate::AppAssets::get_bytes("logo.svg").unwrap_or_default());
-
-        SvgViewer::new(("logo.svg", bytes.read().cloned()))
-            .show_loader(false)
-            .height(Size::px(44.))
-            .width(Size::px(214.))
-            .color(theme::colors::fg_primary())
+        super::brand_wordmark()
     }
 }
 
@@ -263,7 +257,7 @@ impl Component for NavbarRight {
         let unread = use_notifications_snapshot().unread_count();
 
         let account_uuid = try_default_account(&current_account)
-            .map(|account| account.id.to_string())
+            .map(|account| account.skin_profile_key())
             .unwrap_or_else(|| uuid::Uuid::nil().to_string());
 
         let notif_dispatch = dispatch.clone();

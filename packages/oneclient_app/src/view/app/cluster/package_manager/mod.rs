@@ -316,6 +316,7 @@ fn make_row(
         update_available,
         hidden,
         opted_in,
+        shadowed: false,
         advanced: false,
         seen_status: installed_info.map(|i| i.seen_status).unwrap_or_default(),
     }
@@ -479,7 +480,9 @@ impl Component for PackageManager {
         let shares_content = cluster
             .as_ref()
             .map(|cluster| cluster.shares_content(content_type));
-        let uses_bundles = cluster.as_ref().is_none_or(|cluster| cluster.uses_bundles());
+        let uses_bundles = cluster
+            .as_ref()
+            .is_none_or(|cluster| cluster.uses_bundles());
         let active = use_state(|| 0usize);
 
         let search = use_state(String::new);

@@ -6,8 +6,12 @@ use anyhow::{Context, Result, bail};
 use async_zip::{Compression, ZipEntryBuilder, tokio::write::ZipFileWriter};
 use oneclient_common::domain::{ContentType, GameLoader};
 use oneclient_content::packages::store::{PackageStore, artifact_absolute_path};
+use oneclient_events::{GroupedProgressSession, TaskCategory, TaskPhase};
 use tokio::io::AsyncWriteExt;
 use tokio_util::compat::TokioAsyncReadCompatExt;
+
+mod selection;
+pub use selection::{ExportItem, ExportSelection};
 
 use crate::{Cluster, LauncherState, settings::GameSettingsProfile};
 
@@ -49,6 +53,43 @@ pub async fn export_cluster(
     format: ExportFormat,
     destination: &Path,
 ) -> Result<ExportReport> {
+    export_cluster_with_options(state, cluster, format, destination, None, None).await
+}
+
+pub async fn list_cluster_export_items(
+    state: &LauncherState,
+    cluster: &Cluster,
+    parent: String,
+) -> Result<Vec<ExportItem>> {
+    let (source, _) = prepare_source(state, cluster, ExportFormat::Mods).await?;
+    tokio::task::spawn_blocking(move || selection::list_items(&source, &parent)).await?
+}
+
+pub async fn export_cluster_with_options(
+    state: &LauncherState,
+    cluster: &Cluster,
+    format: ExportFormat,
+    destination: &Path,
+    selection: Option<ExportSelection>,
+    progress: Option<GroupedProgressSession>,
+) -> Result<ExportReport> {
+    let (source, dependency_override) = prepare_source(state, cluster, format).await?;
+    export_inner(
+        source,
+        format,
+        destination,
+        Some(dependency_override),
+        selection,
+        progress,
+    )
+    .await
+}
+
+async fn prepare_source(
+    state: &LauncherState,
+    cluster: &Cluster,
+    format: ExportFormat,
+) -> Result<(ExportSource, PathBuf)> {
     let global = state.settings.read().global_game_settings.clone();
     let settings = oneclient_cluster::profiles::resolve_cluster_profile(
         &state.services.db,
@@ -104,7 +145,7 @@ pub async fn export_cluster(
     let dependency_override = cluster
         .dir()?
         .join("config/fabric_loader_dependencies.json");
-    export_inner(source, format, destination, Some(dependency_override)).await
+    Ok((source, dependency_override))
 }
 
 pub async fn export_instance(
@@ -112,7 +153,24 @@ pub async fn export_instance(
     format: ExportFormat,
     destination: &Path,
 ) -> Result<ExportReport> {
-    export_inner(source, format, destination, None).await
+    export_inner(source, format, destination, None, None, None).await
+}
+
+pub async fn export_instance_selected(
+    source: ExportSource,
+    destination: &Path,
+    selection: ExportSelection,
+    progress: Option<GroupedProgressSession>,
+) -> Result<ExportReport> {
+    export_inner(
+        source,
+        ExportFormat::Prism,
+        destination,
+        None,
+        Some(selection),
+        progress,
+    )
+    .await
 }
 
 async fn export_inner(
@@ -120,6 +178,8 @@ async fn export_inner(
     format: ExportFormat,
     destination: &Path,
     dependency_override: Option<PathBuf>,
+    selection: Option<ExportSelection>,
+    progress: Option<GroupedProgressSession>,
 ) -> Result<ExportReport> {
     let template = if format == ExportFormat::Prism {
         prism_files(&source)?
@@ -129,6 +189,16 @@ async fn export_inner(
     let destination = destination.to_path_buf();
     let plan_destination = destination.clone();
     let files = tokio::task::spawn_blocking(move || {
+        if format == ExportFormat::Prism
+            && let Some(selection) = selection.as_ref()
+        {
+            return selection::collect_selected(
+                &source,
+                &plan_destination,
+                dependency_override.as_deref(),
+                selection,
+            );
+        }
         collect_files(
             &source,
             format,
@@ -143,6 +213,16 @@ async fn export_inner(
         .filter(|name| format == ExportFormat::Mods || name.starts_with(".minecraft/mods/"))
         .count();
     let count = template.len() + files.len();
+    let mut total_bytes: u64 = template
+        .iter()
+        .map(|(_, bytes)| bytes.len().max(1) as u64)
+        .sum();
+    for path in files.values() {
+        total_bytes += tokio::fs::metadata(path).await?.len().max(1);
+    }
+    if let Some(session) = &progress {
+        session.expect(TaskCategory::Exports, (count + 1) as u64, total_bytes + 1);
+    }
     let parent = destination
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
@@ -157,24 +237,68 @@ async fn export_inner(
         .with_context(|| format!("Could not create an export in {}", parent.display()))?;
     let mut writer = ZipFileWriter::with_tokio(file);
     for (name, bytes) in template {
+        let task = progress
+            .as_ref()
+            .map(|s| s.child(&name, bytes.len().max(1) as u64, TaskCategory::Exports));
+        if let Some(task) = &task {
+            task.set_phase(TaskPhase::Exporting);
+        }
         writer
             .write_entry_whole(
                 ZipEntryBuilder::new(name.into(), Compression::Deflate),
                 &bytes,
             )
             .await?;
+        if let Some(task) = task {
+            task.finish();
+        }
     }
     for (name, path) in files {
         let file = tokio::fs::File::open(&path)
             .await
             .with_context(|| format!("Could not read {}", path.display()))?;
+        let size = file.metadata().await?.len().max(1);
+        let task = progress
+            .as_ref()
+            .map(|s| s.child(&name, size, TaskCategory::Exports));
+        if let Some(task) = &task {
+            task.set_phase(TaskPhase::Exporting);
+        }
         let mut entry = writer
             .write_entry_stream(ZipEntryBuilder::new(name.into(), Compression::Deflate))
             .await?;
-        futures_lite::io::copy(&mut file.compat(), &mut entry)
-            .await
-            .with_context(|| format!("Could not copy {} into the export", path.display()))?;
+        use futures_lite::io::{AsyncReadExt as _, AsyncWriteExt as _};
+        let mut file = file.compat();
+        let mut buffer = vec![0u8; 64 * 1024];
+        let mut copied = 0u64;
+        let mut last_update = std::time::Instant::now();
+        loop {
+            let read = file
+                .read(&mut buffer)
+                .await
+                .with_context(|| format!("Could not read {}", path.display()))?;
+            if read == 0 {
+                break;
+            }
+            entry.write_all(&buffer[..read]).await?;
+            copied += read as u64;
+            if last_update.elapsed() >= std::time::Duration::from_millis(100) {
+                if let Some(task) = &task {
+                    task.set_progress(copied, None);
+                }
+                last_update = std::time::Instant::now();
+            }
+        }
         entry.close().await?;
+        if let Some(task) = task {
+            task.finish();
+        }
+    }
+    let finalizing = progress
+        .as_ref()
+        .map(|s| s.child("Writing ZIP directory", 1, TaskCategory::Exports));
+    if let Some(task) = &finalizing {
+        task.set_phase(TaskPhase::Finalizing);
     }
     let mut file = writer.close().await?.into_inner();
     file.flush().await?;
@@ -183,6 +307,12 @@ async fn export_inner(
     tokio::fs::rename(&temp.0, &destination)
         .await
         .with_context(|| format!("Could not save {}", destination.display()))?;
+    if let Some(task) = finalizing {
+        task.finish();
+    }
+    if let Some(session) = progress {
+        session.finish();
+    }
     Ok(ExportReport {
         path: destination,
         files: count,
@@ -425,10 +555,13 @@ fn prism_files(source: &ExportSource) -> Result<Vec<(String, Vec<u8>)>> {
     };
     config = config
         .lines()
-        .filter(|line| !line.starts_with("name="))
+        .filter(|line| !line.starts_with("name=") && !line.starts_with("iconKey="))
         .collect::<Vec<_>>()
         .join("\n");
     config.push_str(&format!("\nname={}\n", ini_string(&source.name)));
+    if ornithe {
+        config.push_str("iconKey=oneclient\n");
+    }
     if let Some(memory) = source.settings.mem_max {
         config.push_str(&format!(
             "OverrideMemory=true\nMinMemAlloc={}\nMaxMemAlloc={memory}\n",
@@ -458,7 +591,7 @@ macro_rules! template_files {
     ($($name:literal),* $(,)?) => { &[$(($name, include_bytes!(concat!("../assets/prism/ornithe-gen2-1.8.9/", $name)) as &[u8])),*] };
 }
 const ORNITHE_FILES: &[(&str, &[u8])] = template_files![
-    "ornithe.png",
+    "oneclient.png",
     "patches/net.minecraft.json",
     "patches/net.fabricmc.intermediary.json",
     "patches/org.slf4j.slf4j-api.json",
@@ -517,6 +650,154 @@ mod tests {
             assert!(entries.insert(name, bytes).is_none(), "duplicate ZIP entry");
         }
         entries
+    }
+
+    #[tokio::test]
+    async fn selected_export_respects_nested_exclusions_and_saved_choices() {
+        let root = ScratchDir::new("selected-export");
+        let mut source = source(&root);
+        std::fs::create_dir_all(source.game_dir.join("config/nested")).unwrap();
+        std::fs::write(source.game_dir.join("config/keep.json"), b"kept").unwrap();
+        std::fs::write(source.game_dir.join("config/nested/skip.json"), b"excluded").unwrap();
+        std::fs::write(source.game_dir.join("options.txt"), b"options").unwrap();
+        std::fs::create_dir_all(source.game_dir.join("saves/world")).unwrap();
+        std::fs::write(source.game_dir.join("saves/world/level.dat"), b"world").unwrap();
+        std::fs::write(source.mods_dir.join("disabled.jar"), b"disabled").unwrap();
+        source.disabled_mods.insert("disabled.jar".into());
+        let cached = root.join("cache.jar");
+        std::fs::write(&cached, b"cached").unwrap();
+        source.cached_mods.insert("cached.jar".into(), cached);
+        let mut selection = ExportSelection::initial(&selection::list_items(&source, "").unwrap());
+        selection.set("config/nested".into(), false);
+        selection.set("saves/world".into(), true);
+        selection.open_in_prism = true;
+        let selection: ExportSelection =
+            serde_json::from_slice(&serde_json::to_vec(&selection).unwrap()).unwrap();
+        assert!(selection.open_in_prism);
+        let report = export_instance_selected(source, &root.join("selected.zip"), selection, None)
+            .await
+            .unwrap();
+        let files = archive(&report.path).await;
+        assert_eq!(files[".minecraft/config/keep.json"], b"kept");
+        assert_eq!(files[".minecraft/options.txt"], b"options");
+        assert_eq!(files[".minecraft/saves/world/level.dat"], b"world");
+        assert_eq!(files[".minecraft/mods/cached.jar"], b"cached");
+        assert!(!files.contains_key(".minecraft/mods/disabled.jar"));
+        assert!(!files.contains_key(".minecraft/config/nested/skip.json"));
+        assert!(files.contains_key("oneclient.png"));
+        assert!(String::from_utf8_lossy(&files["instance.cfg"]).contains("iconKey=oneclient\n"));
+    }
+
+    #[tokio::test]
+    async fn export_progress_names_files_and_finalization_and_ends() {
+        use oneclient_events::{Event, GroupedProgressEvent, ProgressEvent};
+        let root = ScratchDir::new("export-progress");
+        let source = source(&root);
+        std::fs::write(source.mods_dir.join("example.jar"), vec![42u8; 1024 * 1024]).unwrap();
+        let (events, mut receiver) = oneclient_events::EventBus::channel();
+        let progress = GroupedProgressSession::start(&events, "Exporting test");
+        let mut selection = ExportSelection::default();
+        selection.set("mods".into(), true);
+        export_instance_selected(source, &root.join("prism.zip"), selection, Some(progress))
+            .await
+            .unwrap();
+        let mut names = Vec::new();
+        let mut expected = 0;
+        let mut finished = 0;
+        let mut finalizing = false;
+        let mut ended = false;
+        while let Ok(event) = receiver.try_recv() {
+            if let Event::Progress(ProgressEvent::Grouped(event)) = event {
+                match event {
+                    GroupedProgressEvent::Expect {
+                        category: TaskCategory::Exports,
+                        count,
+                        total,
+                        ..
+                    } => {
+                        expected = count;
+                        assert!(total >= 1024 * 1024);
+                    }
+                    GroupedProgressEvent::AddChild { label, .. } => names.push(label),
+                    GroupedProgressEvent::FinishChild { .. } => finished += 1,
+                    GroupedProgressEvent::SetChildPhase {
+                        phase: TaskPhase::Finalizing,
+                        ..
+                    } => finalizing = true,
+                    GroupedProgressEvent::End { .. } => ended = true,
+                    _ => {}
+                }
+            }
+        }
+        assert!(names.contains(&".minecraft/mods/example.jar".to_owned()));
+        assert!(names.contains(&"Writing ZIP directory".to_owned()));
+        assert_eq!(finished, expected);
+        assert!(finalizing && ended);
+    }
+
+    #[tokio::test]
+    async fn selected_paths_reject_traversal_and_preserve_existing_zip() {
+        let root = ScratchDir::new("selected-invalid");
+        let source = source(&root);
+        let output = root.join("previous.zip");
+        std::fs::write(&output, b"previous").unwrap();
+        for path in [
+            "../outside",
+            "/absolute",
+            "config/../../escape",
+            "config\\escape",
+        ] {
+            let mut selection = ExportSelection::default();
+            selection.set(path.into(), true);
+            assert!(
+                export_instance_selected(source.clone(), &output, selection, None)
+                    .await
+                    .is_err()
+            );
+            assert_eq!(std::fs::read(&output).unwrap(), b"previous");
+        }
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn selected_export_ignores_unselected_broken_links_and_detects_selected_cycles() {
+        let root = ScratchDir::new("selected-links");
+        let source = source(&root);
+        std::os::unix::fs::symlink(root.join("missing"), source.game_dir.join("broken")).unwrap();
+        std::fs::create_dir_all(source.game_dir.join("config")).unwrap();
+        std::os::unix::fs::symlink(
+            source.game_dir.join("config"),
+            source.game_dir.join("config/loop"),
+        )
+        .unwrap();
+        let mut selection = ExportSelection::default();
+        selection.set("mods".into(), true);
+        export_instance_selected(
+            source.clone(),
+            &root.join("okay.zip"),
+            selection.clone(),
+            None,
+        )
+        .await
+        .unwrap();
+        selection.set("config".into(), true);
+        assert!(
+            export_instance_selected(
+                source.clone(),
+                &root.join("cycle.zip"),
+                selection.clone(),
+                None
+            )
+            .await
+            .is_err()
+        );
+        selection.set("config".into(), false);
+        selection.set("broken".into(), true);
+        assert!(
+            export_instance_selected(source, &root.join("broken.zip"), selection, None)
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]

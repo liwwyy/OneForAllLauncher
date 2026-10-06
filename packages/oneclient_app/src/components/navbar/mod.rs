@@ -8,6 +8,19 @@ use freya::prelude::*;
 
 use crate::components::{Button, Icon, IconType};
 
+fn brand_wordmark() -> impl IntoElement {
+    label()
+        .text("AllForOne")
+        .font_size(24.)
+        .font_weight(FontWeight::BOLD)
+        .color(Color::from_rgb(255, 251, 224))
+        .text_shadow(TextShadow::new(
+            Color::from_rgb(255, 240, 166),
+            (0., 0.),
+            5.,
+        ))
+}
+
 pub(super) fn navbar_button() -> Button {
     Button::new()
         .ghost()

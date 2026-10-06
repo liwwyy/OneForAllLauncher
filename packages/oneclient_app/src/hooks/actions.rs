@@ -31,8 +31,8 @@ use tokio::sync::mpsc;
 use crate::components::IconType;
 use crate::launcher::off_ui;
 use crate::notifications::{
-    ClusterUpdateSummary, NotificationAction, NotificationSpec, OptionalModRef, OptionalModsGroup,
-    OptionalModsOutcome, PackageUpdateGroup, PendingPrompt,
+    BundleChoices, ClusterUpdateSummary, NotificationAction, NotificationSpec, OptionalModRef,
+    OptionalModsGroup, OptionalModsOutcome, PackageUpdateGroup, PendingPrompt,
 };
 use crate::state::{AppChannel, AppState, AsyncStatus, FlaggedInstallPrompt, RelocationState};
 use crate::{invalidate_java_queries, launcher};
@@ -756,6 +756,10 @@ impl Actions {
         self.with_engine(move |state| state.notifications.open_optional_mods(groups, done));
     }
 
+    pub fn close_bundle_choices(&self, chosen: Option<std::collections::HashSet<String>>) {
+        self.with_engine(move |state| state.notifications.finish_bundle_choices(chosen));
+    }
+
     pub fn close_optional_mods(&self, outcome: OptionalModsOutcome) {
         self.with_engine(move |state| state.notifications.finish_optional_mods(outcome));
     }
@@ -991,6 +995,12 @@ impl Actions {
     }
 
     pub fn launch_cluster(&self, cluster_id: ClusterId) {
+        if self.station.peek().installs.exporting.contains(&cluster_id) {
+            self.notify("This instance is being exported")
+                .body("Wait for the ZIP to finish before launching Minecraft.")
+                .send();
+            return;
+        }
         if modpack_job_running(cluster_id) {
             self.notify("The modpack is still being set up")
                 .body("Wait for it to finish installing, then press Play again.")
@@ -1132,6 +1142,25 @@ impl Actions {
             None,
             true,
         );
+    }
+
+    pub fn begin_export(&self, cluster_id: i64) -> bool {
+        self.station
+            .clone()
+            .write_channel(AppChannel::Installs)
+            .installs
+            .exporting
+            .insert(cluster_id)
+    }
+
+    pub fn set_exporting(&self, cluster_id: i64, busy: bool) {
+        let mut station = self.station.clone();
+        let mut state = station.write_channel(AppChannel::Installs);
+        if busy {
+            state.installs.exporting.insert(cluster_id);
+        } else {
+            state.installs.exporting.remove(&cluster_id);
+        }
     }
 
     pub fn dismiss_flagged_install(&self) {
@@ -1796,6 +1825,73 @@ impl Actions {
         }
     }
 
+    async fn resolve_bundle_choices_before_launch(
+        &self,
+        state: &Arc<oneclient_core::LauncherState>,
+        cluster_id: ClusterId,
+    ) {
+        let bundles = match off_ui({
+            let state = state.clone();
+            async move {
+                oneclient_content::bundles::pending_bundle_choices(
+                    cluster_id,
+                    state.bundles.as_ref(),
+                    &state.services.content(),
+                )
+                .await
+            }
+        })
+        .await
+        {
+            Ok(bundles) if !bundles.is_empty() => bundles,
+            Ok(_) => return,
+            Err(err) => {
+                tracing::warn!(cluster_id, error = %err, "could not read the bundles to ask about, launching anyway");
+                return;
+            }
+        };
+
+        let choices_for: Vec<String> = bundles.iter().map(|a| a.manifest.name.clone()).collect();
+        let choices = BundleChoices {
+            cluster_name: crate::install::cluster_display_name(cluster_id, &state.services).await,
+            bundles: bundles
+                .iter()
+                .map(|a| {
+                    (
+                        a.manifest.name.clone(),
+                        crate::utils::bundle_display_name(a),
+                    )
+                })
+                .collect(),
+        };
+        let (done, wait) = tokio::sync::oneshot::channel();
+        self.with_engine(move |state| {
+            state.notifications.open_bundle_choices(choices, done);
+            state.center_open = false;
+        });
+        let Ok(Some(chosen)) = wait.await else { return };
+
+        let choices: Vec<_> = choices_for
+            .iter()
+            .map(|name| (name.clone(), chosen.contains(name)))
+            .collect();
+        if let Err(err) = off_ui({
+            let state = state.clone();
+            async move {
+                oneclient_content::bundles::set_bundle_choices(
+                    cluster_id,
+                    &choices,
+                    &state.services.content(),
+                )
+                .await
+            }
+        })
+        .await
+        {
+            tracing::warn!(cluster_id, error = %err, "could not record the bundle choices");
+        }
+    }
+
     async fn resolve_optional_mods_before_launch(
         &self,
         state: &Arc<oneclient_core::LauncherState>,
@@ -2002,6 +2098,9 @@ async fn launch(actions: &Actions, cluster_id: ClusterId) {
 
     // Before the game process never after Minecraft reads its mods once at
     // startup
+    actions
+        .resolve_bundle_choices_before_launch(&state, cluster_id)
+        .await;
     actions
         .resolve_bundle_updates_before_launch(&state, cluster_id)
         .await;

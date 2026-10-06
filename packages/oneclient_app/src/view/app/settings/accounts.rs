@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 use super::{section_header, settings_page};
 use crate::components::{
-    Avatar, Button, Icon, IconType, PlayerModel, use_microsoft_login, use_offline_login,
+    Avatar, Button, Icon, IconType, PlayerModel, use_elyby_login, use_microsoft_login,
+    use_offline_login,
 };
 use crate::hooks::{
     RefreshAccountKeys, RemoveAccountKeys, SetDefaultAccountKeys, try_accounts,
@@ -31,6 +32,7 @@ impl Component for SettingsAccounts {
         let default_query = use_current_account();
 
         let msa = use_microsoft_login();
+        let elyby = use_elyby_login();
         let set_default = use_set_default_account();
         let remove = use_remove_account();
         let refresh = use_refresh_account();
@@ -74,10 +76,25 @@ impl Component for SettingsAccounts {
                     move |_| msa.start()
                 },
             ))
+            .child(
+                Button::new()
+                    .secondary()
+                    .enabled(!elyby.pending)
+                    .on_press({
+                        let elyby = elyby.clone();
+                        move |_| elyby.start()
+                    })
+                    .child(Icon::new(IconType::Elyby).size(18.))
+                    .text("Add Ely.by"),
+            )
+            .maybe_child(elyby.error.clone().map(|error| {
+                hint_line(IconType::AlertTriangle, error, colors::danger()).into_element()
+            }))
             .child(section_header("YOUR ACCOUNTS"))
             .children(rows)
             .maybe_child(offline.popup())
             .maybe_child(msa.popup())
+            .maybe_child(elyby.popup())
             .into_element()
     }
 }
@@ -106,7 +123,9 @@ fn hero(
         .padding(Gaps::new_all(16.))
         .corner_radius(CornerRadius::new_all(12.))
         .background(colors::page_elevated())
-        .child(model_frame(account.as_ref().map(|account| account.id)))
+        .child(model_frame(
+            account.as_ref().map(|account| account.skin_profile_key()),
+        ))
         .child(
             rect()
                 .vertical()
@@ -167,7 +186,7 @@ fn hero(
                                     Button::new()
                                         .secondary()
                                         .on_press(on_open_offline)
-                                        .child(Icon::new(IconType::Plus).size(16.))
+                                        .child(Icon::new(IconType::Offline).size(16.))
                                         .text("Add offline"),
                                 ),
                         )
@@ -179,7 +198,7 @@ fn hero(
         .into_element()
 }
 
-fn model_frame(id: Option<Uuid>) -> impl IntoElement {
+fn model_frame(id: Option<String>) -> impl IntoElement {
     rect()
         .vertical()
         .cross_align(Alignment::Center)
@@ -193,7 +212,7 @@ fn model_frame(id: Option<Uuid>) -> impl IntoElement {
                 .corner_radius(CornerRadius::new_all(12.))
                 .background(colors::component_bg())
                 .border(border_all_color(1., colors::component_border()))
-                .child(match id {
+                .child(match id.clone() {
                     Some(id) => PlayerModel::new(id)
                         .yaw(-0.5)
                         .width(Size::fill())
@@ -271,8 +290,8 @@ impl Component for AccountRow {
         let remove = self.remove;
         let refresh = self.refresh;
 
-        let is_microsoft = self.kind == AccountKind::Microsoft;
-        let expired = is_microsoft && self.expires <= Utc::now();
+        let is_online = self.kind != AccountKind::Offline;
+        let expired = is_online && self.expires <= Utc::now();
 
         let mut refreshing = use_state(|| false);
         let is_refreshing = *refreshing.read();
@@ -327,9 +346,13 @@ impl Component for AccountRow {
                 el.on_press(move |_| set_default.mutate(SetDefaultAccountKeys { id: Some(id) }))
             })
             .child(
-                Avatar::new(id.to_string())
-                    .width(Size::px(AVATAR_SIZE_PX))
-                    .height(Size::px(AVATAR_SIZE_PX)),
+                Avatar::new(if self.kind == AccountKind::Elyby {
+                    format!("elyby:{}", self.username)
+                } else {
+                    id.to_string()
+                })
+                .width(Size::px(AVATAR_SIZE_PX))
+                .height(Size::px(AVATAR_SIZE_PX)),
             )
             .child(
                 rect()
@@ -361,7 +384,7 @@ impl Component for AccountRow {
                             .color(colors::fg_secondary()),
                     ),
             )
-            .maybe_child(is_microsoft.then(|| {
+            .maybe_child(is_online.then(|| {
                 Button::new()
                     .ghost()
                     .icon()
@@ -424,6 +447,7 @@ impl Component for AccountRow {
 fn kind_label(kind: AccountKind) -> &'static str {
     match kind {
         AccountKind::Microsoft => "Microsoft",
+        AccountKind::Elyby => "Ely.by",
         AccountKind::Offline => "Offline",
     }
 }

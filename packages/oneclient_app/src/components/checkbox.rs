@@ -131,3 +131,34 @@ impl Component for Check {
             }))
     }
 }
+
+/// A checkbox whose value belongs to a larger selection model.
+pub fn checkbox_controlled(
+    checked: bool,
+    text: impl Into<Box<str>>,
+    on_press: impl FnMut(()) + 'static,
+) -> impl IntoElement {
+    ControlledCheck {
+        checked,
+        text: text.into(),
+        on_press: EventHandler::new(on_press),
+    }
+}
+#[derive(PartialEq)]
+struct ControlledCheck {
+    checked: bool,
+    text: Box<str>,
+    on_press: EventHandler<()>,
+}
+impl Component for ControlledCheck {
+    fn render(&self) -> impl IntoElement {
+        let mut value = use_state(|| self.checked);
+        value.set_if_modified(self.checked);
+        Check {
+            value,
+            label: Some(self.text.clone()),
+            on_press: self.on_press.clone(),
+            disabled: false,
+        }
+    }
+}

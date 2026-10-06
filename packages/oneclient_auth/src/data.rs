@@ -7,6 +7,7 @@ use uuid::Uuid;
 pub enum AccountKind {
     Microsoft,
     Offline,
+    Elyby,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,6 +19,8 @@ pub struct MinecraftAccount {
     pub expires: DateTime<Utc>,
     #[serde(default = "default_account_kind")]
     pub kind: AccountKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub elyby_client_id: Option<String>,
 }
 
 fn default_account_kind() -> AccountKind {
@@ -33,8 +36,36 @@ impl MinecraftAccount {
         self.kind == AccountKind::Offline
     }
 
+    /// Public profile key; Ely.by skins use their own username namespace.
+    pub fn skin_profile_key(&self) -> String {
+        if self.is_elyby() {
+            format!("elyby:{}", self.username)
+        } else {
+            self.id.to_string()
+        }
+    }
+
+    pub fn is_elyby(&self) -> bool {
+        self.kind == AccountKind::Elyby
+    }
+
     pub fn is_expired(&self) -> bool {
         self.expires <= Utc::now() + chrono::TimeDelta::seconds(60)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ElybyLoginSession {
+    pub client_id: String,
+    pub device: DeviceCodeLogin,
+}
+
+impl std::fmt::Debug for ElybyLoginSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ElybyLoginSession")
+            .field("client_id", &self.client_id)
+            .field("expires_in", &self.device.expires_in)
+            .finish_non_exhaustive()
     }
 }
 

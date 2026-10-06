@@ -131,7 +131,7 @@ impl Component for AccountHeader {
 
         let uuid = account
             .as_ref()
-            .map(|account| account.id.to_string())
+            .map(|account| account.skin_profile_key())
             .unwrap_or_else(|| uuid::Uuid::nil().to_string());
         let username = match account.as_ref() {
             Some(account) => account.username.clone(),
@@ -139,8 +139,9 @@ impl Component for AccountHeader {
             None => "Not signed in".to_string(),
         };
         let subtitle = match (account.as_ref(), unusable) {
-            (_, true) => "Microsoft Account required",
+            (_, true) => "Sign in again to use this account",
             (Some(account), false) if account.is_microsoft() => "Microsoft account",
+            (Some(account), false) if account.is_elyby() => "Ely.by account",
             (Some(_), false) => "Offline account",
             (None, false) if loading => "Checking accounts",
             (None, false) => "No account selected",
