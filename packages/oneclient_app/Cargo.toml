@@ -18,6 +18,8 @@ path = "src/main.rs"
 default = []
 
 [dependencies]
+base64.workspace = true
+tokio-util.workspace = true
 oneclient_auth.workspace = true
 oneclient_cluster.workspace = true
 oneclient_common.workspace = true

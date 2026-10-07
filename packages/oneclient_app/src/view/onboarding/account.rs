@@ -2,7 +2,8 @@ use freya::prelude::*;
 use oneclient_auth::MinecraftAccount;
 
 use crate::components::{
-    Avatar, Button, Icon, IconType, use_elyby_login, use_microsoft_login, use_offline_login,
+    Avatar, Button, Icon, IconType, use_custom_login, use_elyby_login, use_microsoft_login,
+    use_offline_login,
 };
 use crate::hooks::{try_default_account, use_current_account};
 use crate::routes::Route;
@@ -20,6 +21,7 @@ impl Component for OnboardingAccount {
         let msa = use_microsoft_login();
         let offline = use_offline_login();
         let elyby = use_elyby_login();
+        let custom = use_custom_login();
 
         let account = try_default_account(&account_query);
         let has_account = account.is_some();
@@ -30,7 +32,7 @@ impl Component for OnboardingAccount {
             .spacing(24.)
             .child(step_heading(
                 "Account",
-                "Add a Microsoft, offline or Ely.by account to start playing Minecraft: Java Edition.",
+                "Add a Microsoft, offline, Ely.by or custom account to start playing Minecraft: Java Edition.",
             ))
             .maybe_child(account.as_ref().map(|account| account_preview(account).into_element()))
             .child(sign_in_card(msa.pending, msa.error.clone(), { let msa = msa.clone(); move |_| msa.start() }))
@@ -40,6 +42,9 @@ impl Component for OnboardingAccount {
             .child(Button::new().secondary().large().width(Size::fill()).enabled(!elyby.pending)
                 .on_press({ let elyby = elyby.clone(); move |_| elyby.start() })
                 .child(Icon::new(IconType::Elyby).size(22.)).text("Add an Ely.by account"))
+            .child(Button::new().secondary().large().width(Size::fill())
+                .on_press({ let custom = custom.clone(); move |_| custom.open() })
+                .child(Icon::new(IconType::Custom).size(22.)).text("Add a custom account"))
             .maybe_child(elyby.error.clone().map(|error| label().text(error).font_size(12.).color(colors::danger()).into_element()))
             .into_element();
 
@@ -60,6 +65,7 @@ impl Component for OnboardingAccount {
             .maybe_child(msa.popup())
             .maybe_child(offline.popup())
             .maybe_child(elyby.popup())
+            .maybe_child(custom.popup())
     }
 }
 

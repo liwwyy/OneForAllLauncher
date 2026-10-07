@@ -18,6 +18,51 @@ pub fn offline_uuid(username: &str) -> Uuid {
     Uuid::from_bytes(bytes)
 }
 
+/// Full validity for submission; the input validator also accepts partial names.
+pub fn offline_username_input_allowed(username: &str, allow_invalid: bool) -> bool {
+    allow_invalid
+        || (username.len() <= 16
+            && username
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_'))
+}
+
+pub fn validate_offline_username_with_override(
+    username: &str,
+    allow_invalid: bool,
+) -> AuthResult<()> {
+    if allow_invalid && !username.is_empty() {
+        return Ok(());
+    }
+    validate_offline_username(username)
+}
+
+// Behavioral reference: FreesmLauncher ChooseOfflineNameDialog.cpp (GPL-3.0-only).
+pub fn random_offline_characters() -> String {
+    use rand::RngExt;
+    const CHARACTERS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::rng();
+    (0..14)
+        .map(|_| CHARACTERS[rng.random_range(0..CHARACTERS.len())] as char)
+        .collect()
+}
+
+pub fn random_offline_username() -> String {
+    use rand::RngExt;
+    const WORDS: &[&str] = &[
+        "Cookie", "Clicker", "Licker", "Lenny", "Super", "Sakupen", "Sonic", "Geometry", "Mining",
+        "Chicken", "Sculpted", "Random", "Painted", "Fainted", "MadeIn", "Chinese", "Bing", "Hell",
+        "Circles", "Wave", "Dash", "Crafting", "Smelting", "Jockey", "Vase", "Heaven", "Pudding",
+        "Chilling",
+    ];
+    let mut rng = rand::rng();
+    format!(
+        "{}{}",
+        WORDS[rng.random_range(0..WORDS.len())],
+        WORDS[rng.random_range(0..WORDS.len())]
+    )
+}
+
 pub fn validate_offline_username(username: &str) -> AuthResult<()> {
     let len = username.chars().count();
     if !(3..=16).contains(&len) {
@@ -49,5 +94,6 @@ pub fn offline_account(username: String) -> MinecraftAccount {
         expires: Utc::now() + Duration::days(3650),
         kind: AccountKind::Offline,
         elyby_client_id: None,
+        custom: None,
     }
 }

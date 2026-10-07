@@ -106,3 +106,14 @@ SOFTWARE.
 
 [Gamemode]: https://github.com/FeralInteractive/gamemode
 [Rust Gamemode Internal Linking]: https://github.com/SophieSilver/linking-gamemode
+
+## FreesmLauncher account behavior
+
+Offline username validation, random name generation (including its word list), and custom Yggdrasil account behavior are adapted from [FreesmTeam/FreesmLauncher](https://github.com/FreesmTeam/FreesmLauncher) at commit `163424fc202e451f05ca360ef431209664691137`:
+
+- `launcher/ui/dialogs/ChooseOfflineNameDialog.cpp`: GPL-3.0-only, copyright (C) 2025 Octol1ttle <l1ttleofficial@outlook.com>.
+- `launcher/minecraft/auth/steps/CustomAuthStep.cpp` and `CustomRefreshStep.cpp`: GPL-3.0-only, copyright (C) 2026 so5iso4ka <so5iso4ka@icloud.com>.
+
+The Rust implementation is distributed under this repository's GPL-3.0-only license; see LICENSE.
+
+The custom sign-in form's path autofill behavior was independently implemented after inspecting `launcher/ui/dialogs/CustomLoginDialog.cpp` at the same FreesmLauncher commit. That reference file is licensed under Apache-2.0, copyright 2013–2021 MultiMC Contributors.

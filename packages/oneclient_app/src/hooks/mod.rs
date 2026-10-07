@@ -29,6 +29,7 @@ pub use active_cluster::{
 
 pub use actions::{Actions, NotificationBuilder, PumpSignal, modpack_job_running};
 pub use queries::ALL_VERSIONS;
+pub(crate) use queries::invalidate_auth_queries;
 pub(crate) use queries::use_folder_watch;
 pub use queries::{
     AddOfflineAccountKeys, AddOfflineAccountMutation, AvailableBundlesQuery, BROWSE_PAGE_SIZE,

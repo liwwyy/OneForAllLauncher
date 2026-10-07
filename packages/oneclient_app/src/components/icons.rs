@@ -20,6 +20,7 @@ impl Icon {
         let color = match icon {
             IconType::Modrinth => Some(colors::MODRINTH_COLOR),
             IconType::Curseforge => Some(colors::CURSEFORGE_COLOR),
+            IconType::Custom => Some(Color::WHITE),
             _ => None,
         };
 
@@ -128,6 +129,7 @@ pub enum IconType {
     Export,
     Offline,
     Elyby,
+    Custom,
     Eye,
     File02,
     FilePlus02,

@@ -12,3 +12,6 @@ OneLauncher.iml
 /Ornithe Gen2 Fabric 1.8.9.zip
 
 /icons/
+
+# Generated Python bytecode from build and test scripts
+__pycache__/

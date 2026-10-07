@@ -1,3 +1,5 @@
+mod custom_login;
+pub use custom_login::use_custom_login;
 mod account_switcher;
 mod active_cluster_panel;
 mod asset_image;
@@ -95,7 +97,6 @@ pub use microsoft_java_prompt::MicrosoftJavaPromptOverlay;
 pub(crate) use microsoft_login::login_dialog;
 pub use microsoft_login::use_microsoft_login;
 pub use modpack_confirm_popup::ModpackConfirmPopup;
-pub(crate) use navbar::brand_wordmark_sized;
 pub(crate) use navbar::window_controls;
 pub use navbar::{AppNavbar, OnboardingNavbar};
 pub use notifications::{ChevronToggle, NotificationCenter};

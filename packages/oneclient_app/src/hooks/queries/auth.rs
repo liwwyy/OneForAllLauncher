@@ -113,7 +113,7 @@ pub fn try_account(query: &UseQuery<AccountQuery>) -> Option<MinecraftAccount> {
     super::state::settled_or_loading(query).flatten()
 }
 
-async fn invalidate_auth_queries(account_id: Option<Uuid>) {
+pub async fn invalidate_auth_queries(account_id: Option<Uuid>) {
     QueriesStorage::<ListAccountsQuery>::invalidate_matching(ListAccountsKeys).await;
     for fallback in [false, true] {
         QueriesStorage::<DefaultAccountQuery>::invalidate_matching(DefaultAccountKeys { fallback })
@@ -212,6 +212,7 @@ pub struct AddOfflineAccountMutation;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AddOfflineAccountKeys {
     pub username: String,
+    pub allow_invalid: bool,
 }
 
 impl MutationCapability for AddOfflineAccountMutation {
@@ -222,7 +223,7 @@ impl MutationCapability for AddOfflineAccountMutation {
     async fn run(&self, keys: &Self::Keys) -> Result<Self::Ok, Self::Err> {
         Ok(crate::launcher::state()?
             .auth
-            .add_offline_account(keys.username.clone())
+            .add_offline_account_with_override(keys.username.clone(), keys.allow_invalid)
             .await?)
     }
 

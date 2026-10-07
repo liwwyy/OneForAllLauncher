@@ -142,6 +142,7 @@ impl Component for AccountHeader {
             (_, true) => "Sign in again to use this account",
             (Some(account), false) if account.is_microsoft() => "Microsoft account",
             (Some(account), false) if account.is_elyby() => "Ely.by account",
+            (Some(account), false) if account.is_custom() => "Custom account",
             (Some(_), false) => "Offline account",
             (None, false) if loading => "Checking accounts",
             (None, false) => "No account selected",

@@ -266,6 +266,60 @@ impl AuthService {
             .await
     }
 
+    pub async fn add_offline_account_with_override(
+        &self,
+        username: String,
+        allow_invalid: bool,
+    ) -> AuthResult<MinecraftAccount> {
+        self.store
+            .lock()
+            .await
+            .add_offline_account_with_override_and_save(username, allow_invalid)
+            .await
+    }
+
+    pub async fn discover_custom_server(
+        &self,
+        api_url: &str,
+        login_path: &str,
+        refresh_path: &str,
+    ) -> AuthResult<crate::custom::CustomServer> {
+        Ok(crate::custom::discover_custom_server(
+            self.net.http(),
+            api_url,
+            login_path,
+            refresh_path,
+        )
+        .await?)
+    }
+
+    pub async fn begin_custom_login(
+        &self,
+        server: crate::custom::CustomServer,
+        username: &str,
+        password: &str,
+    ) -> AuthResult<crate::custom::CustomLoginResponse> {
+        Ok(crate::custom::login(server, username, password).await?)
+    }
+
+    pub async fn finish_custom_login(
+        &self,
+        response: crate::custom::CustomLoginResponse,
+        profile: Uuid,
+        cancel: CancellationToken,
+    ) -> AuthResult<MinecraftAccount> {
+        let account = tokio::select! {
+            biased;
+            () = cancel.cancelled() => return Err(AuthError::LoginCancelled),
+            result = crate::custom::select_profile(response, profile) => result?,
+        };
+        let mut store = self.store.lock().await;
+        if cancel.is_cancelled() {
+            return Err(AuthError::LoginCancelled);
+        }
+        store.commit_account(account, &self.events).await
+    }
+
     pub async fn list_accounts(&self) -> Vec<MinecraftAccount> {
         self.store.lock().await.list_accounts()
     }
@@ -318,7 +372,7 @@ impl AuthService {
     #[tracing::instrument(level = "debug", skip(self), fields(%id))]
     async fn renew_token(&self, id: Uuid, force: bool) -> AuthResult<MinecraftAccount> {
         let existing = self.account_snapshot(id).await?;
-        if existing.is_offline() || (!force && !existing.is_expired()) {
+        if existing.is_offline() || (!force && !existing.is_expired() && !existing.is_custom()) {
             return Ok(existing);
         }
 
@@ -327,12 +381,16 @@ impl AuthService {
 
         // Re-read under the guard whoever held it may have just refreshed
         let existing = self.account_snapshot(id).await?;
-        if existing.is_offline() || (!force && !existing.is_expired()) {
+        if existing.is_offline() || (!force && !existing.is_expired() && !existing.is_custom()) {
             return Ok(existing);
         }
 
         tracing::info!(username = %existing.username, "renewing account access token");
-        let result = if existing.is_elyby() {
+        let result = if existing.is_custom() {
+            crate::custom::refresh(&existing)
+                .await
+                .map_err(AuthError::from)
+        } else if existing.is_elyby() {
             elyby::refresh(self.net.http(), &existing)
                 .await
                 .map_err(AuthError::from)

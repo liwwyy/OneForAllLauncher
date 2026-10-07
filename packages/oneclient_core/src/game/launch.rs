@@ -321,7 +321,7 @@ async fn start(
         updated,
     )?;
 
-    let preview_agent = if account.is_elyby() {
+    let preview_agent = if account.authlib_url().is_some() {
         super::elyby::preview_jar(&cluster.mc_version).await?
     } else {
         None
@@ -357,8 +357,8 @@ async fn start(
         jvm_args.push(arg);
     }
 
-    if account.is_elyby() {
-        jvm_args.push(super::elyby::java_argument(state).await?);
+    if let Some(auth_url) = account.authlib_url() {
+        jvm_args.push(super::elyby::java_argument(state, auth_url).await?);
         if let Some(jar) = preview_agent {
             jvm_args.push(format!("-javaagent:{}", jar.display()));
         }
@@ -378,7 +378,7 @@ async fn start(
         profile.resolution.unwrap_or_default(),
         &java.os_arch,
     )?;
-    if account.is_elyby() {
+    if account.authlib_url().is_some() {
         for index in 1..mc_args.len() {
             if mc_args[index - 1] == "--userType" {
                 mc_args[index] = "mojang".into();

@@ -109,6 +109,8 @@ pub type AuthResult<T> = Result<T, AuthError>;
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error(transparent)]
+    Custom(#[from] crate::custom::CustomAuthError),
+    #[error(transparent)]
     Elyby(#[from] crate::elyby::ElybyAuthError),
     #[error(transparent)]
     Minecraft(#[from] MinecraftAuthError),
@@ -135,4 +137,9 @@ pub enum AuthError {
 
     #[error("account already exists for username {username:?}")]
     DuplicateUsername { username: String },
+
+    #[error(
+        "This profile UUID is already used by another account provider. Remove that account before adding this one."
+    )]
+    AccountProviderConflict,
 }

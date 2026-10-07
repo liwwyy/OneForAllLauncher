@@ -7,36 +7,17 @@ pub use onboarding_navbar::OnboardingNavbar;
 use freya::prelude::*;
 
 use crate::components::{Button, Icon, IconType};
-use crate::theme::colors;
 
 fn brand_wordmark() -> impl IntoElement {
     brand_wordmark_sized(24.)
 }
 
-pub(crate) fn brand_wordmark_sized(size: f32) -> impl IntoElement {
-    rect()
-        .horizontal()
-        .cross_align(Alignment::Center)
-        .child(
-            label()
-                .text("One")
-                .font_size(size)
-                .font_weight(FontWeight::BOLD)
-                .color(colors::brand())
-                .text_shadow(TextShadow::new(colors::brand(), (0., 0.), 4.)),
-        )
-        .child(
-            label()
-                .text("ForAll")
-                .font_size(size)
-                .font_weight(FontWeight::BOLD)
-                .color(Color::from_rgb(255, 231, 140))
-                .text_shadow(TextShadow::new(
-                    Color::from_rgb(255, 240, 166),
-                    (0., 0.),
-                    5.,
-                )),
-        )
+fn brand_wordmark_sized(size: f32) -> impl IntoElement {
+    let bytes = use_memo(|| crate::AppAssets::get_bytes("stock-wordmark.svg").unwrap_or_default());
+    SvgViewer::new(("stock-wordmark.svg", bytes.read().cloned()))
+        .show_loader(false)
+        .height(Size::px(size / 24. * 44.))
+        .width(Size::px(size / 24. * 214.))
 }
 
 pub(super) fn navbar_button() -> Button {

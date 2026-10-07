@@ -6,8 +6,8 @@ use uuid::Uuid;
 
 use super::{section_header, settings_page};
 use crate::components::{
-    Avatar, Button, Icon, IconType, PlayerModel, use_elyby_login, use_microsoft_login,
-    use_offline_login,
+    Avatar, Button, Icon, IconType, PlayerModel, use_custom_login, use_elyby_login,
+    use_microsoft_login, use_offline_login,
 };
 use crate::hooks::{
     RefreshAccountKeys, RemoveAccountKeys, SetDefaultAccountKeys, try_accounts,
@@ -33,6 +33,7 @@ impl Component for SettingsAccounts {
 
         let msa = use_microsoft_login();
         let elyby = use_elyby_login();
+        let custom = use_custom_login();
         let set_default = use_set_default_account();
         let remove = use_remove_account();
         let refresh = use_refresh_account();
@@ -50,6 +51,7 @@ impl Component for SettingsAccounts {
                     username: account.username.clone(),
                     kind: account.kind,
                     expires: account.expires,
+                    skin_key: account.skin_profile_key(),
                     is_default: Some(account.id) == default_id,
                     set_default,
                     remove,
@@ -81,12 +83,17 @@ impl Component for SettingsAccounts {
                     let elyby = elyby.clone();
                     move |_| elyby.start()
                 },
+                {
+                    let custom = custom.clone();
+                    move |_| custom.open()
+                },
             ))
             .child(section_header("YOUR ACCOUNTS"))
             .children(rows)
             .maybe_child(offline.popup())
             .maybe_child(msa.popup())
             .maybe_child(elyby.popup())
+            .maybe_child(custom.popup())
             .into_element()
     }
 }
@@ -100,6 +107,7 @@ fn hero(
     on_open_offline: impl FnMut(Event<PressEventData>) + 'static,
     on_add_microsoft: impl FnMut(Event<PressEventData>) + 'static,
     on_add_elyby: impl FnMut(Event<PressEventData>) + 'static,
+    on_add_custom: impl FnMut(Event<PressEventData>) + 'static,
 ) -> impl IntoElement {
     let (name, subtitle) = match &account {
         Some(account) => (account.username.clone(), kind_label(account.kind)),
@@ -195,6 +203,13 @@ fn hero(
                                         } else {
                                             "Add Ely.by"
                                         }),
+                                )
+                                .child(
+                                    Button::new()
+                                        .secondary()
+                                        .on_press(on_add_custom)
+                                        .child(Icon::new(IconType::Custom).size(16.))
+                                        .text("Add custom"),
                                 ),
                         )
                         .map(error, |el, msg| {
@@ -272,6 +287,7 @@ struct AccountRow {
     username: String,
     kind: AccountKind,
     expires: DateTime<Utc>,
+    skin_key: String,
     is_default: bool,
     set_default: crate::hooks::UseSetDefaultAccount,
     remove: crate::hooks::UseRemoveAccount,
@@ -283,6 +299,7 @@ impl PartialEq for AccountRow {
         self.id == other.id
             && self.username == other.username
             && self.kind == other.kind
+            && self.skin_key == other.skin_key
             && self.expires == other.expires
             && self.is_default == other.is_default
     }
@@ -356,13 +373,9 @@ impl Component for AccountRow {
                 el.on_press(move |_| set_default.mutate(SetDefaultAccountKeys { id: Some(id) }))
             })
             .child(
-                Avatar::new(if self.kind == AccountKind::Elyby {
-                    format!("elyby:{}", self.username)
-                } else {
-                    id.to_string()
-                })
-                .width(Size::px(AVATAR_SIZE_PX))
-                .height(Size::px(AVATAR_SIZE_PX)),
+                Avatar::new(self.skin_key.clone())
+                    .width(Size::px(AVATAR_SIZE_PX))
+                    .height(Size::px(AVATAR_SIZE_PX)),
             )
             .child(
                 rect()
@@ -459,6 +472,7 @@ fn kind_label(kind: AccountKind) -> &'static str {
         AccountKind::Microsoft => "Microsoft",
         AccountKind::Elyby => "Ely.by",
         AccountKind::Offline => "Offline",
+        AccountKind::Custom => "Custom",
     }
 }
 

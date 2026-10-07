@@ -270,6 +270,7 @@ async fn account(
         expires,
         kind: AccountKind::Elyby,
         elyby_client_id: Some(client_id.to_owned()),
+        custom: None,
     })
 }
 
@@ -517,6 +518,7 @@ mod tests {
             expires: Utc::now(),
             kind: AccountKind::Elyby,
             elyby_client_id: Some("oneforalllauncher".into()),
+            custom: None,
         };
         let client = Client::new();
         let retained = refresh_at(&client, &existing, &api).await.unwrap();

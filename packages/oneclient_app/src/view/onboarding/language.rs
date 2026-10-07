@@ -45,7 +45,13 @@ impl Component for OnboardingLanguage {
                 rect()
                     .vertical()
                     .spacing(8.)
-                    .child(crate::components::brand_wordmark_sized(36.))
+                    .child(
+                        label()
+                            .text("OneForAll")
+                            .font_size(36.)
+                            .font_weight(FontWeight::BOLD)
+                            .color(colors::fg_primary()),
+                    )
                     .child(
                         label()
                             .text("Let's get you all set-up with the most advanced client.")

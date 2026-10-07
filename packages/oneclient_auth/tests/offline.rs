@@ -2,6 +2,72 @@ use chrono::{TimeDelta, Utc};
 use oneclient_auth::{AccountKind, CredentialsStore, offline_account, offline_uuid};
 use uuid::Uuid;
 
+#[test]
+fn offline_username_checks_partial_input_and_explicit_override() {
+    use oneclient_auth::{offline_username_input_allowed, validate_offline_username_with_override};
+    assert!(offline_username_input_allowed("", false));
+    assert!(offline_username_input_allowed("Ab", false));
+    assert!(offline_username_input_allowed("Player_42", false));
+    for name in ["with space", "naïve", "abcdefghijklmnopq", "line\nbreak"] {
+        assert!(!offline_username_input_allowed(name, false));
+        assert!(validate_offline_username_with_override(name, false).is_err());
+        assert!(offline_username_input_allowed(name, true));
+        assert!(validate_offline_username_with_override(name, true).is_ok());
+    }
+    assert!(validate_offline_username_with_override("", true).is_err());
+    assert!(validate_offline_username_with_override("Ab", false).is_err());
+    assert!(validate_offline_username_with_override("abcdefghijklmnop", false).is_ok());
+}
+
+#[test]
+fn random_names_match_freesm_formats_and_are_valid() {
+    use oneclient_auth::{
+        random_offline_characters, random_offline_username, validate_offline_username,
+    };
+    for _ in 0..200 {
+        let characters = random_offline_characters();
+        assert_eq!(characters.len(), 14);
+        assert!(characters.chars().all(|c| c.is_ascii_alphanumeric()));
+        let name = random_offline_username();
+        assert!(name.chars().all(|c| c.is_ascii_alphabetic()));
+        validate_offline_username(&name).unwrap();
+    }
+}
+
+#[tokio::test]
+async fn invalid_name_override_survives_storage_and_offline_launch() {
+    use oneclient_auth::AuthService;
+    use oneclient_events::EventBus;
+    use oneclient_net::{NetConfig, RequestClient};
+    let mut store = CredentialsStore::default();
+    assert!(store.add_offline_account("My Player!".into()).is_err());
+    assert!(
+        store
+            .add_offline_account_with_override(String::new(), true)
+            .is_err()
+    );
+    let account = store
+        .add_offline_account_with_override("My Player!".into(), true)
+        .unwrap();
+    assert_eq!(account.id, offline_uuid("My Player!"));
+    assert!(
+        store
+            .add_offline_account_with_override("my player!".into(), true)
+            .is_err()
+    );
+    let restored = serde_json::from_str(&serde_json::to_string(&store).unwrap()).unwrap();
+    let (events, _rx) = EventBus::channel();
+    let service = AuthService::with_store(
+        restored,
+        RequestClient::new(NetConfig::default()).unwrap(),
+        events,
+    );
+    let launched = service.default_account_for_launch().await.unwrap().unwrap();
+    assert_eq!(launched.username, "My Player!");
+    assert!(launched.is_offline());
+    assert!(launched.access_token.is_empty());
+}
+
 fn isolate_launcher_dir() {
     oneclient_common::paths::set_launcher_dir(
         std::env::temp_dir().join(format!("oneclient-auth-test-{}", Uuid::new_v4())),
@@ -14,6 +80,25 @@ fn fake_microsoft_account(username: &str) -> oneclient_auth::MinecraftAccount {
     account.access_token = "access".into();
     account.refresh_token = "refresh".into();
     account
+}
+
+#[tokio::test]
+async fn signing_in_to_another_provider_cannot_overwrite_an_existing_account() {
+    let existing = fake_microsoft_account("Player");
+    let mut store = CredentialsStore::default();
+    store.users.insert(existing.id, existing.clone());
+    let mut conflicting = existing.clone();
+    conflicting.kind = AccountKind::Custom;
+    conflicting.access_token = "different-provider-token".into();
+    let (events, _rx) = oneclient_events::EventBus::channel();
+    assert!(matches!(
+        store.commit_account(conflicting, &events).await,
+        Err(oneclient_auth::AuthError::AccountProviderConflict)
+    ));
+    assert_eq!(
+        store.users[&existing.id].access_token,
+        existing.access_token
+    );
 }
 
 #[test]

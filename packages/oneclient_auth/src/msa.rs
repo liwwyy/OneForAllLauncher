@@ -542,6 +542,7 @@ async fn account_from_msa_token(
         expires: msa.obtained_at + chrono::TimeDelta::seconds(msa.expires_in as i64),
         kind: AccountKind::Microsoft,
         elyby_client_id: None,
+        custom: None,
     })
 }
 

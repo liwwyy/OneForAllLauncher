@@ -1,3 +1,24 @@
+## OneForAllLauncher 2.6.8 — 2026-10-08
+
+- Make the custom-account icon white in onboarding, account settings and the sign-in dialog.
+- Update the README screenshots for onboarding, account management and offline account creation.
+
+## OneForAllLauncher 2.6.7 — 2026-10-08
+
+- Use the supplied custom authentication icon in onboarding, account settings and the sign-in dialog.
+- Replace the two-stage custom sign-in form with an inline trust toggle and one Add account action.
+- Move login/refresh paths under Options, with Freesm-style autofill that preserves custom paths.
+- Compile the preview compatibility agent from Java source during Cargo and release/nightly builds; remove the checked-in prebuilt JAR.
+- Document the JDK/Python build requirements and verified ASM dependency cache.
+
+## OneForAllLauncher 2.6.6 — 2026-10-08
+
+- Validate offline usernames while typing; add an explicit invalid-name override and random characters/username generators in onboarding and account settings.
+- Add custom Yggdrasil accounts with server discovery, configurable login/refresh paths, credential destination review, profile selection, token refresh and authlib-injector launches.
+- Restore the stock ONECLIENT wordmark without glow, keeping the custom launcher icon.
+- Add a matching release-download badge and document the bundled Ely.by preview compatibility agent in the README.
+- Limit release notes to the current version's changes.
+
 # OneForAllLauncher 2.6.5 — 2026-10-06
 
 OneForAllLauncher, a fork of OneClient by Polyfrost.

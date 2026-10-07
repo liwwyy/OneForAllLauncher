@@ -7,7 +7,7 @@ on:
       prerelease:
         description: Publish as a prerelease
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: oneforall-release
@@ -87,6 +87,17 @@ jobs:
         if: matrix.macos_deployment_target != ''
         shell: bash
         run: echo "MACOSX_DEPLOYMENT_TARGET=${{ matrix.macos_deployment_target }}" >> "$GITHUB_ENV"
+
+      - name: Setup Java compiler for the source-built preview agent
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Python for the source-built preview agent
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
 
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
@@ -302,15 +313,7 @@ jobs:
             test -s "dist/OneForAllLauncher_${VERSION}_${suffix}"
           done
           (cd dist && sha256sum * > SHA256SUMS.txt)
-          cp FORK_CHANGELOG.md notes.md
-          cat >> notes.md <<'NOTES'
-
-          ## Downloads
-
-          Windows: `.exe` installer. Linux: `.deb`, `.rpm`, or `.AppImage` (mark the AppImage executable). macOS: `.dmg` or `.app.tar.gz`, choosing `aarch64` for Apple Silicon or `x86_64` for Intel.
-
-          These fork builds are unsigned and macOS builds are not notarized. Windows SmartScreen or macOS Gatekeeper may prompt or block them. Automatic updates are disabled. Checksums are in SHA256SUMS.txt; corresponding GPL-3.0 source is available from the source archives for this exact release tag. Original LICENSE and ATTRIBUTION.md are preserved.
-          NOTES
+          python3 distribution/release_notes.py "$VERSION" > notes.md
           args=()
           if [ "$PRERELEASE" = true ]; then args+=(--prerelease); fi
           gh release create "$TAG" dist/* --target "$GITHUB_SHA" \
