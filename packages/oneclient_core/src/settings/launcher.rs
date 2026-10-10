@@ -47,6 +47,8 @@ pub struct ViewState {
     pub sort: Option<String>,
 }
 
+pub const CURRENT_SETTINGS_VERSION: u32 = 2;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct LauncherSettings {
@@ -94,10 +96,22 @@ impl LauncherSettings {
     }
 }
 
+impl LauncherSettings {
+    /// Brings a file written by an older launcher up to the current defaults
+    pub fn migrate(&mut self) {
+        if self.settings_version < 2 {
+            // Had no toggle so a saved `false` was never the user's choice
+            // dedicated clusters plus one shared cluster may now run together
+            self.allow_parallel_running_clusters = true;
+        }
+        self.settings_version = CURRENT_SETTINGS_VERSION;
+    }
+}
+
 impl Default for LauncherSettings {
     fn default() -> Self {
         Self {
-            settings_version: 1,
+            settings_version: CURRENT_SETTINGS_VERSION,
             log_debug: false,
             auto_update: false, // Fork updates stay disabled until a fork signing identity is configured.
             crash_reporting: true,
@@ -105,7 +119,7 @@ impl Default for LauncherSettings {
             enable_gamemode: false,
             max_concurrent_requests: 25,
             global_game_settings: GameSettingsProfile::default_global_profile(),
-            allow_parallel_running_clusters: false,
+            allow_parallel_running_clusters: true,
             launch_behaviour: LaunchBehaviour::default(),
             run_in_background: false,
             show_tray_icon: true,

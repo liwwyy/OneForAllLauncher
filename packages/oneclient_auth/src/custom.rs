@@ -243,6 +243,7 @@ pub async fn select_profile(
         refresh_token: String::new(),
         expires: Utc::now() + Duration::hours(12),
         kind: AccountKind::Custom,
+        signed_out: false,
         elyby_client_id: None,
         custom: Some(CustomAccountData {
             server: response.server,

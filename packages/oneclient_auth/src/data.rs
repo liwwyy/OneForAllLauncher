@@ -24,6 +24,8 @@ pub struct MinecraftAccount {
     pub elyby_client_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub custom: Option<crate::custom::CustomAccountData>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub signed_out: bool,
 }
 
 impl std::fmt::Debug for MinecraftAccount {
@@ -33,6 +35,7 @@ impl std::fmt::Debug for MinecraftAccount {
             .field("username", &self.username)
             .field("kind", &self.kind)
             .field("expires", &self.expires)
+            .field("signed_out", &self.signed_out)
             .field("custom_server", &self.custom.as_ref().map(|c| &c.server))
             .finish_non_exhaustive()
     }
@@ -78,6 +81,10 @@ impl MinecraftAccount {
         } else {
             None
         }
+    }
+
+    pub fn needs_sign_in(&self) -> bool {
+        self.is_microsoft() && self.signed_out
     }
 
     pub fn is_expired(&self) -> bool {

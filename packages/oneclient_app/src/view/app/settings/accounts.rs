@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use super::{section_header, settings_page};
 use crate::components::{
-    Avatar, Button, Icon, IconType, PlayerModel, use_custom_login, use_elyby_login,
+    Avatar, Button, Icon, IconType, MicrosoftLogin, PlayerModel, use_custom_login, use_elyby_login,
     use_microsoft_login, use_offline_login,
 };
 use crate::hooks::{
@@ -52,10 +52,12 @@ impl Component for SettingsAccounts {
                     kind: account.kind,
                     expires: account.expires,
                     skin_key: account.skin_profile_key(),
+                    signed_out: account.needs_sign_in(),
                     is_default: Some(account.id) == default_id,
                     set_default,
                     remove,
                     refresh,
+                    sign_in: msa.clone(),
                 }
                 .into_element()
             })
@@ -110,6 +112,10 @@ fn hero(
     on_add_custom: impl FnMut(Event<PressEventData>) + 'static,
 ) -> impl IntoElement {
     let (name, subtitle) = match &account {
+        Some(account) if account.needs_sign_in() => (
+            account.username.clone(),
+            "Signed out. Sign in again to play",
+        ),
         Some(account) => (account.username.clone(), kind_label(account.kind)),
         None => (
             "No active account".to_string(),
@@ -282,16 +288,21 @@ const REFRESH_SPIN_TIME: u64 = 800;
 
 const REFRESHING_OPACITY: f32 = 0.7;
 
+/// Only the identity half fades the sign-in and remove buttons stay crisp
+const SIGNED_OUT_OPACITY: f32 = 0.45;
+
 struct AccountRow {
     id: Uuid,
     username: String,
     kind: AccountKind,
     expires: DateTime<Utc>,
     skin_key: String,
+    signed_out: bool,
     is_default: bool,
     set_default: crate::hooks::UseSetDefaultAccount,
     remove: crate::hooks::UseRemoveAccount,
     refresh: crate::hooks::UseRefreshAccount,
+    sign_in: MicrosoftLogin,
 }
 
 impl PartialEq for AccountRow {
@@ -301,7 +312,9 @@ impl PartialEq for AccountRow {
             && self.kind == other.kind
             && self.skin_key == other.skin_key
             && self.expires == other.expires
+            && self.signed_out == other.signed_out
             && self.is_default == other.is_default
+            && self.sign_in.pending == other.sign_in.pending
     }
 }
 
@@ -318,7 +331,12 @@ impl Component for AccountRow {
         let refresh = self.refresh;
 
         let is_online = self.kind != AccountKind::Offline;
-        let expired = is_online && self.expires <= Utc::now();
+        let is_microsoft = self.kind == AccountKind::Microsoft;
+        let signed_out = is_microsoft && self.signed_out;
+        // A signed-out entry has no token left to call expired
+        let expired = is_online && !signed_out && self.expires <= Utc::now();
+        let identity_opacity = if signed_out { SIGNED_OUT_OPACITY } else { 1. };
+        let sign_in = self.sign_in.clone();
 
         let mut refreshing = use_state(|| false);
         let is_refreshing = *refreshing.read();
@@ -345,7 +363,9 @@ impl Component for AccountRow {
             0.
         };
 
-        let border_color = if expired {
+        let border_color = if signed_out {
+            colors::component_border()
+        } else if expired {
             colors::danger()
         } else if is_default {
             colors::brand()
@@ -369,19 +389,22 @@ impl Component for AccountRow {
                 1.
             })
             .a11y_role(AccessibilityRole::Button)
-            .maybe(!is_default, |el| {
+            .maybe(!is_default && !signed_out, |el| {
                 el.on_press(move |_| set_default.mutate(SetDefaultAccountKeys { id: Some(id) }))
             })
             .child(
-                Avatar::new(self.skin_key.clone())
-                    .width(Size::px(AVATAR_SIZE_PX))
-                    .height(Size::px(AVATAR_SIZE_PX)),
+                rect().opacity(identity_opacity).child(
+                    Avatar::new(self.skin_key.clone())
+                        .width(Size::px(AVATAR_SIZE_PX))
+                        .height(Size::px(AVATAR_SIZE_PX)),
+                ),
             )
             .child(
                 rect()
                     .vertical()
                     .width(Size::flex(1.0))
                     .spacing(4.)
+                    .opacity(identity_opacity)
                     .child(
                         rect()
                             .horizontal()
@@ -396,18 +419,37 @@ impl Component for AccountRow {
                                     .color(colors::fg_primary()),
                             )
                             .maybe_child(is_default.then(default_badge))
-                            .maybe_child(expired.then(expired_badge)),
+                            .maybe_child(expired.then(expired_badge))
+                            .maybe_child(signed_out.then(signed_out_badge)),
                     )
                     // The kind rides with the id a third badge and a full uuid do not both fit
                     .child(
                         label()
-                            .text(format!("{} · {id}", kind_label(self.kind)))
+                            .text(if signed_out {
+                                "Session expired. Sign in again to use this account".to_string()
+                            } else {
+                                format!("{} · {id}", kind_label(self.kind))
+                            })
                             .font_size(11.)
                             .max_lines(1)
                             .color(colors::fg_secondary()),
                     ),
             )
-            .maybe_child(is_online.then(|| {
+            .maybe_child(signed_out.then(|| {
+                let pending = sign_in.pending;
+                Button::new()
+                    .secondary()
+                    .enabled(!pending)
+                    .tooltip("Sign in to this Microsoft account again")
+                    .on_press(move |e: Event<PressEventData>| {
+                        e.stop_propagation();
+                        sign_in.start();
+                    })
+                    .child(Icon::new(IconType::Globe01).size(16.))
+                    .text(if pending { "Signing in..." } else { "Sign in" })
+                    .into_element()
+            }))
+            .maybe_child((is_online && !signed_out).then(|| {
                 Button::new()
                     .ghost()
                     .icon()
@@ -497,6 +539,18 @@ fn expired_badge() -> impl IntoElement {
         "Expired".to_string(),
         colors::danger(),
         colors::danger(),
+    )
+}
+
+fn signed_out_badge() -> impl IntoElement {
+    badge(
+        Icon::new(IconType::AlertTriangle)
+            .size(12.)
+            .color(colors::fg_secondary())
+            .into_element(),
+        "Signed out".to_string(),
+        colors::component_border(),
+        colors::fg_secondary(),
     )
 }
 

@@ -308,10 +308,10 @@ impl MutationCapability for RefreshAccountMutation {
             .await?)
     }
 
-    async fn on_settled(&self, keys: &Self::Keys, result: &Result<Self::Ok, Self::Err>) {
-        if result.is_ok() {
-            invalidate_auth_queries(Some(keys.id)).await;
-        }
+    /// A failure can still change the account a rejected token marks it
+    /// signed out
+    async fn on_settled(&self, keys: &Self::Keys, _result: &Result<Self::Ok, Self::Err>) {
+        invalidate_auth_queries(Some(keys.id)).await;
     }
 }
 
@@ -330,10 +330,8 @@ impl MutationCapability for RefreshAllAccountsMutation {
             .await?)
     }
 
-    async fn on_settled(&self, _keys: &Self::Keys, result: &Result<Self::Ok, Self::Err>) {
-        if result.is_ok() {
-            invalidate_auth_queries(None).await;
-        }
+    async fn on_settled(&self, _keys: &Self::Keys, _result: &Result<Self::Ok, Self::Err>) {
+        invalidate_auth_queries(None).await;
     }
 }
 

@@ -269,6 +269,7 @@ async fn account(
         refresh_token,
         expires,
         kind: AccountKind::Elyby,
+        signed_out: false,
         elyby_client_id: Some(client_id.to_owned()),
         custom: None,
     })
@@ -517,6 +518,7 @@ mod tests {
             refresh_token: "old-refresh".into(),
             expires: Utc::now(),
             kind: AccountKind::Elyby,
+            signed_out: false,
             elyby_client_id: Some("oneforalllauncher".into()),
             custom: None,
         };

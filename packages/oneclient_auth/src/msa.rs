@@ -482,9 +482,30 @@ async fn refresh_msa_token(
         source,
     })?;
 
-    parse_json_response(res, MinecraftAuthStep::RefreshToken)
+    let status = res.status();
+    let text = res
+        .text()
         .await
-        .map(MsaToken::from_response)
+        .map_err(|source| MinecraftAuthError::RequestError {
+            step: MinecraftAuthStep::RefreshToken,
+            source,
+        })?;
+
+    if status.is_client_error()
+        && let Ok(err) = serde_json::from_str::<OAuthErrorResponse>(&text)
+        && is_revoked_refresh_error(&err.error)
+    {
+        tracing::warn!(error = %err.error, description = ?err.error_description, "Microsoft rejected the refresh token");
+        return Err(MinecraftAuthError::RefreshTokenRevoked { error: err.error });
+    }
+
+    parse_json_text(status, text, MinecraftAuthStep::RefreshToken).map(MsaToken::from_response)
+}
+
+/// `invalid_grant` covers expired revoked and password-changed tokens
+/// `interaction_required` is MFA or consent neither can be answered silently
+fn is_revoked_refresh_error(error: &str) -> bool {
+    matches!(error, "invalid_grant" | "interaction_required")
 }
 
 struct MsaToken {
@@ -543,6 +564,7 @@ async fn account_from_msa_token(
         kind: AccountKind::Microsoft,
         elyby_client_id: None,
         custom: None,
+        signed_out: false,
     })
 }
 
@@ -781,6 +803,14 @@ async fn parse_json_response<T: for<'de> Deserialize<'de>>(
         .await
         .map_err(|source| MinecraftAuthError::RequestError { step, source })?;
 
+    parse_json_text(status, text, step)
+}
+
+fn parse_json_text<T: for<'de> Deserialize<'de>>(
+    status: reqwest::StatusCode,
+    text: String,
+    step: MinecraftAuthStep,
+) -> Result<T, MinecraftAuthError> {
     if !status.is_success() {
         tracing::error!(sentry = false, ?step, %status, body = %text, "MSA endpoint returned a non-success status");
     }

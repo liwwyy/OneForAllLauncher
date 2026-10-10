@@ -95,5 +95,6 @@ pub fn offline_account(username: String) -> MinecraftAccount {
         kind: AccountKind::Offline,
         elyby_client_id: None,
         custom: None,
+        signed_out: false,
     }
 }
