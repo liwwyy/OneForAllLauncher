@@ -28,7 +28,7 @@ pub fn file(package_id: &str, enabled: bool, hidden: bool) -> BundleFile {
 }
 
 pub fn archive(category: &str, enabled: bool, files: Vec<BundleFile>) -> BundleArchive {
-    let name = format!("OneForAllLauncher 1.21.11 Fabric [{category}]");
+    let name = format!("OneClient 1.21.11 Fabric [{category}]");
     BundleArchive {
         bundle: Bundle {
             remote_path: format!("/bundles/{category}.mrpack"),

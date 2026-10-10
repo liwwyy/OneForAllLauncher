@@ -123,12 +123,12 @@ mod tests {
 
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [QoL]",
+            "OneClient 1.21.11 Fabric [QoL]",
             "qol-a"
         )));
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [Utility]",
+            "OneClient 1.21.11 Fabric [Utility]",
             "util-a"
         )));
     }
@@ -139,7 +139,7 @@ mod tests {
 
         assert!(!selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [Utility]",
+            "OneClient 1.21.11 Fabric [Utility]",
             "util-opt"
         )));
     }
@@ -151,12 +151,12 @@ mod tests {
 
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [SkyBlock]",
+            "OneClient 1.21.11 Fabric [SkyBlock]",
             "sb-a"
         )));
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [QoL]",
+            "OneClient 1.21.11 Fabric [QoL]",
             "qol-a"
         )));
         assert!(!selected.iter().any(|k| k.contains("[PvP]")));
@@ -169,7 +169,7 @@ mod tests {
 
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [SkyBlock]",
+            "OneClient 1.21.11 Fabric [SkyBlock]",
             "sb-a"
         )));
     }
@@ -188,10 +188,10 @@ mod tests {
 
         assert!(selected.contains(&pkg_key(
             1,
-            "OneForAllLauncher 1.21.11 Fabric [QoL]",
+            "OneClient 1.21.11 Fabric [QoL]",
             "shown"
         )));
-        assert!(!selected.contains(&pkg_key(1, "OneForAllLauncher 1.21.11 Fabric [QoL]", "dep")));
+        assert!(!selected.contains(&pkg_key(1, "OneClient 1.21.11 Fabric [QoL]", "dep")));
     }
 
     #[test]

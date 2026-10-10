@@ -52,9 +52,9 @@ fn wizard_rail(wizard: Wizard, picks: &Picks) -> Element {
 
     let subtitle = if description.is_empty() {
         match picks.choice {
-            TypeChoice::OneForAllLauncher => match &picks.versions.chosen {
-                Some(version) => format!("OneForAllLauncher · {version}"),
-                None => "OneForAllLauncher".to_string(),
+            TypeChoice::OneClient => match &picks.versions.chosen {
+                Some(version) => format!("OneClient · {version}"),
+                None => "OneClient".to_string(),
             },
             TypeChoice::Scratch => match &picks.versions.chosen {
                 Some(version) => format!("{version} · {}", picks.loader_label()),
@@ -125,7 +125,7 @@ impl Component for CreateInstanceModal {
         let mutation = use_cluster_mutation();
         let wizard = Wizard {
             step: use_state(|| 0usize),
-            choice: use_state(|| TypeChoice::OneForAllLauncher),
+            choice: use_state(|| TypeChoice::OneClient),
             version: use_state(|| None::<String>),
             filter: use_state(|| kind_bit(GameVersionKind::Release)),
             query: use_state(String::new),

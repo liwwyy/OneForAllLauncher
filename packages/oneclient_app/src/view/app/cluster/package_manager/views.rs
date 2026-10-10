@@ -487,7 +487,7 @@ pub(super) fn running_notice(noun_plural: &'static str, content_type: ContentTyp
 
 pub(super) fn global_notice(noun_plural: &'static str) -> String {
     format!(
-        "These {noun_plural} are shared across all your OneForAllLauncher clusters. Adding one here makes it available in all of them, and turning one off removes it from all of them."
+        "These {noun_plural} are shared across all your OneClient clusters. Adding one here makes it available in all of them, and turning one off removes it from all of them."
     )
 }
 

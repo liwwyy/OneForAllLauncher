@@ -21,8 +21,8 @@ pub fn heading(picks: &Picks) -> (&'static str, String) {
         Step::Version => (
             "Choose a version",
             match picks.choice {
-                TypeChoice::OneForAllLauncher => {
-                    "Only versions OneForAllLauncher ships a build for are listed.".to_string()
+                TypeChoice::OneClient => {
+                    "Only versions OneClient ships a build for are listed.".to_string()
                 }
                 TypeChoice::Scratch | TypeChoice::Modpack => {
                     "Every Minecraft version. Switch the release type to reach snapshots, betas and alphas."
@@ -50,8 +50,8 @@ pub fn heading(picks: &Picks) -> (&'static str, String) {
 pub fn footer_note(picks: &Picks) -> String {
     match picks.step {
         Step::Type => match picks.choice {
-            TypeChoice::OneForAllLauncher => {
-                "Shares its game folder, worlds and packs with your other OneForAllLauncher instances."
+            TypeChoice::OneClient => {
+                "Shares its game folder, worlds and packs with your other OneClient instances."
                     .to_string()
             }
             TypeChoice::Scratch => "Keeps its own game folder, worlds and packs.".to_string(),
@@ -92,7 +92,7 @@ pub fn footer_note(picks: &Picks) -> String {
 pub fn step_value(wizard: Wizard, picks: &Picks, step: Step) -> String {
     match step {
         Step::Type => match picks.choice {
-            TypeChoice::OneForAllLauncher => "OneForAllLauncher".to_string(),
+            TypeChoice::OneClient => "OneClient".to_string(),
             TypeChoice::Scratch => "From scratch".to_string(),
             TypeChoice::Modpack => "Modpack".to_string(),
         },

@@ -48,7 +48,7 @@ const ART_MIN_SIDEBAR_PX: f32 = 420.;
 #[derive(Clone, Copy, PartialEq)]
 enum Filter {
     All,
-    OneForAllLauncher,
+    OneClient,
     Custom,
     Modpacks,
 }
@@ -232,7 +232,7 @@ impl Component for Clusters {
             .iter()
             .copied()
             .filter(|l| {
-                active_filter.shows(Filter::OneForAllLauncher) && groups[l].iter().any(matches)
+                active_filter.shows(Filter::OneClient) && groups[l].iter().any(matches)
             })
             .collect();
         let shown_custom = shown(&custom, sort_by, |c| {
@@ -257,7 +257,7 @@ impl Component for Clusters {
 
         let tabs = [
             (Filter::All, "All"),
-            (Filter::OneForAllLauncher, "OneForAllLauncher"),
+            (Filter::OneClient, "OneClient"),
             (Filter::Custom, "Custom"),
             (Filter::Modpacks, "Modpacks"),
         ]
@@ -368,7 +368,7 @@ impl Component for Clusters {
                                     .spacing(22.)
                                     .append_children((!shown_lines.is_empty()).then(|| {
                                         section(
-                                            "OneForAllLauncher",
+                                            "OneClient",
                                             "Grouped by Minecraft version",
                                             fixed_grid(line_cards, columns, item_height, gap),
                                         )
@@ -661,7 +661,7 @@ impl Sidebar {
             cluster_id: cluster.id,
             uses_bundles: cluster.uses_bundles(),
             art: DynamicArt::for_cluster(cluster).max_edge(ART_PREVIEW_EDGE),
-            type_label: "OneForAllLauncher",
+            type_label: "OneClient",
             title: cluster.name.clone(),
             subtitle: cluster_caption(cluster),
             description: None,
@@ -940,7 +940,7 @@ fn page_header(mut show_create: State<bool>) -> impl IntoElement {
                 )
                 .child(
                     label()
-                        .text("Pick a OneForAllLauncher version, or launch one of your own instances.")
+                        .text("Pick a OneClient version, or launch one of your own instances.")
                         .font_size(13.)
                         .color(colors::fg_secondary()),
                 ),

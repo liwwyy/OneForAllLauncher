@@ -1,3 +1,9 @@
+## OneForAllLauncher 2.6.9 — 2026-10-10
+
+- Restore OneClient's name and stock modpack icon in instance creation, instance lists, version labels and shared modpack descriptions.
+- Add an optional, initially unchecked online username lookup to offline account creation in onboarding and account settings. Matching online names and lookup failures do not prevent creating an offline account.
+- Merge the 16 upstream commits through `1d6ec598`, including OneClient 2.8.0, parallel Minecraft instances, signed-out Microsoft session handling, bundled-mod fixes, notification improvements and the updated Freya/Skia fixes.
+
 ## OneForAllLauncher 2.6.8 — 2026-10-08
 
 - Make the custom-account icon white in onboarding, account settings and the sign-in dialog.

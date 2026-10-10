@@ -141,6 +141,7 @@ pub enum IconType {
     Globe01,
     HelpCircle,
     IconLogo,
+    OneclientModpack,
     InfoCircle,
     Key01,
     LayoutTop,

@@ -4,11 +4,14 @@ use crate::theme::colors;
 use crate::ui::border_all_color;
 use freya::prelude::*;
 use freya::query::{MutationStateData, UseMutation};
+use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
 pub struct OfflineLogin {
     username: State<String>,
     allow_invalid: State<bool>,
+    check_online: State<bool>,
+    online_hint: State<Option<String>>,
     show_offline: State<bool>,
     closing_offline: State<bool>,
     add_offline: UseMutation<AddOfflineAccountMutation>,
@@ -18,8 +21,53 @@ pub fn use_offline_login() -> OfflineLogin {
     let add_offline = use_add_offline_account();
     let mut username = use_state(String::new);
     let mut allow_invalid = use_state(|| false);
+    let mut check_online = use_state(|| false);
+    let mut online_hint = use_state(|| None);
+    let mut check_cancel = use_state(CancellationToken::new);
     let mut show_offline = use_state(|| false);
     let mut closing_offline = use_state(|| false);
+
+    use_drop(move || check_cancel.peek().cancel());
+    use_side_effect(move || {
+        let enabled = *check_online.read();
+        let visible = *show_offline.read();
+        let name = username.read().clone();
+        check_cancel.peek().cancel();
+        let cancel = CancellationToken::new();
+        check_cancel.set(cancel.clone());
+        online_hint.set(None);
+        if !enabled || !visible {
+            return;
+        }
+        if oneclient_auth::validate_offline_username(&name).is_err() {
+            online_hint.set(Some(
+                "Online checks require a valid Minecraft username.".into(),
+            ));
+            return;
+        }
+        online_hint.set(Some("Checking online usernames…".into()));
+        let task_cancel = cancel.clone();
+        spawn(async move {
+            let result = crate::launcher::off_ui(async move {
+                tokio::select! {
+                    () = task_cancel.cancelled() => None,
+                    result = async {
+                        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+                        let state = crate::launcher::state().map_err(|e| e.to_string())?;
+                        oneclient_auth::lookup_online_username(state.services.requester.http(), &name).await
+                    } => Some(result),
+                }
+            }).await;
+            if cancel.is_cancelled() {
+                return;
+            }
+            online_hint.set(result.map(|result| match result {
+                Ok(Some(name)) => format!("An online Minecraft account already uses {name}. This account will still be offline."),
+                Ok(None) => "No online Minecraft account found with this username.".into(),
+                Err(error) => format!("{error} You can still add an offline account."),
+            }));
+        });
+    });
 
     use_side_effect(move || {
         if !*closing_offline.read() {
@@ -31,6 +79,7 @@ pub fn use_offline_login() -> OfflineLogin {
                 show_offline.set(false);
                 username.set(String::new());
                 allow_invalid.set(false);
+                check_online.set(false);
             }
             MutationStateData::Settled { res: Err(_), .. } => {
                 closing_offline.set(false);
@@ -42,6 +91,8 @@ pub fn use_offline_login() -> OfflineLogin {
     OfflineLogin {
         username,
         allow_invalid,
+        check_online,
+        online_hint,
         show_offline,
         closing_offline,
         add_offline,
@@ -50,6 +101,8 @@ pub fn use_offline_login() -> OfflineLogin {
 
 impl OfflineLogin {
     pub fn open(&self) {
+        let mut check = self.check_online;
+        check.set(false);
         let mut show = self.show_offline;
         show.set(true);
     }
@@ -57,6 +110,8 @@ impl OfflineLogin {
         let Self {
             username,
             allow_invalid,
+            check_online,
+            online_hint,
             show_offline,
             mut closing_offline,
             add_offline,
@@ -89,6 +144,8 @@ impl OfflineLogin {
             offline_dialog(
                 username,
                 allow_invalid,
+                check_online,
+                online_hint.read().clone(),
                 *closing_offline.read(),
                 offline_uuid,
                 offline_error,
@@ -103,6 +160,8 @@ impl OfflineLogin {
 fn offline_dialog(
     mut username: State<String>,
     allow_invalid: State<bool>,
+    check_online: State<bool>,
+    online_hint: Option<String>,
     pending: bool,
     uuid_preview: Option<String>,
     error: Option<String>,
@@ -171,6 +230,19 @@ fn offline_dialog(
                             allow_invalid,
                             "Allow invalid offline usernames",
                         ))
+                        .child(checkbox_labeled(
+                            check_online,
+                            "Check for online usernames with the same name",
+                        ))
+                        .map(online_hint, |el, hint| {
+                            el.child(
+                                label()
+                                    .text(hint)
+                                    .width(Size::fill())
+                                    .font_size(12.)
+                                    .color(colors::fg_secondary()),
+                            )
+                        })
                         .child(
                             label()
                                 .text(validity_hint)

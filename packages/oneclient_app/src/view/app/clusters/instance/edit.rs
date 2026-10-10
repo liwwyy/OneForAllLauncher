@@ -44,7 +44,7 @@ fn name_limit(modpack: bool) -> Option<usize> {
 
 fn kind_label(kind: ClusterKind) -> &'static str {
     match kind {
-        ClusterKind::OneClient => "OneForAllLauncher",
+        ClusterKind::OneClient => "OneClient",
         ClusterKind::Vanilla => "Vanilla",
         ClusterKind::Modded => "Modded",
     }

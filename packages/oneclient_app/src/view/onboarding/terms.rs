@@ -363,7 +363,7 @@ fn decline_modal(confirming: State<bool>, on_confirm: impl FnMut() + 'static) ->
                             label()
                                 .text(
                                     "This will disable access to world hosting, \
-                                     all social features, the OneForAllLauncher nametag indicator, \
+                                     all social features, the OneClient nametag indicator, \
                                      and more.",
                                 )
                                 .font_size(12.)

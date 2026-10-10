@@ -9,6 +9,7 @@ mod elyby;
 mod error;
 mod msa;
 mod offline;
+mod online_username;
 mod service;
 mod store;
 
@@ -24,6 +25,7 @@ pub use offline::{
     offline_account, offline_username_input_allowed, offline_uuid, random_offline_characters,
     random_offline_username, validate_offline_username, validate_offline_username_with_override,
 };
+pub use online_username::lookup_online_username;
 pub use service::ELYBY_LOGIN_PROGRESS;
 pub use service::{AuthService, MICROSOFT_LOGIN_PROGRESS};
 pub use store::CredentialsStore;

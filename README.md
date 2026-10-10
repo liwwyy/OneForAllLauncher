@@ -43,7 +43,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 ## Features
 
-- Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, and random characters/username generators.
+- Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, random characters/username generators, and an optional online-name check (off by default).
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.
 - Export enabled mods as a portable ZIP, including manually added mods and linked files from the launcher cache.
 - Export **Ornithe Gen2 Minecraft 1.8.9** instances for Prism Launcher, with a file/folder picker, personal-use and distribution presets, remembered selections, and optional opening in Prism.
