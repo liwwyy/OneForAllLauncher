@@ -48,6 +48,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 - Export enabled mods as a portable ZIP, including manually added mods and linked files from the launcher cache.
 - Export **Ornithe Gen2 Minecraft 1.8.9** instances for Prism Launcher, with a file/folder picker, personal-use and distribution presets, remembered selections, and optional opening in Prism.
 - Follow exports through live progress notifications with file names and completion details.
+- Choose automatic, signature-verified updates from this fork’s GitHub releases, or check for updates manually in Launcher settings.
 - Install alongside upstream OneClient using separate accounts, settings and game data.
 - Based on upstream OneLauncher, with the fork-specific changes described here.
 - Free and open-source under GPL-3.0-only.
@@ -76,8 +77,14 @@ Download OneForAll Launcher from [GitHub Releases](https://github.com/liwwyy/One
 
 macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. Installers do not have Windows/macOS code signing, and macOS builds are not notarized, so Windows SmartScreen or macOS Gatekeeper may show a warning or block them.
 
-> [!NOTE]
-> Starting with **2.6.10**, setup asks whether to enable automatic launcher updates. Change this later in **Settings → Launcher → Updates**, or use **Check for updates** there at any time. Opting out disables background update checks. Manual checks ask before installation. Updates come from this fork’s stable GitHub releases and their package signatures are verified before installation; restart to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates. DEB/RPM installs and development builds display a download notice instead. Install 2.6.10 manually once if you are upgrading from an older version with its updater disabled.
+### Launcher updates
+
+Starting with **2.6.10**, setup asks whether to enable automatic launcher updates. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
+
+Updates come from this fork’s stable GitHub releases, and package signatures are verified before installation. Restart the launcher to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates; DEB/RPM installations and development builds show a download notice instead.
+
+> [!IMPORTANT]
+> **Upgrading from 2.6.9 or earlier?** Install 2.6.10 or newer manually once from [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest). Those older versions have their updater disabled and cannot automatically install this first updater-enabled release.
 
 ## Community & Support
 
