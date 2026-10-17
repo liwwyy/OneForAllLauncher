@@ -74,10 +74,10 @@ Download OneForAll Launcher from [GitHub Releases](https://github.com/liwwyy/One
 | macOS Apple Silicon | `darwin_aarch64.dmg` | Open the DMG and copy the app to Applications. |
 | macOS Intel | `darwin_x86_64.dmg` | Open the DMG and copy the app to Applications. |
 
-macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. Current builds are unsigned, and macOS builds are not notarized, so Windows SmartScreen or macOS Gatekeeper may show a warning or block them.
+macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. Installers do not have Windows/macOS code signing, and macOS builds are not notarized, so Windows SmartScreen or macOS Gatekeeper may show a warning or block them.
 
 > [!NOTE]
-> Automatic launcher updates are **not supported for now**. Download and install newer versions manually from [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest). Publishing a new release does not update existing installations automatically.
+> Starting with **2.6.10**, setup asks whether to enable automatic launcher updates. Change this later in **Settings → Launcher → Updates**, or use **Check for updates** there at any time. Opting out disables background update checks. Manual checks ask before installation. Updates come from this fork’s stable GitHub releases and their package signatures are verified before installation; restart to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates. DEB/RPM installs and development builds display a download notice instead. Install 2.6.10 manually once if you are upgrading from an older version with its updater disabled.
 
 ## Community & Support
 
@@ -159,6 +159,8 @@ Output is under `target/release/`. `NO_STRIP=1` avoids linuxdeploy's older strip
 
 See [the release workflow](.github/workflows/oneclient_release.yml) for Windows NSIS runtime bundling, macOS app/DMG packages, and Linux RPM packaging. Converted icons and Prism template files are included in the repository; the ignored original artwork and example ZIP are not needed. Both local Cargo builds and release/nightly CI compile the [Java compatibility agent](distribution/elyby-preview-compat/README.md) from source.
 
+Publishing updater-enabled releases requires the repository secrets `CARGO_PACKAGER_SIGN_PRIVATE_KEY` and `CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD`. The workflow signs final update packages and attaches their `.sig` files plus `latest.json` to the release. Only the public verification key at `packages/oneclient_app/assets/updater.pub` belongs in Git; keep an encrypted backup of the private signing key and its password, and preserve this signing identity so installed launchers can verify future releases. These secrets are not needed for building the launcher locally.
+
 ### Bundled Java compatibility agent
 
 The previously checked-in `packages/oneclient_core/assets/elyby-preview-compat.jar` has been removed. **Cargo compiles the agent from the tracked Java source and embeds the generated JAR from its build output directory.** It is only enabled for Ely.by/custom-account launches of Minecraft 1.8.9 to fix a missing-name crash in VanillaHUD's OneConfig tab preview. It is separate from authlib-injector, which the launcher downloads and verifies for Ely.by/custom authentication. The preview agent does not receive account credentials; its preview lookups may contact Mojang's public profile API.
@@ -177,6 +179,7 @@ A fix in VanillaHUD's preview code would let us remove the agent entirely. [Free
 
 The launcher contacts third-party services for sign-in, game metadata, downloads, skins and enabled online features. These include Microsoft/Mojang, Ely.by when you use an Ely.by account, your chosen authentication server for custom accounts, Polyfrost services, and mod/content providers. Those services receive the requests needed to provide their features; an offline account does not make all launcher activity offline.
 
+- **Launcher updates:** optional and off until you opt in during setup or in **Settings → Launcher → Updates**. When enabled, startup checks request this fork’s `latest.json` from GitHub Releases and download newer signed packages when available. GitHub receives your public IP and normal HTTP request information. **Check for updates** sends a check even when automatic updates are off, and asks before installing.
 - **Crash reporting:** controlled by **Settings → Launcher → Crash Reporting** and applies after restarting. Reports require reporting to be enabled and the build to have a configured Sentry endpoint. Declining the terms/privacy consent disables reporting. Fork builds have no Sentry endpoint by default; it must be supplied at build time through `ONEFORALL_SENTRY_DSN`.
 - **Discord Rich Presence:** enabled by default and controlled by **Settings → Launcher → Discord RPC**. When enabled, it shares launcher/game activity with your running Discord client.
 - **Online username check:** **Check for online usernames with the same name** in the offline-account popup is unchecked by default in both onboarding and account settings. When enabled, valid usernames are sent over HTTPS to Mojang's public profile lookup at `api.mojang.com/users/profiles/minecraft/<username>` after a short pause in typing. Mojang receives the queried name and your public IP address; no passwords or account tokens are sent. Clearing the checkbox or closing the popup cancels pending checks. Matches and lookup failures are informational: you can still create the offline account, and its offline UUID stays unchanged. With the checkbox off, this feature sends no lookup requests.

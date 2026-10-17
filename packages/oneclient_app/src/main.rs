@@ -66,7 +66,7 @@ impl App for OneForAllLauncherApp {
                         }
                         Err(err) => {
                             events::report_startup_failure(&station, &err);
-                            oneclient_app::updater::spawn_update_check(false, rescue_bus);
+                            oneclient_app::updater::spawn_automatic_update_check(rescue_bus);
                         }
                     }
                 });

@@ -28,7 +28,9 @@ impl Component for OnboardingShell {
             let fresh = use_launcher().needs_location;
             move || fresh
         });
+        let automatic_updates = use_state(|| None);
         use_provide_onboarding_selection(OnboardingSelectionState {
+            automatic_updates,
             selected,
             user_touched,
             migrated_categories,

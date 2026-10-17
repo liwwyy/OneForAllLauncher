@@ -1,6 +1,8 @@
 use std::cell::Cell;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
-use cargo_packager_updater::{Config, Update, check_update};
+use cargo_packager_updater::{Config, Update};
 use oneclient_events::{Choice, EventBus, Prompt};
 use uuid::Uuid;
 
@@ -26,14 +28,56 @@ fn update_prompt(version: &str) -> Prompt<UpdateAnswer> {
 
 const PROGRESS_STEP: u64 = 256 * 1024;
 
+static UPDATE_RUNNING: AtomicBool = AtomicBool::new(false);
+
+struct UpdateCheckGuard;
+impl Drop for UpdateCheckGuard {
+    fn drop(&mut self) {
+        UPDATE_RUNNING.store(false, Ordering::Release);
+    }
+}
+
+fn automatic_checks_enabled(settings: &oneclient_core::settings::LauncherSettings) -> bool {
+    settings.seen_onboarding && settings.auto_update
+}
+
+fn automatic_updates_enabled() -> bool {
+    crate::launcher::state().is_ok_and(|state| automatic_checks_enabled(&state.settings.read()))
+}
+
+pub fn spawn_automatic_update_check(events: EventBus) {
+    if automatic_updates_enabled() {
+        spawn_update_check(true, events);
+    }
+}
+
+/// Automatic calls require opt-in. Manual calls always ask before installing.
 pub fn spawn_update_check(auto_install: bool, events: EventBus) {
-    if UPDATER_ENDPOINT.is_none() {
-        tracing::debug!("automatic updates disabled for this fork");
+    if auto_install && !automatic_updates_enabled() {
+        return;
+    }
+    if UPDATE_RUNNING.swap(true, Ordering::AcqRel) {
+        if !auto_install {
+            events.notify("Update check already in progress").send();
+        }
         return;
     }
     tokio::spawn(async move {
-        if let Err(err) = run_check(auto_install, events).await {
+        let _guard = UpdateCheckGuard;
+        if !auto_install {
+            events
+                .notify("Checking for updates")
+                .body("Checking OneForAllLauncher releases on GitHub.")
+                .send();
+        }
+        if let Err(err) = run_check(auto_install, events.clone()).await {
             tracing::warn!("update check failed: {err:#}");
+            events
+                .notify("Update check failed")
+                .body(format!(
+                    "{err}. You can try again or download a package from {RELEASES_URL}."
+                ))
+                .send();
         }
     });
 }
@@ -82,10 +126,22 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
     // `check_update` performs a blocking HTTP request so offload it to a thread pool
     let Some(update) = tokio::task::spawn_blocking(check_for_update).await?? else {
         tracing::info!("no update available");
+        if !auto_install {
+            events
+                .notify("You’re up to date")
+                .body(format!(
+                    "OneForAllLauncher {} is the latest available version.",
+                    env!("CARGO_PKG_VERSION")
+                ))
+                .send();
+        }
         return Ok(());
     };
 
     tracing::info!("update available: {}", update.version);
+    if auto_install && !automatic_updates_enabled() {
+        return Ok(());
+    }
 
     // cargo-packager-updater can only replace an AppImage in place deb/rpm installs live
     // under a package-managed path that an install would fail on or clobber
@@ -106,7 +162,7 @@ async fn run_check(auto_install: bool, events: EventBus) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    download_and_install(update, events).await
+    download_and_install(update, events, auto_install).await
 }
 
 fn can_self_update() -> bool {
@@ -131,27 +187,36 @@ fn can_self_update() -> bool {
 }
 
 fn check_for_update() -> anyhow::Result<Option<Update>> {
-    let Some(endpoint) = UPDATER_ENDPOINT else {
-        return Ok(None);
-    };
     let current = env!("CARGO_PKG_VERSION").parse()?;
     let config = Config {
-        endpoints: vec![endpoint.parse()?],
-        pubkey: UPDATER_PUBKEY.into(),
+        endpoints: vec![UPDATER_ENDPOINT.parse()?],
+        pubkey: UPDATER_PUBKEY.trim().into(),
         ..Default::default()
     };
-
-    Ok(check_update(current, config)?)
+    let mut update = cargo_packager_updater::UpdaterBuilder::new(current, config)
+        .timeout(Duration::from_secs(30))
+        .build()?
+        .check()?;
+    if let Some(update) = &mut update {
+        // Large packages need more time than the small metadata request.
+        update.timeout = Some(Duration::from_secs(30 * 60));
+    }
+    Ok(update)
 }
 
-async fn download_and_install(update: Update, events: EventBus) -> anyhow::Result<()> {
+async fn download_and_install(
+    update: Update,
+    events: EventBus,
+    automatic: bool,
+) -> anyhow::Result<()> {
     let progress_id = Uuid::new_v4();
     let version = update.version.clone();
     let label = format!("Downloading OneForAllLauncher {version}");
 
     events.progress(progress_id, &label, 0, 0);
 
-    tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+    let progress_events = events.clone();
+    let result = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
         let downloaded = Cell::new(0u64);
         let last_sent = Cell::new(0u64);
 
@@ -175,6 +240,14 @@ async fn download_and_install(update: Update, events: EventBus) -> anyhow::Resul
         let total = downloaded.get().max(1);
         events.progress(progress_id, &label, total, total);
 
+        if automatic && !automatic_updates_enabled() {
+            events.finish_progress(
+                progress_id,
+                "Update cancelled",
+                "Automatic updates were turned off. No update was installed.",
+            );
+            return Ok(());
+        }
         update.install(bytes)?;
 
         // Converts the same download card into its finished state rather than adding a second
@@ -185,17 +258,126 @@ async fn download_and_install(update: Update, events: EventBus) -> anyhow::Resul
         );
         Ok(())
     })
-    .await??;
+    .await;
+    let result = result
+        .map_err(anyhow::Error::from)
+        .and_then(|result| result);
+    if let Err(error) = &result {
+        progress_events.finish_progress(progress_id, "Update failed", error.to_string());
+    }
+    result?;
 
-    tracing::info!("update installed; restart to apply");
+    tracing::info!("update download completed");
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn fork_updater_is_disabled_without_network_access() {
-        assert!(super::UPDATER_ENDPOINT.is_none());
-        assert!(super::check_for_update().unwrap().is_none());
+    fn automatic_updates_require_completed_setup_and_opt_in() {
+        let mut settings = oneclient_core::settings::LauncherSettings::default();
+        assert!(!automatic_checks_enabled(&settings));
+        settings.auto_update = true;
+        assert!(!automatic_checks_enabled(&settings));
+        settings.seen_onboarding = true;
+        assert!(automatic_checks_enabled(&settings));
+        settings.auto_update = false;
+        assert!(!automatic_checks_enabled(&settings));
+    }
+
+    #[test]
+    fn release_endpoint_belongs_to_this_fork() {
+        assert_eq!(
+            UPDATER_ENDPOINT,
+            "https://github.com/liwwyy/OneForAllLauncher/releases/latest/download/latest.json"
+        );
+        assert!(!UPDATER_PUBKEY.trim().is_empty());
+    }
+
+    // Exercise the real updater's HTTP, metadata and signature checks without
+    // installing a package or contacting GitHub. Only a public signed fixture is stored.
+    fn download_fixture(tamper: bool) -> cargo_packager_updater::Result<Vec<u8>> {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let format = if cfg!(target_os = "windows") {
+            "nsis"
+        } else if cfg!(target_os = "macos") {
+            "app"
+        } else {
+            "appimage"
+        };
+        let target = format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH);
+        let metadata = serde_json::json!({
+            "version": "9999.0.0",
+            "platforms": {(target): {
+                "format": format,
+                "url": format!("{base}/payload"),
+                "signature": include_str!("../tests/fixtures/updater/payload.sig").trim(),
+            }},
+        })
+        .to_string();
+        let server = std::thread::spawn(move || {
+            let mut payload = include_bytes!("../tests/fixtures/updater/payload").to_vec();
+            if tamper {
+                payload[0] ^= 1;
+            }
+            for (path, body) in [
+                ("/latest.json", metadata.into_bytes()),
+                ("/payload", payload),
+            ] {
+                let deadline = std::time::Instant::now() + Duration::from_secs(10);
+                let mut socket = loop {
+                    match listener.accept() {
+                        Ok((socket, _)) => break socket,
+                        Err(error)
+                            if error.kind() == std::io::ErrorKind::WouldBlock
+                                && std::time::Instant::now() < deadline =>
+                        {
+                            std::thread::sleep(Duration::from_millis(10))
+                        }
+                        Err(error) => panic!("fixture request missing: {error}"),
+                    }
+                };
+                socket
+                    .set_read_timeout(Some(Duration::from_secs(3)))
+                    .unwrap();
+                let mut request = [0; 4096];
+                let n = socket.read(&mut request).unwrap();
+                assert!(
+                    String::from_utf8_lossy(&request[..n]).starts_with(&format!("GET {path} "))
+                );
+                write!(socket, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).unwrap();
+                socket.write_all(&body).unwrap();
+            }
+        });
+        let config = Config {
+            endpoints: vec![format!("{base}/latest.json").parse().unwrap()],
+            pubkey: UPDATER_PUBKEY.trim().into(),
+            ..Default::default()
+        };
+        let update = cargo_packager_updater::UpdaterBuilder::new("0.0.0".parse().unwrap(), config)
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap()
+            .check()
+            .unwrap()
+            .unwrap();
+        let result = update.download();
+        server.join().unwrap();
+        result
+    }
+
+    #[test]
+    fn signed_fork_updates_are_accepted_and_modified_packages_are_rejected() {
+        assert_eq!(
+            download_fixture(false).unwrap(),
+            include_bytes!("../tests/fixtures/updater/payload")
+        );
+        assert!(download_fixture(true).is_err());
     }
 }

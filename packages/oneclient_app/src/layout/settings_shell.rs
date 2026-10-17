@@ -116,6 +116,22 @@ const SEARCH_INDEX: &[SearchItem] = &[
         route: Route::SettingsAppearance {},
     },
     SearchItem {
+        id: "launcher.auto_update",
+        icon: IconType::DownloadCloud02,
+        title: "Automatic launcher updates",
+        description: "Check GitHub on startup and install verified launcher updates.",
+        keywords: &["updates", "automatic", "upgrade", "github"],
+        route: Route::SettingsLauncher {},
+    },
+    SearchItem {
+        id: "launcher.check_updates",
+        icon: IconType::RefreshCw01,
+        title: "Check for updates",
+        description: "Manually check GitHub for a new launcher release.",
+        keywords: &["updates", "upgrade", "github", "check"],
+        route: Route::SettingsLauncher {},
+    },
+    SearchItem {
         id: "apis.modrinth_key",
         icon: IconType::Key01,
         title: "Modrinth API key",

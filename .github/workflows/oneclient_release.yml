@@ -278,7 +278,7 @@ jobs:
             [ "${#apps[@]}" -eq 1 ]
             tar -czf "dist/$prefix.app.tar.gz" -C "$OUT_DIR" "$(basename "${apps[0]}")"
           fi
-          # These builds are unsigned; automatic updates remain disabled.
+          # Updater signatures are applied in the publish job after collecting final packages.
           ls -lh dist
 
       - name: Upload release assets
@@ -301,6 +301,26 @@ jobs:
           pattern: release-*
           path: dist
           merge-multiple: true
+      - name: Install cargo-packager signer
+        uses: ./.github/actions/install-cargo-tool
+        with:
+          tool: cargo-packager
+          version: 0.11.8
+      - name: Sign updater packages and assemble latest.json
+        env:
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY }}
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          test -n "$CARGO_PACKAGER_SIGN_PRIVATE_KEY"
+          test -n "$CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD"
+          for suffix in windows_x86_64.exe linux_x86_64.AppImage darwin_aarch64.app.tar.gz darwin_x86_64.app.tar.gz; do
+            cargo packager signer sign "dist/OneForAllLauncher_${VERSION}_${suffix}"
+          done
+          python3 distribution/release_notes.py "$VERSION" > notes.md
+          python3 distribution/updater_manifest.py dist "$VERSION" "$GITHUB_REPOSITORY" "$TAG" --notes notes.md
       - name: Validate assets and publish release
         env:
           GH_TOKEN: ${{ github.token }}

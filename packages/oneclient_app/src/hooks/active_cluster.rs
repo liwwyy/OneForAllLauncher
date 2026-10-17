@@ -155,6 +155,7 @@ pub fn use_browser_state_store() -> State<HashMap<String, BrowserUiState>> {
 
 #[derive(Clone)]
 pub struct OnboardingSelectionState {
+    pub automatic_updates: State<Option<bool>>,
     pub selected: State<HashSet<String>>,
     /// Until set the shell keeps re-deriving `selected` from the catalog so a
     /// late-settling bundle list still gets the right defaults

@@ -1,3 +1,10 @@
+## OneForAllLauncher 2.6.10 — 2026-10-17
+
+- Add an explicit automatic-update choice during onboarding and an Updates section in Launcher settings with a toggle and a manual Check for updates button.
+- Use OneLauncher’s cargo-packager updater with this fork’s GitHub releases and a separate signing identity. Verify downloaded packages before installation.
+- Sign release update packages and publish latest.json for Windows, Linux AppImage, and both macOS architectures; show package download notices for DEB/RPM installs.
+- Keep background checks off unless users opt in, and require confirmation for manual installations.
+
 ## OneForAllLauncher 2.6.9 — 2026-10-10
 
 - Restore OneClient's name and stock modpack icon in instance creation, instance lists, version labels and shared modpack descriptions.
