@@ -1,3 +1,4 @@
+pub mod launchers;
 // OneClient v1 migration is deliberately not compiled or detected by this fork.
 pub mod vanilla;
 

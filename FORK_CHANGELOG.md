@@ -1,3 +1,9 @@
+## OneForAllLauncher 2.6.11 — 2026-10-23
+
+- Merge all 57 upstream commits through `4859c96c`, including instance import/export, importing packs into existing instances, dedicated/shared folder controls, bundled-mod deletion, factory reset, graphics-backend selection and crash diagnosis tools.
+- Adopt upstream's `.mrpack` instance exporter with OneClient and Compatibility modes. Remove the fork-specific mods ZIP and native Prism ZIP exporters, presets, file picker, saved export selections and embedded Prism templates. Upstream does not copy personal worlds or edited configs from the instance folder; original modpack overrides can still be retained.
+- Retain the fork's account providers, offline username options, VanillaHUD compatibility agent, isolated launcher identity and signed updater with explicit update consent.
+
 ## OneForAllLauncher 2.6.10 — 2026-10-17
 
 - Add an explicit automatic-update choice during onboarding and an Updates section in Launcher settings with a toggle and a manual Check for updates button.

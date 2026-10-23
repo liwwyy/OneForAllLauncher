@@ -51,7 +51,7 @@ impl Icon {
 
 impl Component for Icon {
     fn render(&self) -> impl IntoElement {
-        let path = if self.icon == IconType::IconLogo {
+        let path = if self.icon == IconType::LauncherLogo {
             "brand-icon.png"
         } else {
             self.icon.path()
@@ -68,7 +68,7 @@ impl Component for Icon {
             .or_else(|| tint.map(|tint| *tint.0.read()))
             .unwrap_or_else(colors::fg_primary);
 
-        if self.icon == IconType::IconLogo {
+        if self.icon == IconType::LauncherLogo {
             return ImageViewer::new((path, bytes.peek().1.clone()))
                 .width(Size::px(self.size_px))
                 .height(Size::px(self.size_px))
@@ -126,7 +126,6 @@ pub enum IconType {
     DotsVertical,
     Download01,
     DownloadCloud02,
-    Export,
     Offline,
     Elyby,
     Custom,
@@ -141,7 +140,7 @@ pub enum IconType {
     Globe01,
     HelpCircle,
     IconLogo,
-    OneclientModpack,
+    LauncherLogo,
     InfoCircle,
     Key01,
     LayoutTop,

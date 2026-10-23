@@ -48,6 +48,9 @@ pub enum GroupedProgressEvent {
     End {
         session_id: Uuid,
     },
+    Abort {
+        session_id: Uuid,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -58,7 +61,7 @@ pub enum TaskPhase {
     Extracting,
     Installing,
     Exporting,
-    Finalizing,
+    Importing,
 }
 
 impl TaskPhase {
@@ -70,7 +73,7 @@ impl TaskPhase {
             Self::Extracting => "Extracting",
             Self::Installing => "Installing",
             Self::Exporting => "Exporting",
-            Self::Finalizing => "Finalizing ZIP",
+            Self::Importing => "Importing",
         }
     }
 }
@@ -86,7 +89,6 @@ pub enum TaskCategory {
     Java,
     #[default]
     Packages,
-    Exports,
 }
 
 impl TaskCategory {
@@ -100,13 +102,12 @@ impl TaskCategory {
             Self::Assets => "Assets",
             Self::Java => "Java runtime",
             Self::Packages => "Packages",
-            Self::Exports => "Export files",
         }
     }
 
     #[must_use]
     pub fn is_minecraft(self) -> bool {
-        !matches!(self, Self::Packages | Self::Exports)
+        !matches!(self, Self::Packages)
     }
 }
 
@@ -237,6 +238,15 @@ impl GroupedProgressSession {
 
     pub fn finish(self) {
         self.inner.end();
+    }
+
+    pub fn abort(self) {
+        if self.inner.ended.swap(true, Ordering::Relaxed) {
+            return;
+        }
+        self.inner.events.emit(GroupedProgressEvent::Abort {
+            session_id: self.inner.session_id,
+        });
     }
 
     /// Consumes the session without emitting an `End` event

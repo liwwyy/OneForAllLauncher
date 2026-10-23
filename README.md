@@ -6,7 +6,7 @@
 <a style="color:#f5c2e7">OneForAll Launcher</a>
 </h1>
 
-A OneLauncher/OneClient fork that **removes offline account restrictions**, adds Ely.by authentication, and provides instance/mods exporting
+A OneLauncher/OneClient fork that **removes offline account restrictions**, adds Ely.by authentication, and follows upstream instance importing and exporting
 
 This fork is **not** endorsed by Polyfrost/OneLauncher
 
@@ -29,8 +29,6 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
       <img src="docs/screenshots/account-manager.png" alt="Account manager" width="512" />
       <img src="docs/screenshots/offline-account-add-popup.png" alt="Offline account add popup" width="512" />
       <img src="docs/screenshots/ely-by-account-add-popup.png" alt="Ely.by account add popup" width="512" />
-      <img src="docs/screenshots/exporting-settings-section.png" alt="Exporting settings section" width="512" />
-      <img src="docs/screenshots/prism-instance-export-popup.png" alt="Prism Instance export popup" width="512" />
     </div>
   </div>
 
@@ -45,9 +43,8 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 - Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, random characters/username generators, and an optional online-name check (off by default).
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.
-- Export enabled mods as a portable ZIP, including manually added mods and linked files from the launcher cache.
-- Export **Ornithe Gen2 Minecraft 1.8.9** instances for Prism Launcher, with a file/folder picker, personal-use and distribution presets, remembered selections, and optional opening in Prism.
-- Follow exports through live progress notifications with file names and completion details.
+- Use upstream’s instance import/export support. Export `.mrpack` files in **OneClient** mode to retain bundle/modpack links, or **Compatibility** mode to flatten content for other launchers.
+- Exports contain mods, resource packs, shaders, loader information, Java version and cover art. **Your instance’s worlds and edited configs are not copied.** Original modpack overrides can still be carried through a compatibility export. The previous fork-specific mods ZIP and native Prism ZIP exporters, file picker, presets and saved export selections have been removed.
 - Choose automatic, signature-verified updates from this fork’s GitHub releases, or check for updates manually in Launcher settings.
 - Install alongside upstream OneClient using separate accounts, settings and game data.
 - Based on upstream OneLauncher, with the fork-specific changes described here.
@@ -164,7 +161,7 @@ NO_STRIP=1 cargo +stable packager --release --packages oneclient_app --formats d
 
 Output is under `target/release/`. `NO_STRIP=1` avoids linuxdeploy's older strip tool failing on modern system libraries; Cargo already strips the release executable.
 
-See [the release workflow](.github/workflows/oneclient_release.yml) for Windows NSIS runtime bundling, macOS app/DMG packages, and Linux RPM packaging. Converted icons and Prism template files are included in the repository; the ignored original artwork and example ZIP are not needed. Both local Cargo builds and release/nightly CI compile the [Java compatibility agent](distribution/elyby-preview-compat/README.md) from source.
+See [the release workflow](.github/workflows/oneclient_release.yml) for Windows NSIS runtime bundling, macOS app/DMG packages, and Linux RPM packaging. Converted icons are included in the repository; the ignored original artwork and example ZIP are not needed. Both local Cargo builds and release/nightly CI compile the [Java compatibility agent](distribution/elyby-preview-compat/README.md) from source.
 
 Publishing updater-enabled releases requires the repository secrets `CARGO_PACKAGER_SIGN_PRIVATE_KEY` and `CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD`. The workflow signs final update packages and attaches their `.sig` files plus `latest.json` to the release. Only the public verification key at `packages/oneclient_app/assets/updater.pub` belongs in Git; keep an encrypted backup of the private signing key and its password, and preserve this signing identity so installed launchers can verify future releases. These secrets are not needed for building the launcher locally.
 

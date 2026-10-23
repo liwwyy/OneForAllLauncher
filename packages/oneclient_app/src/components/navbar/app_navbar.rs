@@ -90,7 +90,7 @@ fn navbar_left(show_logo: bool) -> impl IntoElement {
             el.padding(Gaps::new(0., NAV_LINK_SPACING_PX, 0., 0.))
         })
         .child(
-            Icon::new(IconType::IconLogo)
+            Icon::new(IconType::LauncherLogo)
                 .size(COMPACT_LOGO_PX)
                 .into_element(),
         )
@@ -224,6 +224,7 @@ impl Component for NavLink {
             .on_press(move |e: Event<PressEventData>| {
                 e.prevent_default();
                 match &target {
+                    NavTarget::Route(_) if active => {}
                     NavTarget::Route(route) => {
                         let _ = RouterContext::get().push(route.clone());
                     }

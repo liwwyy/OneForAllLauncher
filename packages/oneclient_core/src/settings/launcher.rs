@@ -45,6 +45,8 @@ pub struct ViewState {
     pub layout: ViewLayout,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub filters: BTreeMap<String, String>,
 }
 
 pub const CURRENT_SETTINGS_VERSION: u32 = 2;
@@ -68,7 +70,6 @@ pub struct LauncherSettings {
     pub start_maximized: bool,
     pub animations_enabled: bool,
     pub view_states: BTreeMap<String, ViewState>,
-    pub export_selections: BTreeMap<i64, crate::export::ExportSelection>,
     pub seen_onboarding: bool,
     pub skip_microsoft_java: bool,
     pub microsoft_java_migrated: bool,
@@ -127,7 +128,6 @@ impl Default for LauncherSettings {
             start_maximized: false,
             animations_enabled: true,
             view_states: BTreeMap::new(),
-            export_selections: BTreeMap::new(),
             seen_onboarding: false,
             skip_microsoft_java: false,
             microsoft_java_migrated: false,
