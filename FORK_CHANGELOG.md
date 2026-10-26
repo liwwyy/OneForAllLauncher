@@ -1,3 +1,10 @@
+## OneForAllLauncher 2.9.0 — 2026-10-26
+
+- Align the launcher version with upstream OneLauncher 2.9.0 and merge its 29 latest commits through `e74a9315`.
+- Include upstream themes and accent colors, the wardrobe, Microsoft session renewal fixes, dedicated-folder resource packs and shaders, desktop instance icons, and safer game shutdown.
+- Omit upstream-only Flatpak packaging, which downloads the original launcher and uses its app identity; existing fork packages remain unchanged.
+- Preserve OneForAllLauncher account providers, offline username options, compatibility agent, isolated data directories, and signed updates with explicit consent.
+
 ## OneForAllLauncher 2.6.11 — 2026-10-23
 
 - Merge all 57 upstream commits through `4859c96c`, including instance import/export, importing packs into existing instances, dedicated/shared folder controls, bundled-mod deletion, factory reset, graphics-backend selection and crash diagnosis tools.

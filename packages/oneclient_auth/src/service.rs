@@ -389,12 +389,17 @@ impl AuthService {
     #[tracing::instrument(level = "debug", skip(self), fields(%id))]
     async fn renew_token(&self, id: Uuid, force: bool) -> AuthResult<MinecraftAccount> {
         let existing = self.account_snapshot(id).await?;
-        if existing.needs_sign_in() {
+        if existing.needs_sign_in() && existing.refresh_token.is_empty() {
             return Err(AuthError::SessionExpired {
                 username: existing.username,
             });
         }
-        if existing.is_offline() || (!force && !existing.is_expired() && !existing.is_custom()) {
+        if existing.is_offline()
+            || (!force
+                && !existing.needs_sign_in()
+                && !existing.is_expired()
+                && !existing.is_custom())
+        {
             return Ok(existing);
         }
 
@@ -403,12 +408,17 @@ impl AuthService {
 
         // Re-read under the guard whoever held it may have just refreshed
         let existing = self.account_snapshot(id).await?;
-        if existing.needs_sign_in() {
+        if existing.needs_sign_in() && existing.refresh_token.is_empty() {
             return Err(AuthError::SessionExpired {
                 username: existing.username,
             });
         }
-        if existing.is_offline() || (!force && !existing.is_expired() && !existing.is_custom()) {
+        if existing.is_offline()
+            || (!force
+                && !existing.needs_sign_in()
+                && !existing.is_expired()
+                && !existing.is_custom())
+        {
             return Ok(existing);
         }
 

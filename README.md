@@ -6,7 +6,7 @@
 <a style="color:#f5c2e7">OneForAll Launcher</a>
 </h1>
 
-A OneLauncher/OneClient fork that **removes offline account restrictions**, adds Ely.by authentication, and follows upstream instance importing and exporting
+A OneLauncher/OneClient fork that **removes offline account restrictions** and adds Ely.by and custom authentication server support.
 
 This fork is **not** endorsed by Polyfrost/OneLauncher
 
@@ -43,8 +43,6 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 - Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, random characters/username generators, and an optional online-name check (off by default).
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.
-- Use upstream’s instance import/export support. Export `.mrpack` files in **OneClient** mode to retain bundle/modpack links, or **Compatibility** mode to flatten content for other launchers.
-- Exports contain mods, resource packs, shaders, loader information, Java version and cover art. **Your instance’s worlds and edited configs are not copied.** Original modpack overrides can still be carried through a compatibility export. The previous fork-specific mods ZIP and native Prism ZIP exporters, file picker, presets and saved export selections have been removed.
 - Choose automatic, signature-verified updates from this fork’s GitHub releases, or check for updates manually in Launcher settings.
 - Install alongside upstream OneClient using separate accounts, settings and game data.
 - Based on upstream OneLauncher, with the fork-specific changes described here.
@@ -75,6 +73,8 @@ Download OneForAll Launcher from [GitHub Releases](https://github.com/liwwyy/One
 macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. Installers do not have Windows/macOS code signing, and macOS builds are not notarized, so Windows SmartScreen or macOS Gatekeeper may show a warning or block them.
 
 ### Launcher updates
+
+Version numbers now follow upstream OneLauncher: **2.9.0** includes upstream 2.9.0 plus the fork’s features. GitHub release tags retain the `oneforall-` prefix.
 
 Starting with **2.6.10**, setup asks whether to enable automatic launcher updates. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
 

@@ -37,6 +37,7 @@ pub use actions::{
 pub use queries::ALL_VERSIONS;
 pub(crate) use queries::invalidate_auth_queries;
 pub(crate) use queries::use_folder_watch;
+pub use queries::wardrobe;
 pub use queries::{
     AddOfflineAccountKeys, AddOfflineAccountMutation, AvailableBundlesQuery, BROWSE_PAGE_SIZE,
     BeginElybyLoginMutation, BeginMicrosoftLoginMutation, CachedImageQuery,

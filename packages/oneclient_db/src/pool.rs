@@ -8,8 +8,8 @@ use crate::DbError;
 
 pub type DbPool = SqlitePool;
 
-// Bundle installs write metadata concurrently; slow disks and CPU pressure can
-// hold a writer longer than five seconds. Wait before dropping an installed mod.
+/// Bundle updates write from several installs at once and on a slow disk or
+/// under antivirus a single write can take seconds; 5s failed real installs
 const BUSY_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tracing::instrument(

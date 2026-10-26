@@ -222,8 +222,7 @@ mod tests {
         let a = polyio::tempdir().await.unwrap();
         let b = polyio::tempdir().await.unwrap();
         let root = a.dir_path();
-        // Filesystem canonicalization requires every traversed directory to exist.
-        polyio::create_dir_all(root.join("sub")).await.unwrap();
+        polyio::create_dir(root.join("sub")).await.unwrap();
 
         assert!(same_folder(root, &root.join(".")));
         assert!(same_folder(root, &root.join("sub").join("..")));
