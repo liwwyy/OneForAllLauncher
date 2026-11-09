@@ -27,7 +27,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 <details>
   <summary>Browse the screenshot gallery</summary>
 
-  <p>The account screenshots are from version 2.9.0. The offline launch screenshot was provided by the maintainer.</p>
+  <p>Screenshots are supplied by the maintainer. The onboarding and account-manager screenshots have been refreshed; the other account-dialog screenshots are from version 2.9.0.</p>
 
   <table>
     <tr>
