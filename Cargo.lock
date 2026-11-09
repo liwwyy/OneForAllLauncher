@@ -4675,6 +4675,7 @@ dependencies = [
  "sys-locale",
  "sysinfo",
  "tokio",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "url",

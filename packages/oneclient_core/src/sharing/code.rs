@@ -8,7 +8,7 @@ pub const SHARE_LINK_HOSTS: &[&str] =
     &["polyfrost.org", "www.polyfrost.org", "share.polyfrost.org"];
 pub const APP_LINK_HOST: &str = "share";
 
-const APP_SCHEMES: &[&str] = &["oneclient", "oneclient-dev"];
+const APP_SCHEMES: &[&str] = &["oneclient", "oneclient-dev", "oneforall", "oneforall-dev"];
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

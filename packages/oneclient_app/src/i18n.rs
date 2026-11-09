@@ -164,7 +164,7 @@ mod tests {
             &pattern,
             &mut used,
         );
-        used.retain(|key| key.starts_with("oneclient."));
+        used.retain(|key| key.starts_with("oneclient.") || key.starts_with("fork."));
         let defined: BTreeSet<String> = EN_US.keys().cloned().collect();
 
         let missing: Vec<_> = used.difference(&defined).collect();

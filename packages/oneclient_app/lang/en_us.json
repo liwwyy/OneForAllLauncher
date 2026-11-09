@@ -2543,5 +2543,18 @@
   "oneclient.wardrobe.variants": "%s variants",
   "oneclient.wardrobe.wear.not_saved": "Wearing %s, but it couldn't be saved to your library. %s",
   "oneclient.wardrobe.wear.wearing": "Wearing %s",
-  "oneclient.wardrobe.wear.wearing_done": "Wearing %s."
+  "oneclient.wardrobe.wear.wearing_done": "Wearing %s.",
+  "fork.onboarding.updates.title": "Updates",
+  "fork.updates.title": "Launcher updates",
+  "fork.updates.description": "Choose how OneForAllLauncher stays up to date. You can change this later in Settings → Launcher → Updates.",
+  "fork.updates.auto": "Enable automatic updates",
+  "fork.updates.auto_description": "Check GitHub on startup and install verified launcher updates automatically. Restart to apply them.",
+  "fork.updates.manual": "Update manually",
+  "fork.updates.manual_description": "No background update checks. Use Check for updates in Launcher settings whenever you want.",
+  "fork.updates.package_notice": "DEB and RPM installations receive an update notice instead of replacing package-managed files.",
+  "fork.updates.section": "UPDATES",
+  "fork.updates.setting_title": "Automatic launcher updates",
+  "fork.updates.setting_description": "Check GitHub on startup and install verified updates automatically. Restart to apply. DEB/RPM installs receive an update notice.",
+  "fork.updates.check": "Check for updates",
+  "fork.updates.check_description": "Check GitHub now, even when automatic updates are off. You’ll be asked before installation."
 }

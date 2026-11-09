@@ -22,11 +22,9 @@ pub const CRASH_DATA_URL: &str =
 
 pub const DISCORD_URL: &str = "https://discord.com/invite/polyfrost";
 
-pub const SENTRY_DSN: &str = match option_env!("ONECLIENT_SENTRY_DSN") {
+pub const SENTRY_DSN: &str = match option_env!("ONEFORALL_SENTRY_DSN") {
     Some(dsn) => dsn,
-    None => {
-        "https://e7dff7e07427e1a28b9212cfcc8ddc1e@o4511714343124992.ingest.us.sentry.io/4511714354135040"
-    }
+    None => "",
 };
 
 pub const TARGET_OS: &str = cfg_select! {

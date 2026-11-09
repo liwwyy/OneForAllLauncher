@@ -4,3 +4,14 @@
 OneLauncher.iml
 
 /packages/oneclient_app/icons/generated/
+
+/icon.jpg
+/prompt.md
+/icon-transparent.png
+/export.svg
+/Ornithe Gen2 Fabric 1.8.9.zip
+
+/icons/
+
+# Generated Python bytecode from build and test scripts
+__pycache__/

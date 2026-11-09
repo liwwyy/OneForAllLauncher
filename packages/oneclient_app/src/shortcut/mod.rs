@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 
 const MAX_STEM: usize = 96;
-const FALLBACK_STEM: &str = "OneClient";
+const FALLBACK_STEM: &str = "OneForAllLauncher";
 const MAX_COLLISIONS: usize = 20;
 #[cfg(any(target_os = "macos", windows))]
 const ICON_EDGE: u32 = 256;
@@ -81,7 +81,8 @@ pub fn launcher_exe() -> Result<PathBuf> {
         }
     }
 
-    let exe = std::env::current_exe().context("couldn't locate the OneClient executable")?;
+    let exe =
+        std::env::current_exe().context("couldn't locate the OneForAllLauncher executable")?;
     Ok(dunce::canonicalize(&exe).unwrap_or(exe))
 }
 

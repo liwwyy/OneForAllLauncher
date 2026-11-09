@@ -8,7 +8,7 @@ use crate::file_content::desktop_entry;
 
 pub const EXTENSION: &str = "desktop";
 
-const ICON: &str = "oneclient_app";
+const ICON: &str = "oneforall_app";
 
 pub fn write(request: &ShortcutRequest, exe: &Path, path: &Path) -> Result<()> {
     let icon = request

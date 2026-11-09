@@ -1,7 +1,9 @@
-pub const WINDOW_APP_ID: &str = "oneclient_app";
+pub const WINDOW_APP_ID: &str = "oneforall_app";
 pub const WINDOW_TITLE: &str = "OneClient";
 
-pub const UPDATER_PUBKEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFGODk3MkMyMjg0MjFDMDUKUldRRkhFSW93bktKSHpkWjNEMXNzaDVINVpCTU8xSnhuK2RnV0dTZ2FkcFJWbG1zUkhGYTNjaUkK";
+// Only this fork's signed GitHub release packages are trusted.
 pub const UPDATER_ENDPOINT: &str =
-    "https://github.com/Polyfrost/OneLauncher/releases/latest/download/latest.json";
-pub const RELEASES_URL: &str = "https://github.com/Polyfrost/OneLauncher/releases/latest";
+    "https://github.com/liwwyy/OneForAllLauncher/releases/latest/download/latest.json";
+pub const UPDATER_PUBKEY: &str = include_str!("../assets/updater.pub");
+pub const RELEASES_URL: &str = "https://github.com/liwwyy/OneForAllLauncher/releases/latest";
+pub const FORK_NOTICE: &str = "OneForAllLauncher, a fork of OneClient by Polyfrost, with standalone offline, Ely.by and custom accounts. Modified 2026-11-09. GPL-3.0-only; no warranty.";

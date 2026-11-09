@@ -34,7 +34,9 @@ impl Component for OnboardingShell {
             let welcome = matches!(route, Route::OnboardingWelcome {});
             move || if welcome { 0. } else { 1. }
         });
+        let automatic_updates = use_state(|| None);
         use_provide_onboarding_selection(OnboardingSelectionState {
+            automatic_updates,
             selected,
             user_touched,
             migrated_categories,

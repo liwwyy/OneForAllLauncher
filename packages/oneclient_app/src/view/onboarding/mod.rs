@@ -9,6 +9,7 @@ mod summary;
 mod terms;
 #[cfg(test)]
 pub(crate) mod test_support;
+mod updates;
 mod welcome;
 
 pub(crate) use selection::{
@@ -24,6 +25,7 @@ pub(crate) use migration::matching_new_cluster_id;
 pub use preferences::OnboardingPreferences;
 pub use summary::OnboardingSummary;
 pub use terms::OnboardingTerms;
+pub use updates::OnboardingUpdates;
 pub use welcome::OnboardingWelcome;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -40,7 +42,7 @@ use crate::theme::{colors, rounded, text_size};
 use crate::ui::{border_all_color, entrance_motion_layer};
 
 pub fn onboarding_total(has_migration: bool, picks_location: bool) -> usize {
-    7 + usize::from(has_migration) + usize::from(picks_location)
+    8 + usize::from(has_migration) + usize::from(picks_location)
 }
 
 pub fn onboarding_step_index(route: &Route, has_migration: bool, picks_location: bool) -> usize {
@@ -56,7 +58,8 @@ pub fn onboarding_step_index(route: &Route, has_migration: bool, picks_location:
         Route::OnboardingAccount {} => 3 + shift,
         Route::OnboardingBundles {} => 4 + shift,
         Route::OnboardingPreferences {} => 5 + shift,
-        Route::OnboardingSummary {} => 6 + shift,
+        Route::OnboardingUpdates {} => 6 + shift,
+        Route::OnboardingSummary {} => 7 + shift,
         _ => 0,
     }
 }
@@ -351,6 +354,7 @@ mod tests {
             Route::OnboardingAccount {},
             Route::OnboardingBundles {},
             Route::OnboardingPreferences {},
+            Route::OnboardingUpdates {},
             Route::OnboardingSummary {},
         ]);
 

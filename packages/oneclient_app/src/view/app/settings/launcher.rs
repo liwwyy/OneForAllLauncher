@@ -28,6 +28,12 @@ impl Component for SettingsLauncher {
         let defaults = LauncherSettings::default();
         let dispatch = use_dispatch();
 
+        let automatic_updates = use_state({
+            let v = settings.auto_update;
+            move || v
+        });
+
+
         let discord_rpc = use_state({
             let v = settings.discord_enabled;
             move || v
@@ -65,6 +71,7 @@ impl Component for SettingsLauncher {
 
         let mut first = use_state(|| true);
         use_side_effect(move || {
+            let automatic = *automatic_updates.read();
             let discord = *discord_rpc.read();
             let crash = *crash_reporting.read();
             let maximized = *start_maximized.read();
@@ -77,6 +84,7 @@ impl Component for SettingsLauncher {
                 return;
             }
             dispatch.edit_settings(|next| {
+                next.auto_update = automatic;
                 next.discord_enabled = discord;
                 next.crash_reporting = crash;
                 next.start_maximized = maximized;
@@ -102,9 +110,24 @@ impl Component for SettingsLauncher {
             .text(t("oneclient.settings.launcher.terms.review"));
 
         settings_page()
-            .child(section_header(t(
-                "oneclient.settings.launcher.section.general",
-            )))
+            .child(section_header(t("fork.updates.section")))
+            .child(settings_row(
+                IconType::DownloadCloud02,
+                t("fork.updates.setting_title"),
+                t("fork.updates.setting_description"),
+                resettable(toggle(automatic_updates), automatic_updates, defaults.auto_update),
+            ))
+            .child(settings_row(
+                IconType::RefreshCw01,
+                t("fork.updates.check"),
+                t("fork.updates.check_description"),
+                Button::new().secondary().small().text(t("fork.updates.check")).on_press(move |_| {
+                    if let Ok(state) = crate::launcher::state() {
+                        crate::updater::spawn_update_check(false, state.services.events.clone());
+                    }
+                }),
+            ))
+            .child(section_header(t("oneclient.settings.launcher.section.general")))
             .child(settings_row(
                 IconType::Link03,
                 t("oneclient.settings.launcher.discord_rpc.title"),

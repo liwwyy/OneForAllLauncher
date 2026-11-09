@@ -120,7 +120,7 @@ impl Default for LauncherSettings {
         Self {
             settings_version: CURRENT_SETTINGS_VERSION,
             log_debug: false,
-            auto_update: true,
+            auto_update: false, // Users opt in during onboarding or in Launcher settings.
             crash_reporting: true,
             discord_enabled: true,
             enable_gamemode: false,

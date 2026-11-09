@@ -205,7 +205,7 @@ pub(super) fn summary_view(
                         .width(Size::px(128.))
                         .enabled(!finishing)
                         .on_press(move |_| {
-                            let _ = RouterContext::get().replace(Route::OnboardingPreferences {});
+                            let _ = RouterContext::get().replace(Route::OnboardingUpdates {});
                         })
                         .text(t("oneclient.common.back"))
                         .into_element()
