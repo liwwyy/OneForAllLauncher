@@ -305,12 +305,23 @@ an earlier commit that cannot support its advertised behavior.
 
 ## Optional upstream library reuse
 
-Onboarding keeps This PC as the fork's default and adds OneClient default folder
-alongside Another drive. Resolve the upstream release path using the same legacy
-settings marker as upstream, without changing fork configuration/account identity.
-The explicit upstream choice applies the exact directory. Custom folder selection
-recognizes the existing SQLite catalog read-only so a valid library is reused
-without a nested OneClient folder. Do not replace upstream settings or auth files.
+Fresh onboarding defaults to OneClient folder, alongside OneForAllLauncher folder
+and Another drive. Existing fork installs retain their saved location, including
+the old default when `data_dir` is null. Resolve upstream's release/legacy config
+root, then read only its saved `data_dir` to find its actual game library. Do not
+fall back to its config directory when a custom drive is unavailable. Apply the
+exact game directory without changing fork configuration/account identity.
+Custom selection recognizes the SQLite catalog read-only without nesting a new
+OneClient folder. Do not replace/import upstream settings or auth files.
+
+Settings → Launcher → Folders and files shows the private fork folder and allows
+selecting OneClient, OneForAllLauncher or custom game libraries. Confirm selection
+and quit, then reopen to replace all path/database handles together. Selection
+does not copy/merge either library and never marks either one for cleanup.
+Retain explicit file moves separately, exclude private configuration from copies,
+and preserve reused sources instead of making them removable move leftovers.
+Instances, metadata, assets, libraries, package caches and managed Java all use
+the selected game root; launcher preferences, auth, logs and themes remain private.
 
 Sharing targets matching stable versions, with one launcher open at a time.
 Preserve shared migration checksums and verify upstream → fork → upstream database

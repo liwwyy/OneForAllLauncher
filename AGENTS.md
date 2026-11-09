@@ -50,12 +50,21 @@ upgrade existing fork installs and coexist with upstream:
   the page must not start updates.
 - Preserve automatic-update consent and manual installation confirmation. Keep
   fork crash reporting unconfigured unless explicitly enabled for the build.
-- Keep the fork's data location as its default. The explicit onboarding choice
-  **OneClient default folder** may reuse upstream game data/database, including
-  its existing legacy location. Keep fork configuration, accounts, logs and IPC
-  separate. Recognize compatible existing libraries selected through the folder
-  picker without nesting a new OneClient directory. Shared libraries are intended
-  for matching stable releases; use one launcher at a time.
+- Preserve existing installs' fork/custom game locations, including saved
+  `data_dir: null`; changing fresh-setup defaults must never redirect upgrades.
+  Fresh onboarding defaults to **OneClient folder**, following upstream's saved
+  custom `data_dir` as well as release/legacy layouts. An unavailable configured
+  drive must produce an error, not a fallback empty library or new downloads.
+- Keep fork configuration, accounts, themes, logs and IPC in the existing private
+  fork folder. Only game data/database, instances, caches and managed Java share
+  the selected library. Offer OneClient, OneForAllLauncher and custom libraries in
+  Settings → Launcher → Folders and files, alongside the private folder's opener.
+  Switching libraries saves the exact path and requires reopening; do not copy,
+  merge, delete or offer the previous shared library as removable leftovers.
+  Keep explicit file moves separate from library selection, and exclude both
+  launchers' configuration from copies. Recognize compatible existing libraries
+  without nesting a new OneClient directory. Shared libraries are intended for
+  matching stable releases; use one launcher at a time.
 - Do not automatically import or modify upstream OneClient installations. Test
   sharing and database round trips only in temporary directories, never a user's
   live accounts or game library.

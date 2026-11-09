@@ -101,17 +101,33 @@ macOS also has `.app.tar.gz` archives for each processor type. Releases include 
 
 ### Choosing the game data folder
 
-Initial setup offers **This PC**, **OneClient default folder**, and **Another drive**.
-This PC keeps the fork's own directory. OneClient default folder reuses upstream
-OneClient's release library, including its existing legacy location. For an
-upstream custom data location, use Another drive and select the existing library;
-its instances/database are recognized without adding a nested OneClient folder.
+Fresh setup selects **OneClient folder** by default. This follows stock
+OneLauncher's configured game folder, including a custom location on another
+drive or an older directory layout. **OneForAllLauncher folder** uses the fork's
+own library, and **Another drive** lets you choose a custom location. Existing
+libraries are recognized without adding a nested OneClient folder. If stock
+OneLauncher's configured drive is disconnected, reconnect it before selecting
+that library; the launcher will not silently substitute an empty folder.
 
-Sharing reuses games, instances, libraries and the catalog database. Fork accounts,
-launcher settings, update preferences and logs remain separate. Use matching
+**Upgrading users keep their existing OneForAllLauncher/custom game folder.**
+The new default applies only to fresh setup. Accounts, launcher settings, themes,
+update preferences and logs stay in the existing private fork folder.
+
+Change libraries in **Settings → Launcher → Folders and files → Game library →
+Use folder…**. Choose OneClient, OneForAllLauncher or another folder, then confirm
+**Use folder and quit** and reopen the launcher. This selects that library without
+copying, merging or deleting either library. **Move files…** separately copies
+the current game files to an empty location. Reused/shared source libraries are
+preserved and are never offered as disposable move leftovers.
+
+Sharing reuses instances, Minecraft, assets, libraries, caches, managed Java and
+the catalog database. Managed Java lives in `<game folder>/metadata/java`;
+explicitly selected external Java paths remain unchanged. Use matching
 stable launcher versions and **one launcher at a time** with a shared library;
 changes to instances and game files affect both. Nothing automatically switches
-existing fork installations to upstream data.
+existing fork installations to upstream data. If a previous development build
+selected the upstream configuration folder instead of its custom game folder,
+select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 

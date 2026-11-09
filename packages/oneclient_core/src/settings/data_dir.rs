@@ -24,6 +24,53 @@ const OS_CLUTTER: &[&str] = &[
     "System Volume Information",
 ];
 
+/// Read only the upstream location preference; never import its accounts/settings.
+pub async fn oneclient_folder() -> Result<PathBuf, String> {
+    let config = paths::oneclient_default_dir().map_err(|error| error.to_string())?;
+    oneclient_folder_from(&config).await
+}
+
+async fn oneclient_folder_from(config: &Path) -> Result<PathBuf, String> {
+    let file = config.join(paths::SETTINGS_FILE);
+    if !polyio::try_exists(&file)
+        .await
+        .map_err(|error| error.to_string())?
+    {
+        return Ok(config.to_path_buf());
+    }
+    #[derive(serde::Deserialize)]
+    struct Location {
+        data_dir: Option<PathBuf>,
+    }
+    let raw = polyio::read(&file)
+        .await
+        .map_err(|error| error.to_string())?;
+    let location: Location = serde_json::from_slice(&raw).map_err(|error| {
+        format!(
+            "Couldn't read OneClient's folder from {}: {error}",
+            file.display()
+        )
+    })?;
+    match location.data_dir {
+        None => Ok(config.to_path_buf()),
+        Some(dir) if !dir.is_absolute() => Err(format!(
+            "OneClient's game folder must be an absolute path: {}",
+            dir.display()
+        )),
+        Some(dir)
+            if !polyio::try_exists(&dir)
+                .await
+                .map_err(|error| error.to_string())? =>
+        {
+            Err(format!(
+                "OneClient's game folder is unavailable: {}. Connect its drive before selecting it.",
+                dir.display()
+            ))
+        }
+        Some(dir) => Ok(dir),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataDirCheck {
     pub path: PathBuf,
@@ -70,7 +117,7 @@ pub async fn resolve(picked: &Path) -> Result<PathBuf, String> {
 
 /// Reuse explicitly picked existing libraries, including custom roots named "data".
 /// The read-only probe must not initialize or migrate a database during browsing.
-async fn contains_launcher_library(dir: &Path) -> Result<bool, String> {
+pub(crate) async fn contains_launcher_library(dir: &Path) -> Result<bool, String> {
     let file = dir.join(paths::DATABASE_FILE);
     if !file.is_file() {
         return Ok(false);
@@ -137,17 +184,22 @@ pub async fn apply(picked: Option<PathBuf>) -> Result<(), String> {
         Some(path) => Some(check(&path).await?),
         None => None,
     };
-    apply_checked(checked).await
+    let reused = match &checked {
+        Some(checked) => contains_launcher_library(&checked.path).await?,
+        None => false,
+    };
+    apply_checked(checked, reused).await
 }
 
 /// OneClient's default may use an older layout whose leaf is not "OneClient".
 pub async fn apply_exact(path: PathBuf) -> Result<(), String> {
-    apply_checked(Some(check_exact(&path).await?)).await
+    apply_checked(Some(check_exact(&path).await?), true).await
 }
 
-async fn apply_checked(checked: Option<DataDirCheck>) -> Result<(), String> {
+async fn apply_checked(checked: Option<DataDirCheck>, reused: bool) -> Result<(), String> {
     let mut settings = LauncherSettings::default();
     if let Some(checked) = checked {
+        settings.reused_data_dir = reused;
         polyio::create_dir_all(&checked.path)
             .await
             .map_err(|err| format!("Couldn't create {}: {err}", checked.path.display()))?;
@@ -339,5 +391,73 @@ mod tests {
             .unwrap();
         db.close().await.unwrap();
         assert_eq!(resolve(root.path()).await.unwrap(), root.join(FOLDER_NAME));
+    }
+
+    #[tokio::test]
+    async fn upstream_selection_follows_its_custom_folder_without_importing_configuration() {
+        let root = polyio::testing::ScratchDir::new("upstream_location");
+        let config = root.join("config");
+        let library = root.join("games");
+        polyio::create_dir_all(&config).await.unwrap();
+        polyio::create_dir_all(&library).await.unwrap();
+        let raw = serde_json::to_vec(&serde_json::json!({
+            "data_dir": library,
+            "auto_update": false,
+            "theme": "light"
+        }))
+        .unwrap();
+        polyio::write(config.join(paths::SETTINGS_FILE), &raw)
+            .await
+            .unwrap();
+        assert_eq!(oneclient_folder_from(&config).await.unwrap(), library);
+        assert_eq!(
+            polyio::read(config.join(paths::SETTINGS_FILE))
+                .await
+                .unwrap(),
+            raw
+        );
+        assert!(!config.join(paths::DATABASE_FILE).exists());
+        assert!(!library.join(paths::DATABASE_FILE).exists());
+        polyio::remove_dir(&library).await.unwrap();
+        assert!(
+            oneclient_folder_from(&config)
+                .await
+                .unwrap_err()
+                .contains("unavailable")
+        );
+        assert!(
+            !library.exists(),
+            "an unavailable drive must not become a new empty library"
+        );
+    }
+
+    #[tokio::test]
+    async fn upstream_without_a_custom_location_uses_its_release_or_legacy_root() {
+        let root = polyio::testing::ScratchDir::new("upstream_default_location");
+        assert_eq!(
+            oneclient_folder_from(root.path()).await.unwrap(),
+            root.path()
+        );
+        polyio::create_dir_all(root.path()).await.unwrap();
+        for raw in [b"{}".as_slice(), b"{\"data_dir\":null}".as_slice()] {
+            polyio::write(root.join(paths::SETTINGS_FILE), raw)
+                .await
+                .unwrap();
+            assert_eq!(
+                oneclient_folder_from(root.path()).await.unwrap(),
+                root.path()
+            );
+        }
+        polyio::write(
+            root.join(paths::SETTINGS_FILE),
+            b"{\"data_dir\":\"relative\"}",
+        )
+        .await
+        .unwrap();
+        assert!(oneclient_folder_from(root.path()).await.is_err());
+        polyio::write(root.join(paths::SETTINGS_FILE), b"invalid json")
+            .await
+            .unwrap();
+        assert!(oneclient_folder_from(root.path()).await.is_err());
     }
 }

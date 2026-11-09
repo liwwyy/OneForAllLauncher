@@ -48,8 +48,8 @@ and incremental compilation were disabled to keep resource use bounded.
 
 The initial replacement series contains seven focused commits: installation/updates,
 retained account support, the preview toggle, provider identities, offline launch,
-local wardrobe and maintenance documentation. The onboarding follow-up adds one
-focused commit. The assembled tree was checked
+local wardrobe and maintenance documentation. The onboarding and shared-library
+follow-ups add two focused commits. The assembled tree was checked
 against the archived implementation snapshot before the validation report was
 finalized. Backups are local and excluded from the replacement history.
 
@@ -93,15 +93,44 @@ finalized. Backups are local and excluded from the replacement history.
   excluded. The Linux debug build passed. Clippy completed with the same 11
   upstream diagnostics; Cargo.lock is unchanged.
 
+## Follow-up: active upstream folder and library settings
+
+- Corrected the selector's distinction between upstream's configuration root and
+  its actual game library. Read only upstream's saved `data_dir`, including custom
+  drives; unavailable drives and malformed locations produce errors rather than
+  silently creating another library. No live launcher settings were changed.
+- Fresh setup defaults to the OneClient library. Existing fork settings with
+  `data_dir: null` or a custom path retain those locations. Accounts, launcher
+  settings, themes and logs remain in the existing private fork directory.
+- Added OneClient, OneForAllLauncher and custom library choices under Launcher →
+  Folders and files. Selecting a library saves the path and quits; reopening binds
+  paths and the catalog together. Explicit file moves remain separate, exclude
+  private configuration and preserve reused sources without cleanup offers.
+- Passed 363 core and 316 app library tests, with the same 14 rendering tests
+  excluded. A separate temporary-library integration test passed: a ready stock
+  instance and its registered Java runtime were reused, every game/cache/managed
+  Java path used the library, private paths stayed separate, and selecting another
+  library preserved preferences and original files until restart. These checks
+  do not replace an actual game launch or owner UI verification.
+- The refreshed Linux debug build passed. Clippy completed with the same 11
+  upstream diagnostics and none in the new library-selection code. New/changed
+  Rust sections, translation-key coverage, Markdown links and diff whitespace
+  checks passed. Cargo.lock is unchanged. No screenshots or visual comparisons
+  were performed.
+
 ## Manual acceptance before release
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
    light/dark and Minecraft themes. The README gallery deliberately uses the
    owner's existing 2.9 screenshots pending replacements. Check all three data
    location choices, including a legacy/custom upstream library, then restart to
-   verify persistence. Use one launcher at a time when sharing; verify accounts
-   and launcher settings remain separate. On fresh setup, press Enter on Updates
-   without clicking a choice; also check manual selection and Back/Next behavior.
+   verify persistence. Verify fresh setup's OneClient default and an upgraded
+   fork's unchanged old location. Switch back to the OneForAllLauncher library in
+   Folders and files, then select OneClient again and verify its custom-path
+   instances and installed Java are reused. Use one launcher at a time when
+   sharing; verify accounts and launcher settings remain separate. On fresh
+   setup, press Enter on Updates without clicking a choice; also check manual
+   selection and Back/Next behavior.
 2. Disconnect before startup and launch a fully installed game. Check the
    eight-second shared probe, all launch labels, right-click Launch Offline,
    the per-instance toggle (default off), busy-state guards and recovery online.

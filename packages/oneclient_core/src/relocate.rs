@@ -41,6 +41,15 @@ const HEADROOM: f64 = 1.05;
 
 const REPORT_EVERY: u64 = 32 * 1024 * 1024;
 
+const CONFIG_NAMES: &[&str] = &[
+    "settings.json",
+    "settings.json.corrupt",
+    "auth.json",
+    "themes",
+    "logs",
+    "ipc.sock",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RelocationPlan {
     pub from: PathBuf,
@@ -48,6 +57,68 @@ pub struct RelocationPlan {
     pub bytes: u64,
     pub available: Option<u64>,
     pub warning: Option<String>,
+}
+
+/// Select a library without copying over either launcher's files or configuration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LibraryPlan {
+    pub from: PathBuf,
+    pub to: PathBuf,
+    pub warning: Option<String>,
+}
+
+pub async fn plan_library(state: &LauncherState, to: &Path) -> Result<LibraryPlan, String> {
+    let from = ready_to_move(state)?;
+    if !to.is_absolute() {
+        return Err("Choose an absolute game-library path.".to_string());
+    }
+    let to = polyio::canonicalize(to).unwrap_or_else(|_| to.to_path_buf());
+    let from = polyio::canonicalize(&from).unwrap_or(from);
+    if to == from {
+        return Err("Your game data is already there.".to_string());
+    }
+    validate_library(&to).await?;
+    let checked = data_dir::check_exact(&to).await?;
+    Ok(LibraryPlan {
+        from,
+        to,
+        warning: checked.warning,
+    })
+}
+
+async fn validate_library(dir: &Path) -> Result<(), String> {
+    if incomplete(dir) {
+        return Err(
+            "Finish the interrupted folder move before selecting this library.".to_string(),
+        );
+    }
+    if dir.join(paths::DATABASE_FILE).is_file() && !data_dir::contains_launcher_library(dir).await?
+    {
+        return Err("That folder's database is not a compatible OneClient library.".to_string());
+    }
+    Ok(())
+}
+
+/// The caller quits after this succeeds. Paths and database handles change only
+/// on restart, so the running launcher never mixes two libraries.
+pub async fn use_library(state: &LauncherState, plan: &LibraryPlan) -> Result<(), String> {
+    let current = ready_to_move(state)?;
+    if polyio::canonicalize(&current).unwrap_or(current) != plan.from {
+        return Err("The game folder changed since it was selected.".to_string());
+    }
+    validate_library(&plan.to).await?;
+    data_dir::check_exact(&plan.to).await?;
+    let mut snapshot = state.settings.read().clone();
+    snapshot.data_dir = Some(plan.to.clone());
+    snapshot.reused_data_dir = true;
+    // Selection is not a move: neither library becomes disposable leftovers.
+    save_settings(&snapshot)
+        .await
+        .map_err(|error| error.to_string())?;
+    let mut settings = state.settings.write();
+    settings.data_dir = snapshot.data_dir;
+    settings.reused_data_dir = true;
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,7 +210,7 @@ async fn weigh(
         ));
     }
 
-    let bytes = collect(&from, &skipped_names(&from)).await?.total;
+    let bytes = collect(&from, &skipped_names()).await?.total;
     let available = data_dir::available_space(&to);
 
     if let Some(available) = available
@@ -184,9 +255,12 @@ pub async fn relocate(
 
     let _in_progress = InProgress::begin();
 
-    drop_materialized_content(state).await;
+    let reused = preserve_source(state, &plan.from).await;
+    if !reused {
+        drop_materialized_content(state).await;
+    }
 
-    let skip = skipped_names(&plan.from);
+    let skip = skipped_names();
     let found = collect(&plan.from, &skip).await?;
 
     polyio::create_dir_all(&plan.to)
@@ -210,7 +284,7 @@ pub async fn relocate(
         .await
         .map_err(|err| format!("Couldn't finish the move at {}: {err}", plan.to.display()))?;
 
-    if let Err(err) = commit(state, &plan.from, &plan.to).await {
+    if let Err(err) = commit(state, &plan.from, &plan.to, reused).await {
         discard_unclaimed(&plan.to).await;
         return Err(err);
     }
@@ -430,9 +504,11 @@ fn busy_reason(state: &LauncherState) -> Option<String> {
     ))
 }
 
-fn skipped_names(from: &Path) -> Vec<OsString> {
+fn skipped_names() -> Vec<OsString> {
     let mut names = database_names();
-    names.extend(config_owned_names(from));
+    // A shared upstream root can contain its private configuration too. Moving
+    // game files must not copy either launcher's accounts/settings into a library.
+    names.extend(CONFIG_NAMES.iter().map(OsString::from));
     names
 }
 
@@ -452,16 +528,7 @@ fn database_names() -> Vec<OsString> {
 
 fn config_owned_names(dir: &Path) -> Vec<OsString> {
     if paths::config_dir().is_ok_and(|config| config == dir) {
-        [
-            paths::settings_file(),
-            paths::damaged_settings_file(),
-            paths::auth_file(),
-            paths::logs_dir(),
-        ]
-        .into_iter()
-        .flatten()
-        .filter_map(|path| path.file_name().map(std::ffi::OsStr::to_os_string))
-        .collect()
+        CONFIG_NAMES.iter().map(OsString::from).collect()
     } else {
         Vec::new()
     }
@@ -777,11 +844,33 @@ async fn swap_java_prefix(
     Ok(profiles.rows_affected() + runtimes.rows_affected())
 }
 
-async fn commit(state: &LauncherState, from: &Path, to: &Path) -> Result<(), String> {
+async fn preserve_source(state: &LauncherState, from: &Path) -> bool {
+    if state.settings.read().reused_data_dir {
+        return true;
+    }
+    // Also protect selections saved before the shared-library flag existed.
+    for upstream in [
+        paths::oneclient_default_dir().ok(),
+        data_dir::oneclient_folder().await.ok(),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if polyio::canonicalize(&upstream).unwrap_or(upstream)
+            == polyio::canonicalize(from).unwrap_or_else(|_| from.to_path_buf())
+        {
+            return true;
+        }
+    }
+    false
+}
+
+async fn commit(state: &LauncherState, from: &Path, to: &Path, reused: bool) -> Result<(), String> {
     {
         let mut settings = state.settings.write();
         settings.data_dir = Some(to.to_path_buf());
-        settings.previous_data_dir = Some(from.to_path_buf());
+        settings.previous_data_dir = move_leftovers(from, reused);
+        settings.reused_data_dir = false;
     }
 
     let snapshot = state.settings.read().clone();
@@ -789,6 +878,10 @@ async fn commit(state: &LauncherState, from: &Path, to: &Path) -> Result<(), Str
     save_settings(&snapshot)
         .await
         .map_err(|err| format!("Everything was copied but your settings could not be saved: {err}"))
+}
+
+fn move_leftovers(from: &Path, reused: bool) -> Option<PathBuf> {
+    (!reused).then(|| from.to_path_buf())
 }
 
 async fn abandon(to: &Path) {
@@ -847,6 +940,16 @@ async fn remove_children_except(dir: &Path, keep: &[OsString]) -> Result<(), Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reused_libraries_never_become_removable_move_leftovers() {
+        let source = Path::new("shared-library");
+        assert_eq!(move_leftovers(source, true), None);
+        assert_eq!(move_leftovers(source, false), Some(source.to_path_buf()));
+        for name in CONFIG_NAMES {
+            assert!(skipped_names().contains(&OsString::from(name)));
+        }
+    }
 
     #[tokio::test]
     async fn a_shared_folder_nobody_uses_forgets_its_links_too() {

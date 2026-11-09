@@ -91,6 +91,8 @@ pub struct LauncherSettings {
     pub custom_meta_url_base: Option<String>,
     pub custom_plus_endpoint: Option<String>,
     pub data_dir: Option<PathBuf>,
+    /// A selected/shared library must never be offered as disposable move leftovers.
+    pub reused_data_dir: bool,
     pub previous_data_dir: Option<PathBuf>,
 }
 
@@ -156,6 +158,7 @@ impl Default for LauncherSettings {
             custom_meta_url_base: None,
             custom_plus_endpoint: None,
             data_dir: None,
+            reused_data_dir: false,
             previous_data_dir: None,
         }
     }
@@ -164,6 +167,22 @@ impl Default for LauncherSettings {
 #[cfg(test)]
 mod compatibility_tests {
     use super::*;
+    #[test]
+    fn upgrades_keep_the_existing_fork_library_including_custom_locations() {
+        let own: LauncherSettings =
+            serde_json::from_str(r#"{"seen_onboarding":true,"data_dir":null}"#).unwrap();
+        assert!(own.data_dir.is_none());
+        assert!(!own.reused_data_dir);
+        let custom: LauncherSettings =
+            serde_json::from_str(r#"{"seen_onboarding":true,"data_dir":"/old/fork-library"}"#)
+                .unwrap();
+        assert_eq!(
+            custom.data_dir.as_deref(),
+            Some(std::path::Path::new("/old/fork-library"))
+        );
+        assert!(!custom.reused_data_dir);
+    }
+
     #[test]
     fn old_settings_keep_preview_compatibility_and_toggle_round_trips() {
         let legacy: LauncherSettings = serde_json::from_str("{}").unwrap();

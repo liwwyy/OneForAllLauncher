@@ -6,7 +6,7 @@
 - Add automatic and explicit cache-only launches, a launch-button context menu and a per-instance Always launch Offline setting. Installed game files and Java are required.
 - Add an offline account wardrobe with local PNG skins. The source-built client hook uses shared authlib and legacy skin paths across versions/loaders and never loads for other account types. Minecraft 1.8.9/Ornithe has been tested in game by the owner.
 - Restore the automatic-update choice between Preferences and Summary during initial setup, preselect automatic updates, and allow Enter to confirm without changing existing installs' preferences.
-- Offer OneClient's default data folder during onboarding, reusing its catalog and game files while keeping fork accounts/settings separate. Recognize existing custom libraries without creating a nested data directory.
+- Default fresh setup to stock OneLauncher's active game folder, including configured custom locations, while preserving existing fork installs' paths and private accounts/settings. Add library choices under Launcher Settings → Folders and files; share catalogs, game files and managed Java without nesting or copying libraries. Protect reused libraries from old-copy cleanup.
 - Document unsigned-installer warnings, per-app Windows/macOS opening steps and macOS compatibility checks.
 - Make the scoped VanillaHUD preview workaround optional while retaining authlib-injector authentication.
 - Restore upstream artwork, use theme-aware account icons, and retain fork storage, installation, protocol and signed updater identities for upgrades and side-by-side use.

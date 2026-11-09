@@ -17,7 +17,7 @@ use crate::view::onboarding::{
 #[derive(Clone, PartialEq)]
 enum FolderChoice {
     ThisPc,
-    OneClient(PathBuf),
+    OneClient,
     AnotherDrive(PathBuf),
 }
 
@@ -30,7 +30,17 @@ impl Component for OnboardingLocation {
         let launcher = use_launcher();
         let selection = use_onboarding_selection();
 
-        let mut picked = use_state(|| FolderChoice::ThisPc);
+        // Only fresh onboarding reaches an unanswered location step. Saved installs
+        // keep their existing fork/custom path in main's startup resolution.
+        let mut picked = use_state(|| FolderChoice::OneClient);
+        let mut upstream = use_state(|| None::<Result<PathBuf, String>>);
+        use_hook(move || {
+            spawn(async move {
+                upstream.set(Some(
+                    oneclient_core::settings::data_dir::oneclient_folder().await,
+                ));
+            });
+        });
         let mut warning = use_state(|| None::<String>);
         let mut error = use_state(|| None::<String>);
         let mut waiting = use_state(|| false);
@@ -52,9 +62,7 @@ impl Component for OnboardingLocation {
             .map(|dir| dir.display().to_string())
             .unwrap_or_default();
 
-        let upstream_dir =
-            oneclient_common::paths::oneclient_default_dir().map_err(|err| err.to_string());
-        let upstream_choice = upstream_dir.clone();
+        let upstream_dir = upstream.read().clone();
 
         let confirm = move |()| {
             if *waiting.peek() {
@@ -80,8 +88,13 @@ impl Component for OnboardingLocation {
                         FolderChoice::ThisPc => {
                             oneclient_core::settings::data_dir::apply(None).await
                         }
-                        FolderChoice::OneClient(path) => {
-                            oneclient_core::settings::data_dir::apply_exact(path).await
+                        FolderChoice::OneClient => {
+                            match oneclient_core::settings::data_dir::oneclient_folder().await {
+                                Ok(path) => {
+                                    oneclient_core::settings::data_dir::apply_exact(path).await
+                                }
+                                Err(message) => Err(message),
+                            }
                         }
                         FolderChoice::AnotherDrive(path) => {
                             oneclient_core::settings::data_dir::apply(Some(path)).await
@@ -124,9 +137,12 @@ impl Component for OnboardingLocation {
             let folder = if launcher.data_dir.is_empty() {
                 match &chosen {
                     FolderChoice::ThisPc => default_dir.clone(),
-                    FolderChoice::OneClient(path) | FolderChoice::AnotherDrive(path) => {
-                        path.display().to_string()
-                    }
+                    FolderChoice::OneClient => upstream_dir
+                        .as_ref()
+                        .and_then(|result| result.as_ref().ok())
+                        .map(|path| path.display().to_string())
+                        .unwrap_or_default(),
+                    FolderChoice::AnotherDrive(path) => path.display().to_string(),
                 }
             } else {
                 launcher.data_dir.clone()
@@ -153,7 +169,7 @@ impl Component for OnboardingLocation {
                     .width(Size::fill())
                     .spacing(10.)
                     .child(choice_row(
-                        t("oneclient.onboarding.location.this_pc"),
+                        t("fork.onboarding.location.oneforall"),
                         &default_dir,
                         matches!(chosen, FolderChoice::ThisPc),
                         move |()| {
@@ -166,16 +182,14 @@ impl Component for OnboardingLocation {
                         t("fork.onboarding.location.oneclient"),
                         &upstream_dir
                             .as_ref()
+                            .and_then(|result| result.as_ref().ok())
                             .map(|path| path.display().to_string())
                             .unwrap_or_default(),
-                        matches!(chosen, FolderChoice::OneClient(_)),
-                        move |()| match &upstream_choice {
-                            Ok(path) => {
-                                picked.set(FolderChoice::OneClient(path.clone()));
-                                warning.set(None);
-                                error.set(None);
-                            }
-                            Err(message) => error.set(Some(message.clone())),
+                        matches!(chosen, FolderChoice::OneClient),
+                        move |()| {
+                            picked.set(FolderChoice::OneClient);
+                            warning.set(None);
+                            error.set(None);
                         },
                     ))
                     .child(choice_row(
@@ -190,11 +204,14 @@ impl Component for OnboardingLocation {
             )
         };
 
-        if matches!(chosen, FolderChoice::OneClient(_)) {
+        if !answered && matches!(chosen, FolderChoice::OneClient) {
             content = content.child(note(
                 t("fork.onboarding.location.shared").to_string(),
                 colors::fg_secondary(),
             ));
+            if let Some(Err(message)) = &upstream_dir {
+                content = content.child(note(message.clone(), colors::danger()));
+            }
         }
 
         if let Some(message) = warning.read().clone() {
@@ -221,7 +238,10 @@ impl Component for OnboardingLocation {
             onboarding_nav_action(
                 Some(Route::OnboardingWelcome {}),
                 next_label,
-                !running,
+                !running
+                    && (answered
+                        || !matches!(chosen, FolderChoice::OneClient)
+                        || matches!(upstream_dir, Some(Ok(_)))),
                 confirm,
             ),
         )
