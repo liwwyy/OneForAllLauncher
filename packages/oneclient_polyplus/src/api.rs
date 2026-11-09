@@ -750,7 +750,7 @@ pub async fn create_checkout(
     products: &[String],
 ) -> Result<String, PlusError> {
     let body = serde_json::json!({
-        "player": account.id.hyphenated().to_string(),
+        "player": account.game_id().hyphenated().to_string(),
         "products": products,
     });
     Ok(json_authorized::<CheckoutResponse>(

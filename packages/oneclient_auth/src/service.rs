@@ -437,7 +437,9 @@ impl AuthService {
                 .map_err(AuthError::from)
         };
         match result {
-            Ok(refreshed) => {
+            Ok(mut refreshed) => {
+                refreshed.id = existing.id;
+                refreshed.profile_id = existing.profile_id;
                 self.store
                     .lock()
                     .await

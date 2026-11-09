@@ -91,10 +91,12 @@ async fn signing_in_to_another_provider_cannot_overwrite_an_existing_account() {
     conflicting.kind = AccountKind::Custom;
     conflicting.access_token = "different-provider-token".into();
     let (events, _rx) = oneclient_events::EventBus::channel();
-    assert!(matches!(
-        store.commit_account(conflicting, &events).await,
-        Err(oneclient_auth::AuthError::AccountProviderConflict)
-    ));
+    isolate_launcher_dir();
+    let added = store.commit_account(conflicting, &events).await.unwrap();
+    assert_ne!(added.id, existing.id);
+    assert_eq!(added.game_id(), existing.game_id());
+    assert_eq!(store.users.len(), 2);
+
     assert_eq!(
         store.users[&existing.id].access_token,
         existing.access_token

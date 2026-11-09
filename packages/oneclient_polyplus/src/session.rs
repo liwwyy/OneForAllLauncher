@@ -186,7 +186,7 @@ async fn run_session(
         &mut websocket,
         &client.events,
         PING_INTERVAL,
-        account_id,
+        account.game_id(),
         restart,
         &mut watched,
         || async move {
@@ -414,7 +414,7 @@ pub(crate) async fn login(
         .header("Accept", "application/json")
         .json(&serde_json::json!({
             "accessToken": account.access_token,
-            "selectedProfile": account.id.simple().to_string(),
+            "selectedProfile": account.game_id().simple().to_string(),
             "serverId": server_id,
         }))
         .send()
@@ -477,6 +477,7 @@ mod tests {
 
     fn account(kind: oneclient_auth::AccountKind, token: &str, signed_out: bool) -> MinecraftAccount {
         MinecraftAccount {
+            profile_id: None,
             elyby_client_id: None,
             custom: None,
             id: Uuid::from_u128(1),

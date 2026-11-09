@@ -237,6 +237,7 @@ pub async fn select_profile(
         .ok_or_else(|| CustomAuthError::InvalidResponse("Unknown profile".into()))?
         .clone();
     let account = MinecraftAccount {
+        profile_id: None,
         id: profile.id,
         username: profile.name,
         access_token: response.access_token,
@@ -265,14 +266,14 @@ pub async fn refresh(account: &MinecraftAccount) -> Result<MinecraftAccount, Cus
         custom.server.endpoint(&custom.server.refresh_path)?,
         serde_json::json!({
             "accessToken": account.access_token, "clientToken": custom.client_token,
-            "selectedProfile": { "id": account.id.simple().to_string(), "name": account.username }
+            "selectedProfile": { "id": account.game_id().simple().to_string(), "name": account.username }
         }),
     )
     .await?;
     let profile = data
         .selected_profile
         .ok_or_else(|| CustomAuthError::InvalidResponse("No selected profile".into()))?;
-    if profile.id != account.id || profile.name.is_empty() {
+    if profile.id != account.game_id() || profile.name.is_empty() {
         return Err(CustomAuthError::InvalidResponse(
             "Server changed the selected profile".into(),
         ));

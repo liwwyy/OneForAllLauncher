@@ -60,14 +60,7 @@ impl CredentialsStore {
         account: MinecraftAccount,
         events: &EventBus,
     ) -> AuthResult<MinecraftAccount> {
-        if let Some(existing) = self.users.get(&account.id) {
-            if existing.kind != account.kind
-                || existing.custom.as_ref().map(|c| &c.server.api_url)
-                    != account.custom.as_ref().map(|c| &c.server.api_url)
-            {
-                return Err(AuthError::AccountProviderConflict);
-            }
-        }
+        let account = self.prepare_account(account)?;
         self.users.insert(account.id, account.clone());
 
         if self.default_user.is_none() {
@@ -80,6 +73,33 @@ impl CredentialsStore {
             .notify("Account added")
             .body(format!("Signed in as {}", account.username))
             .send();
+        Ok(account)
+    }
+
+    fn prepare_account(&self, mut account: MinecraftAccount) -> AuthResult<MinecraftAccount> {
+        let game_id = account.game_id();
+        let existing = self.users.values().find(|entry| {
+            entry.kind == account.kind && entry.game_id() == game_id
+                && entry.custom.as_ref().map(|c| &c.server.api_url)
+                    == account.custom.as_ref().map(|c| &c.server.api_url)
+        });
+        if self.users.values().any(|entry| {
+            entry.kind == account.kind
+                && entry.username.eq_ignore_ascii_case(&account.username)
+                && existing.is_none_or(|same| same.id != entry.id)
+        }) {
+            return Err(AuthError::DuplicateUsername { username: account.username });
+        }
+        if let Some(existing) = existing {
+            account.id = existing.id;
+            account.profile_id = existing.profile_id;
+        } else if self.users.contains_key(&account.id) {
+            account.profile_id = Some(game_id);
+            loop {
+                account.id = Uuid::new_v4();
+                if !self.users.contains_key(&account.id) { break; }
+            }
+        }
         Ok(account)
     }
 
@@ -126,12 +146,12 @@ impl CredentialsStore {
         if self
             .users
             .values()
-            .any(|u| u.username.eq_ignore_ascii_case(&username))
+            .any(|u| u.kind == AccountKind::Offline && u.username.eq_ignore_ascii_case(&username))
         {
             return Err(AuthError::DuplicateUsername { username });
         }
 
-        let account = offline_account(username);
+        let account = self.prepare_account(offline_account(username))?;
         self.users.insert(account.id, account.clone());
         if self.default_user.is_none() {
             self.default_user = Some(account.id);
@@ -252,4 +272,42 @@ pub(crate) fn is_transient_auth_error(err: &AuthError) -> bool {
         AuthError::Minecraft(crate::error::MinecraftAuthError::RequestError { source, .. })
             if source.is_connect() || source.is_timeout()
     )
+}
+
+#[cfg(test)]
+mod provider_identity_tests {
+    use super::*;
+
+    #[test]
+    fn same_name_requires_different_kinds_and_preserves_game_identity() {
+        let mut store = CredentialsStore::default();
+        let offline = store.add_offline_account("liwwyy".into()).unwrap();
+        let mut elyby = offline.clone();
+        elyby.kind = AccountKind::Elyby;
+        let elyby = store.prepare_account(elyby).unwrap();
+        assert_ne!(elyby.id, offline.id);
+        assert_eq!(elyby.game_id(), offline.game_id());
+        store.users.insert(elyby.id, elyby.clone());
+        let mut duplicate = elyby.clone();
+        duplicate.id = Uuid::new_v4();
+        duplicate.profile_id = None;
+        duplicate.username = "LIWWYY".into();
+        assert!(matches!(store.prepare_account(duplicate), Err(AuthError::DuplicateUsername { .. })));
+        let signed_in_again = store.prepare_account(elyby.clone()).unwrap();
+        assert_eq!(signed_in_again.id, elyby.id);
+        let raw = serde_json::to_string(&store).unwrap();
+        let restored: CredentialsStore = serde_json::from_str(&raw).unwrap();
+        assert_eq!(restored.users[&elyby.id].game_id(), offline.game_id());
+        assert_eq!(restored.default_user, Some(offline.id));
+    }
+
+    #[test]
+    fn legacy_accounts_need_no_identity_rewrite() {
+        let account = offline_account("Legacy".into());
+        let mut json = serde_json::to_value(&account).unwrap();
+        json.as_object_mut().unwrap().remove("profile_id");
+        let restored: MinecraftAccount = serde_json::from_value(json).unwrap();
+        assert_eq!(restored.id, account.id);
+        assert_eq!(restored.game_id(), account.id);
+    }
 }

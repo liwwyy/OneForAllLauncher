@@ -1668,7 +1668,7 @@ impl Actions {
     pub fn sync_chat_owner(&self, account: Option<&MinecraftAccount>) {
         let owner = account
             .filter(|account| account.is_microsoft())
-            .map(|account| account.id);
+            .map(|account| account.game_id());
         let station = self.station();
         if station.peek().chat.owner == owner {
             return;
@@ -1684,7 +1684,7 @@ impl Actions {
             return;
         }
 
-        set_invite_join(station.clone(), None);
+        set_invite_join(station, None);
         self.clear_chat_notices();
 
         if owner.is_none() {

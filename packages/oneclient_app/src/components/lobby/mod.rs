@@ -276,7 +276,7 @@ pub async fn refresh(mut state: State<LobbyState>) {
         let seen = state.peek().revision;
         let result = crate::launcher::off_ui(async {
             let account = lobby_account().await?;
-            let id = account.id;
+            let id = account.game_id();
             let failed = |err: PlusError| (Some(id), party_message(err));
             let party = party::current(&account).await.map_err(failed)?;
             let incoming = party::incoming(&account).await.map_err(failed)?;
@@ -340,7 +340,7 @@ pub fn party_message(err: PlusError) -> String {
 fn renewing_owner(stored: Option<MinecraftAccount>, allowed: bool) -> Option<Uuid> {
     stored
         .filter(|account| allowed && account.is_microsoft())
-        .map(|account| account.id)
+        .map(|account| account.game_id())
 }
 
 async fn lobby_account() -> Result<MinecraftAccount, (Option<Uuid>, String)> {
@@ -383,7 +383,7 @@ pub fn act<T, F, Fut>(
     spawn_global(async move {
         let result = crate::launcher::off_ui(async move {
             let account = party_account().await?;
-            let id = account.id;
+            let id = account.game_id();
             let value = work(account).await.map_err(party_message)?;
             Ok::<_, String>((id, value))
         })
@@ -414,14 +414,14 @@ pub fn act<T, F, Fut>(
 pub fn use_my_uuid() -> Option<Uuid> {
     try_default_account(&use_current_account())
         .filter(MinecraftAccount::is_microsoft)
-        .map(|account| account.id)
+        .map(|account| account.game_id())
 }
 
 pub fn use_player_name(player: Uuid) -> String {
     let me = try_default_account(&use_current_account());
     let profile = settled_or_loading(&use_player_profile(player.to_string(), None::<String>));
     match me {
-        Some(account) if account.id == player => account.username,
+        Some(account) if account.game_id() == player => account.username,
         _ => profile.map_or_else(|| short_player_id(player), |profile| profile.username),
     }
 }
@@ -520,6 +520,7 @@ mod tests {
     #[test]
     fn a_failed_renewal_only_keeps_a_social_account() {
         let account = |kind| MinecraftAccount {
+            profile_id: None,
             elyby_client_id: None,
             custom: None,
             id: id(1),
@@ -537,6 +538,9 @@ mod tests {
         assert_eq!(renewing_owner(Some(account(microsoft)), false), None);
         assert_eq!(renewing_owner(Some(account(offline)), true), None);
         assert_eq!(renewing_owner(None, true), None);
+        let mut colliding = account(microsoft);
+        colliding.profile_id = Some(id(2));
+        assert_eq!(renewing_owner(Some(colliding), true), Some(id(2)));
     }
 
     #[test]

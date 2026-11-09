@@ -98,7 +98,7 @@ fn account_preview(account: &MinecraftAccount) -> impl IntoElement {
                         )
                         .child(
                             label()
-                                .text(account.id.to_string())
+                                .text(account.game_id().to_string())
                                 .font_size(text_size(12.))
                                 .color(colors::fg_secondary()),
                         ),

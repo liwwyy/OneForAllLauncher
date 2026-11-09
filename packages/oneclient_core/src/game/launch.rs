@@ -459,7 +459,7 @@ async fn start(
         version_info.minecraft_arguments.as_deref(),
         &account.access_token,
         &account.username,
-        account.id,
+        account.game_id(),
         &version.id,
         &version_info.asset_index.id,
         &cwd,

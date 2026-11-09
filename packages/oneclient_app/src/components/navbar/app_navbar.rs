@@ -296,7 +296,7 @@ impl Component for NavbarRight {
             .is_none_or(|account| account.is_some_and(|account| account.is_microsoft()));
 
         let account_uuid = try_default_account(&current_account)
-            .map(|account| account.id.to_string())
+            .map(|account| account.skin_profile_key())
             .unwrap_or_else(|| uuid::Uuid::nil().to_string());
 
         let social_dispatch = dispatch.clone();

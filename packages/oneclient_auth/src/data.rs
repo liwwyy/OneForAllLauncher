@@ -13,7 +13,10 @@ pub enum AccountKind {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MinecraftAccount {
+    /// Stable launcher entry ID; legacy entries retain their Minecraft UUID.
     pub id: Uuid,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile_id: Option<Uuid>,
     pub username: String,
     pub access_token: String,
     pub refresh_token: String,
@@ -46,6 +49,10 @@ fn default_account_kind() -> AccountKind {
 }
 
 impl MinecraftAccount {
+    pub fn game_id(&self) -> Uuid {
+        self.profile_id.unwrap_or(self.id)
+    }
+
     pub fn is_microsoft(&self) -> bool {
         self.kind == AccountKind::Microsoft
     }
@@ -59,9 +66,9 @@ impl MinecraftAccount {
         if self.is_elyby() {
             format!("elyby:{}", self.username)
         } else if let Some(custom) = &self.custom {
-            format!("custom:{}:{}", self.id, custom.server.api_url)
+            format!("custom:{}:{}", self.game_id(), custom.server.api_url)
         } else {
-            self.id.to_string()
+            self.game_id().to_string()
         }
     }
 

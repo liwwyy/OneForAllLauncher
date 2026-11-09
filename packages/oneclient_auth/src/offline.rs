@@ -87,6 +87,7 @@ pub fn validate_offline_username(username: &str) -> AuthResult<()> {
 pub fn offline_account(username: String) -> MinecraftAccount {
     tracing::info!("creating offline account");
     MinecraftAccount {
+        profile_id: None,
         id: offline_uuid(&username),
         username,
         access_token: String::new(),

@@ -57,7 +57,7 @@ impl Component for SocialPanel {
 
         let (own_id, username) = account
             .flatten()
-            .map(|account| (account.id, account.username))
+            .map(|account| (account.game_id(), account.username))
             .unwrap_or_else(|| {
                 (
                     Uuid::nil(),

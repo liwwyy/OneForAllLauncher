@@ -262,6 +262,7 @@ async fn account(
         .filter(|token| !token.is_empty())
         .ok_or(ElybyAuthError::Reauthenticate)?;
     Ok(MinecraftAccount {
+        profile_id: None,
         id,
         username: profile.name,
         access_token: token.access_token,
@@ -306,7 +307,7 @@ async fn refresh_at(
     let token = serde_json::from_value(json(response, "refresh token").await?)
         .map_err(|_| ElybyAuthError::InvalidResponse("refresh token"))?;
     let refreshed = account(client, api, client_id, token, Some(&existing.refresh_token)).await?;
-    if refreshed.id != existing.id {
+    if refreshed.game_id() != existing.game_id() {
         return Err(ElybyAuthError::InvalidResponse(
             "refreshed profile identity",
         ));
@@ -511,6 +512,7 @@ mod tests {
         ])
         .await;
         let existing = MinecraftAccount {
+            profile_id: None,
             id: Uuid::parse_str(ID).unwrap(),
             username: "ElyPlayer".into(),
             access_token: "old-access".into(),

@@ -348,6 +348,7 @@ pub async fn refresh_microsoft_account(
     tracing::debug!("refreshing Microsoft account token");
     let msa = refresh_msa_token(client, &creds.refresh_token).await?;
     let mut account = account_from_msa_token(client, msa, |_, _, _| {}).await?;
+    account.profile_id = creds.profile_id;
     account.id = creds.id;
     Ok(account)
 }
@@ -551,6 +552,7 @@ async fn account_from_msa_token(
     on_progress("Loading profile", AUTH_STEPS, AUTH_STEPS);
 
     Ok(MinecraftAccount {
+        profile_id: None,
         id: profile.id.unwrap_or_default(),
         username: profile.name,
         access_token: minecraft_token.access_token,
