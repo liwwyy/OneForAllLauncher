@@ -1,4 +1,4 @@
-## OneForAllLauncher 2.10.0 — pending release validation
+## OneForAllLauncher 2.10.0 — upstream OneClient 2.10.0
 
 - Rebuild the fork on stable upstream OneClient 2.10.0, retaining its presentation, components and instance export behavior.
 - Preserve standalone offline accounts, both name generators, optional online-name lookup, invalid-name overrides, Ely.by and custom Yggdrasil sign-in.
@@ -13,5 +13,6 @@
 - Restore upstream artwork, use theme-aware account icons, and retain fork storage, installation, protocol and signed updater identities for upgrades and side-by-side use.
 - Limit fork contributions to offline accounts, Ely.by and custom authentication support. Follow upstream stable releases, usually within a day after validation.
 
-The owner must complete UI, game and packaged-upgrade validation before publication.
+The owner confirms shared OneClient libraries, offline launching, local skins on Ornithe and modern versions, and opening OneConfig HUD with Ely.by. Packaged builds are produced by CI. macOS hardware testing has not been available to the maintainer.
+Windows installers and macOS bundles are not OS-signed/notarized; signed updater packages retain the fork's existing verification identity. See [installation guidance](https://github.com/liwwyy/OneForAllLauncher/blob/main/docs/installation-troubleshooting.md).
 Older release notes remain in [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases).

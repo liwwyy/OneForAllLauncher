@@ -171,6 +171,11 @@ Sync the fork to stable OneLauncher/OneClient releases, rather than following
 individual upstream commits or development builds. The usual update target is
 within a day of an upstream stable release; do not promise an unconditional
 deadline or bypass validation to meet it.
+The release workflow runs on pushes to `main` and supports manual dispatch. It
+skips already tagged/released versions on automatic pushes and publishes after
+successful packaging/signing. Keep existing releases immutable. The stable-sync
+badge checks upstream release ancestry hourly and writes only to `badges`;
+badge updates must not create source commits or trigger release builds.
 Prepare signed update artifacts and notes for the exact release commit, verify
 upgrade continuity and side-by-side installation, and obtain the owner's manual
 UI test result before publishing. Do not describe planned features as released.

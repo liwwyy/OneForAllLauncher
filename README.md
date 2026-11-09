@@ -13,6 +13,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 <div>
 
 [![Latest GitHub release](https://img.shields.io/github/v/release/liwwyy/OneForAllLauncher?label=Release&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases/latest)
+[![Stable upstream sync](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fliwwyy%2FOneForAllLauncher%2Fbadges%2Fupstream-sync.json&style=for-the-badge&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/upstream_sync.yml)
 [![GitHub Repo stars](https://img.shields.io/github/stars/liwwyy/OneForAllLauncher?label=Stars&style=for-the-badge&color=%23f5c2e7&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIC05NjAgOTYwIDk2MCIgd2lkdGg9IjI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoIGQ9Im0zNTQtMjQ3IDEyNi03NiAxMjYgNzctMzMtMTQ0IDExMS05Ni0xNDYtMTMtNTgtMTM2LTU4IDEzNS0xNDYgMTMgMTExIDk3LTMzIDE0M1pNMjMzLTgwbDY1LTI4MUw4MC01NTBsMjg4LTI1IDExMi0yNjUgMTEyIDI2NSAyODgtMjUtMjE4IDE4OSA2NSAyODEtMjQ3LTE0OUwyMzMtODBabTI0Ny0zNTBaIiBzdHlsZT0iZmlsbDogcmdiKDI0NSwgMTk0LCAyMzEpOyIvPgo8L3N2Zz4%3D)](https://github.com/liwwyy/OneForAllLauncher/stargazers) [![GitHub release downloads](https://img.shields.io/github/downloads/liwwyy/OneForAllLauncher/total?label=Downloads&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases)
 
 </div>
@@ -144,7 +145,9 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers now follow upstream OneLauncher: **2.10.0** targets upstream 2.10.0 plus the fork’s account features. This checkout is awaiting release validation. GitHub release tags retain the `oneforall-` prefix.
+Version numbers now follow upstream OneLauncher: **2.10.0** targets upstream 2.10.0 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
+
+Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 
 Setup shows **automatic updates selected by default**. Press **Enter** or **Next** to confirm it, or select **Update manually** to opt out. Viewing the page alone does not enable updates, and existing installations retain their saved preference. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
 
@@ -168,6 +171,8 @@ Code, documentation and translation contributions supporting those account featu
 ## Fork Sync Notice
 
 This fork follows **stable OneLauncher/OneClient releases** rather than individual upstream commits or development builds. It will usually be updated within a day of an upstream stable release.
+
+The **Upstream sync** badge checks hourly whether this fork's `main` includes the latest stable OneClient release commit. It shows **Up to date**, **Update available**, or **Check unavailable**. It describes the source branch; the Release badge separately shows the latest published build.
 
 If an update is taking longer, you can contact me via **[Discord](https://discord.com/users/1476376719668674620)** or open a **[GitHub Issue](https://github.com/liwwyy/OneForAllLauncher/issues)**.
 

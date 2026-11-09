@@ -2,8 +2,9 @@
 
 This checkout targets stable upstream `oneclient-2.10.0`, commit
 `3968fb95f98569de41ec341ef0da2ed63802cfc4` (released 2026-11-08).
-The implementation is on the local `rewrite/2.10.0` branch. Remote `main` remains
-`71699a140a820538335f67924961973c501eec41`; no tags or release assets were removed.
+The initial validation used the local `rewrite/2.10.0` branch while remote `main`
+was `71699a140a820538335f67924961973c501eec41`; no tags or release assets were removed.
+See [the maintainer handoff](maintainer-handoff.md) for current publication instructions.
 
 ## Automated checks (2026-11-09)
 
@@ -205,9 +206,9 @@ Enabled GitHub's managed default setup with the Extended query suite, standard
 hosted runners and remote/local sources where supported. The
 [initial setup run](https://github.com/liwwyy/OneForAllLauncher/actions/runs/42659907902)
 includes Rust, Java/Kotlin, Python and GitHub Actions. It analyzes the published
-`main` commit `71699a140a820538335f67924961973c501eec41`, not this unpublished
-rewrite. No source commit, tag or release was pushed. The rewrite needs its own
-scan after an authorized push. See [configuration and limits](security-verification.md#codeql-configuration).
+`main` commit `71699a140a820538335f67924961973c501eec41`, not the rewritten
+checkout. At setup time, no source commit, tag or release had been pushed. The
+rewrite needs analysis of its own published commit. See [configuration and limits](security-verification.md#codeql-configuration).
 
 All four analysis jobs completed successfully. GitHub confirms all four languages,
 the Extended suite and a configured weekly schedule. The baseline contains
@@ -230,8 +231,9 @@ Shared library operation and offline launch were already confirmed. This records
 the owner's report, not automated rendering verification or full platform coverage.
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
-   light/dark and Minecraft themes. The README gallery deliberately uses the
-   owner's existing 2.9 screenshots pending replacements. Check all three data
+   light/dark and Minecraft themes. The owner refreshed the onboarding and
+   account-manager screenshots; other account-dialog images remain from 2.9.
+   Check all three data
    location choices, including a legacy/custom upstream library, then restart to
    verify persistence. Verify fresh setup's OneClient default and an upgraded
    fork's unchanged old location. Switch back to the OneForAllLauncher library in

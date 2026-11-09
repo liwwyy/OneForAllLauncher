@@ -71,8 +71,8 @@ completed successfully for all four languages on published `main` at
 `71699a140a820538335f67924961973c501eec41`. It reported **260 open alerts**
 (245 Rust, 3 Java, 11 Python and 1 Actions). These findings remain untriaged;
 a successful analysis job does not mean the code has no vulnerabilities.
-The local `rewrite/2.10.0` changes have not been pushed and are not covered by that
-run. Check the [code-scanning results](https://github.com/liwwyy/OneForAllLauncher/security/code-scanning)
+That run predates the `rewrite/2.10.0` changes and does not cover them. A push of
+the rewrite to `main` triggers its own analysis. Check the [code-scanning results](https://github.com/liwwyy/OneForAllLauncher/security/code-scanning)
 and the analyzed commit before citing a result for a release.
 
 GitHub manages the analysis workflow; no `.github/workflows/codeql.yml` is needed.

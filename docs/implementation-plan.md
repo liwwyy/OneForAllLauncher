@@ -2,8 +2,8 @@
 
 Status: implementation authorized and present on the local `rewrite/2.10.0`
 branch. Automated validation is recorded in [validation.md](validation.md).
-UI/game and packaged-upgrade acceptance checks remain with the owner. No remote
-history rewrite or release has been published.
+UI/game and packaged-upgrade acceptance checks remain with the owner. See the
+[maintainer handoff](maintainer-handoff.md) for publication instructions and status.
 
 Build the agreed replacement fork history on stable upstream `oneclient-2.10.0`
 (`3968fb95f98569de41ec341ef0da2ed63802cfc4`). Retain all existing account features,

@@ -2,6 +2,8 @@ name: OneForAllLauncher Release Build
 
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       prerelease:
@@ -27,6 +29,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      should_release: ${{ steps.version.outputs.should_release }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Resolve fork version
@@ -37,19 +40,23 @@ jobs:
           set -euo pipefail
           VERSION="$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
           TAG="oneforall-$VERSION"
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG already exists. Bump the workspace version before releasing again."
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1 || \
+             gh release view "$TAG" >/dev/null 2>&1; then
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              echo "Release or tag $TAG already exists; skipping automatic publication."
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Release or tag $TAG already exists. Bump the workspace version before releasing again."
             exit 1
           fi
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::Release $TAG already exists."
-            exit 1
-          fi
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
     timeout-minutes: 120
     permissions:
       contents: read
