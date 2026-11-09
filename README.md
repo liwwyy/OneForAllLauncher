@@ -23,7 +23,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 <details>
   <summary>Browse the screenshot gallery</summary>
 
-  <p>Account screens from version 2.9.0. Updated screenshots will follow manual UI testing.</p>
+  <p>The account screenshots are from version 2.9.0. The offline launch screenshot was provided by the maintainer.</p>
 
   <table>
     <tr>
@@ -46,6 +46,12 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
         <sub>Ely.by sign-in</sub>
       </td>
     </tr>
+    <tr>
+      <td align="center" colspan="2">
+        <a href="docs/screenshots/offline-launch.png"><img src="docs/screenshots/offline-launch.png" alt="Offline launch controls" width="840" /></a><br />
+        <sub>Offline launch</sub>
+      </td>
+    </tr>
   </table>
 
 </details>
@@ -56,6 +62,9 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 > This is a fork modified and maintained with **AI**.
 
 ## Features
+
+See [code review and release verification](docs/security-verification.md) for the
+recommended free checks, what they establish, and their current status.
 
 - Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, random characters/username generators, and an optional online-name check (off by default).
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.

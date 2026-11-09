@@ -192,6 +192,12 @@ rendering tests were excluded. The Linux debug build passed, Clippy completed
 with the same 11 upstream diagnostics, and formatting/link/diff checks passed.
 No screenshots or automated visual comparisons were performed.
 
+The maintainer-provided offline-launch image is included in the README gallery.
+[Security-verification notes](security-verification.md) document researched free
+CodeQL, OpenSSF Scorecard, review and build-provenance options and their limits.
+GitHub reported CodeQL default setup as not configured during this review. No
+remote security setting was changed and no new scan or attestation is claimed.
+
 ## Manual acceptance before release
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
