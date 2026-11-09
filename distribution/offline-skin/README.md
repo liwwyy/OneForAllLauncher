@@ -112,6 +112,7 @@ native URL-creation patterns, checks the returned PNG bytes and verifies that
 remote HTTPS and other local URLs are preserved. This reproduces the reported
 transport failure without screenshots or launching a game. Use Java 25+.
 
-The owner confirmed Ornithe 1.8.9 rendering but reported a missing skin on 26.3
-before the loader/transport corrections. That game/pack still needs an in-game recheck;
-passing library/classloader tests alone is not evidence of visible rendering.
+The owner has confirmed Ornithe 1.8.9 rendering and now reports that local skins
+also work on modern versions after the version 4 transport correction. This is
+owner testing of those setups, not a claim that every version, loader and skin mod
+has been verified. Passing library/classloader tests alone does not verify rendering.

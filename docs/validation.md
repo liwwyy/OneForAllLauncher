@@ -195,10 +195,35 @@ No screenshots or automated visual comparisons were performed.
 The maintainer-provided offline-launch image is included in the README gallery.
 [Security-verification notes](security-verification.md) document researched free
 CodeQL, OpenSSF Scorecard, review and build-provenance options and their limits.
-GitHub reported CodeQL default setup as not configured during this review. No
-remote security setting was changed and no new scan or attestation is claimed.
+GitHub reported CodeQL default setup as not configured during the initial
+research. It was subsequently enabled at the owner's request; see below. No
+build attestation has been added.
+
+## Follow-up: managed CodeQL setup
+
+Enabled GitHub's managed default setup with the Extended query suite, standard
+hosted runners and remote/local sources where supported. The
+[initial setup run](https://github.com/liwwyy/OneForAllLauncher/actions/runs/42659907902)
+includes Rust, Java/Kotlin, Python and GitHub Actions. It analyzes the published
+`main` commit `71699a140a820538335f67924961973c501eec41`, not this unpublished
+rewrite. No source commit, tag or release was pushed. The rewrite needs its own
+scan after an authorized push. See [configuration and limits](security-verification.md#codeql-configuration).
+
+All four analysis jobs completed successfully. GitHub confirms all four languages,
+the Extended suite and a configured weekly schedule. The baseline contains
+**260 open alerts**: 245 Rust, 3 Java, 11 Python and 1 Actions. GitHub's query
+severity labels are 8 critical, 250 high and 2 medium; 237 findings use Rust's
+path-injection rule. These alerts remain untriaged and none were dismissed.
+Review the new rewrite scan before release rather than treating job success as
+security clearance. This documentation-only follow-up passed new local Markdown-link
+and diff whitespace checks; no application rebuild was needed.
 
 ## Manual acceptance before release
+
+Owner update (2026-11-09): offline skins now work on modern versions after the
+version 4 correction, in addition to the previously confirmed Ornithe 1.8.9 setup.
+Shared library operation and offline launch were already confirmed. This records
+the owner's report, not automated rendering verification or full platform coverage.
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
    light/dark and Minecraft themes. The README gallery deliberately uses the
@@ -220,13 +245,13 @@ remote security setting was changed and no new scan or attestation is claimed.
    credentials, selected account, player name and game UUID. Offline mode does
    not enable authenticated multiplayer. Test equal names on different providers
    and reject a second equal name on the same provider.
-4. Minecraft 1.8.9/Ornithe local skins have now been confirmed in game by the
-   owner. Recheck the reported 26.3/Fabric failure with the version 4 hook and its
-   activation/local-texture/HTTPS-restoration messages. Manually test Vanilla/Fabric/Forge/NeoForge/Quilt
-   and representative old and new versions as available: choose a PNG, switch classic/slim, restart and
-   restore the default. Verify only the local player's skin changes. Other
-   account kinds must receive no hook, including when launched offline. Versions
-   before 1.8 use the classic model. Check installed skin mods separately.
+4. Minecraft 1.8.9/Ornithe and modern-version local skins have been confirmed in
+   game by the owner. Continue checking untested Vanilla/Fabric/Forge/NeoForge/Quilt
+   setups and representative old and new versions as available: choose a PNG,
+   switch classic/slim, restart and restore the default. Verify only the local
+   player's skin changes. Other account kinds must receive no hook, including
+   when launched offline. Versions before 1.8 use the classic model. Check
+   installed skin mods separately.
 
 5. Test current VanillaHUD 3.5.10 with Ely.by and custom accounts, with the preview
    workaround disabled and enabled. Exercise the OneConfig tab-list/head editor

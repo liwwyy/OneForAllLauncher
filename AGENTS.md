@@ -135,6 +135,11 @@ diff checks rather than application builds. Agent tests and prerequisites are
 documented in `distribution/elyby-preview-compat/README.md`. They do not replace
 testing the actual game/mod combination with the workaround enabled and disabled.
 
+GitHub uses managed CodeQL default setup; see `docs/security-verification.md`.
+Do not add a duplicate CodeQL workflow without intentionally migrating that
+configuration. Before release, review the scan for the exact published commit;
+a successful analysis job does not mean there are no alerts.
+
 **Do not take screenshots or perform automated visual comparisons unless the
 owner explicitly requests them. The owner manually tests UI changes.** Report
 which checks ran and which behaviors still need manual verification. Do not claim
