@@ -1,0 +1,92 @@
+[
+  {
+    "minecraft": "b1.7.3",
+    "url": "https://piston-meta.mojang.com/v1/packages/44f6969326bd45aa00dcd3c4ca3a7c05ebb24c04/b1.7.3.json",
+    "sha1": "44f6969326bd45aa00dcd3c4ca3a7c05ebb24c04"
+  },
+  {
+    "minecraft": "1.6.4",
+    "url": "https://piston-meta.mojang.com/v1/packages/b71bae449192fbbe1582ff32fb3765edf0b9b0a8/1.6.4.json",
+    "sha1": "b71bae449192fbbe1582ff32fb3765edf0b9b0a8"
+  },
+  {
+    "minecraft": "1.7.2",
+    "url": "https://piston-meta.mojang.com/v1/packages/c2e8ecbf355760a74c93d7210767fa043d53f27c/1.7.2.json",
+    "sha1": "c2e8ecbf355760a74c93d7210767fa043d53f27c"
+  },
+  {
+    "minecraft": "1.7.5",
+    "url": "https://piston-meta.mojang.com/v1/packages/4afb628501a6a206b80a47ab4f29ea6b98caac90/1.7.5.json",
+    "sha1": "4afb628501a6a206b80a47ab4f29ea6b98caac90"
+  },
+  {
+    "minecraft": "1.7.6",
+    "url": "https://piston-meta.mojang.com/v1/packages/b6dd3e6496ad415f0c57867dea1f97710d5f184c/1.7.6.json",
+    "sha1": "b6dd3e6496ad415f0c57867dea1f97710d5f184c"
+  },
+  {
+    "minecraft": "1.7.10",
+    "url": "https://piston-meta.mojang.com/v1/packages/ed5d8789ed29872ea2ef1c348302b0c55e3f3468/1.7.10.json",
+    "sha1": "ed5d8789ed29872ea2ef1c348302b0c55e3f3468"
+  },
+  {
+    "minecraft": "1.8.9",
+    "url": "https://piston-meta.mojang.com/v1/packages/d546f1707a3f2b7d034eece5ea2e311eda875787/1.8.9.json",
+    "sha1": "d546f1707a3f2b7d034eece5ea2e311eda875787"
+  },
+  {
+    "minecraft": "1.12.2",
+    "url": "https://piston-meta.mojang.com/v1/packages/832d95b9f40699d4961394dcf6cf549e65f15dc5/1.12.2.json",
+    "sha1": "832d95b9f40699d4961394dcf6cf549e65f15dc5"
+  },
+  {
+    "minecraft": "1.16.5",
+    "url": "https://piston-meta.mojang.com/v1/packages/fba9f7833e858a1257d810d21a3a9e3c967f9077/1.16.5.json",
+    "sha1": "fba9f7833e858a1257d810d21a3a9e3c967f9077"
+  },
+  {
+    "minecraft": "1.19.4",
+    "url": "https://piston-meta.mojang.com/v1/packages/c3a51315dfc64d6729394adda6971fa00bbb9a65/1.19.4.json",
+    "sha1": "c3a51315dfc64d6729394adda6971fa00bbb9a65"
+  },
+  {
+    "minecraft": "1.20.1",
+    "url": "https://piston-meta.mojang.com/v1/packages/72ae93b0934df5541860e3e6b72cf883c74da491/1.20.1.json",
+    "sha1": "72ae93b0934df5541860e3e6b72cf883c74da491"
+  },
+  {
+    "minecraft": "1.20.2",
+    "url": "https://piston-meta.mojang.com/v1/packages/68f87c7ec41d1471493671899c28cc4202b00a11/1.20.2.json",
+    "sha1": "68f87c7ec41d1471493671899c28cc4202b00a11"
+  },
+  {
+    "minecraft": "1.20.4",
+    "url": "https://piston-meta.mojang.com/v1/packages/3753ef41f9540d84b13d8c203a48cc1afecc90d5/1.20.4.json",
+    "sha1": "3753ef41f9540d84b13d8c203a48cc1afecc90d5"
+  },
+  {
+    "minecraft": "1.21.1",
+    "url": "https://piston-meta.mojang.com/v1/packages/82ba6501da174a665c1787775f946487422f2432/1.21.1.json",
+    "sha1": "82ba6501da174a665c1787775f946487422f2432"
+  },
+  {
+    "minecraft": "1.21.11",
+    "url": "https://piston-meta.mojang.com/v1/packages/35f8a9bc4874e2c95e51b3ad21e043a33776f7c2/1.21.11.json",
+    "sha1": "35f8a9bc4874e2c95e51b3ad21e043a33776f7c2"
+  },
+  {
+    "minecraft": "26.1",
+    "url": "https://piston-meta.mojang.com/v1/packages/90d81d9cd00c1ce55eb2b40aad4f1112bb58f12a/26.1.json",
+    "sha1": "90d81d9cd00c1ce55eb2b40aad4f1112bb58f12a"
+  },
+  {
+    "minecraft": "26.2",
+    "url": "https://piston-meta.mojang.com/v1/packages/09165f570b16394790c4e37c93b0918729615d17/26.2.json",
+    "sha1": "09165f570b16394790c4e37c93b0918729615d17"
+  },
+  {
+    "minecraft": "26.3",
+    "url": "https://piston-meta.mojang.com/v1/packages/80608ff6753705b6a82e2cb86a5937d4d233abd4/26.3.json",
+    "sha1": "80608ff6753705b6a82e2cb86a5937d4d233abd4"
+  }
+]

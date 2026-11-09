@@ -23,6 +23,7 @@ mod folder_watch;
 mod image;
 mod java;
 mod logs;
+mod local_skin;
 mod migration;
 mod mutations;
 mod package_updates;
@@ -101,7 +102,7 @@ pub use packages::{
     use_package_categories, use_package_meta_batch, use_package_project, use_package_search,
     use_package_versions_when, use_project_web_urls, version_list, versions_total,
 };
-pub use player_profile::use_player_profile;
+pub use player_profile::{use_player_profile, use_player_profile_when};
 pub use screenshots::{
     ScreenshotAction, UseScreenshotAction, invalidate_screenshots_queries, try_cluster_screenshots,
     use_cluster_screenshots, use_local_image, use_screenshot_action, use_screenshot_folder_watch,
@@ -110,7 +111,7 @@ pub use settings_profiles::{
     try_game_profile, use_cluster_profile, use_cluster_settings, use_game_profile,
     use_named_profiles,
 };
-pub use skin::use_player_skin;
+pub use skin::{use_player_skin, use_player_skin_when};
 pub use state::{query_error, query_is_busy, query_is_loading, settled_or_loading};
 pub use storage::{
     DiscardLeftoversKeys, DiscardLeftoversMutation, LeftoversQuery, StorageAction,
@@ -133,3 +134,5 @@ pub use worlds::{
     try_world_size, use_cluster_worlds, use_saves_folder_watch, use_world_datapacks,
     use_world_size,
 };
+
+pub use local_skin::{LocalSkinQuery, use_local_skin};

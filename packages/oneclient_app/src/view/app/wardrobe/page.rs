@@ -789,6 +789,7 @@ impl Component for Wardrobe {
                 account: account.id,
             }
             .into_element(),
+            Some(account) if account.is_offline() => super::local::LocalWardrobe { account }.into_element(),
             Some(_) => centered_note(t("oneclient.wardrobe.account.not_microsoft")),
             None if query_is_loading(&current) => {
                 centered_spinner(t("oneclient.wardrobe.account.loading"))

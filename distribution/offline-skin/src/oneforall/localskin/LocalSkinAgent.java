@@ -1,0 +1,153 @@
+package oneforall.localskin;
+
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
+import org.objectweb.asm.*;
+
+/** Loader-independent authlib/legacy hooks, retaining the verified Ornithe renderer. */
+public final class LocalSkinAgent implements ClassFileTransformer {
+    private static final String PLAYER = "net/minecraft/unmapped/C_23527099";
+    private static final String IDENTIFIER = "net/minecraft/unmapped/C_22168528";
+
+    public static void premain(String arguments, Instrumentation instrumentation) {
+        try {
+            if (Boolean.getBoolean("oneforall.localSkin.offlineAccount")
+                    && System.getProperty("oneforall.localSkin.path") != null
+                    && LocalTextures.initialize()) {
+                instrumentation.addTransformer(new LocalSkinAgent());
+            }
+        } catch (Throwable error) {
+            // An optional cosmetic must not abort the JVM if its bridge is unavailable.
+            System.err.println("[OneForAll local skin] Skin bridge unavailable; keeping the default skin.");
+        }
+    }
+
+    @Override
+    public byte[] transform(ClassLoader loader, String name, Class<?> redefining,
+                            ProtectionDomain domain, byte[] bytes) {
+        if (loader == null || name == null || name.startsWith("java/") || name.startsWith("javax/")
+                || name.startsWith("sun/") || name.startsWith("jdk/") || name.startsWith("oneforall/")) return null;
+        boolean session = name.equals("com/mojang/authlib/yggdrasil/YggdrasilMinecraftSessionService")
+                || name.equals("com/mojang/authlib/services/MinecraftServicesSessionService");
+        boolean ornithe = PLAYER.equals(name) && Boolean.getBoolean("oneforall.localSkin.ornithe189");
+        if (!session && !ornithe && !usesUrl(bytes)) return null;
+        try { Class.forName("oneforall.localskin.LocalTextures", false, loader); }
+        catch (ClassNotFoundException ignored) { return null; }
+        if (session) return authlib(bytes);
+        if (!ornithe) return legacy(bytes);
+        try {
+            ClassReader reader = new ClassReader(bytes);
+            ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+            reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                                 String signature, String[] exceptions) {
+                    MethodVisitor original = super.visitMethod(access, name, descriptor, signature, exceptions);
+                    final boolean skin = name.equals("m_68930603") && descriptor.equals("()L" + IDENTIFIER + ";");
+                    final boolean model = name.equals("m_63406370") && descriptor.equals("()Ljava/lang/String;");
+                    if (!skin && !model) return original;
+                    return new MethodVisitor(Opcodes.ASM9, original) {
+                        @Override
+                        public void visitCode() {
+                            super.visitCode();
+                            visitVarInsn(Opcodes.ALOAD, 0);
+                            visitMethodInsn(Opcodes.INVOKESTATIC, "oneforall/localskin/LocalSkin",
+                                    skin ? "skin" : "model", "(Ljava/lang/Object;)Ljava/lang/Object;", false);
+                            visitInsn(Opcodes.DUP);
+                            Label fallback = new Label();
+                            visitJumpInsn(Opcodes.IFNULL, fallback);
+                            visitTypeInsn(Opcodes.CHECKCAST, skin ? IDENTIFIER : "java/lang/String");
+                            visitInsn(Opcodes.ARETURN);
+                            visitLabel(fallback);
+                            visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[]{"java/lang/Object"});
+                            visitInsn(Opcodes.POP);
+                        }
+                    };
+                }
+            }, 0);
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[OneForAll local skin] Unsupported player class; keeping the default skin.");
+            return null;
+        }
+    }
+    private byte[] authlib(byte[] bytes) {
+        try {
+            ClassReader reader = new ClassReader(bytes);
+            ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+            reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+                @Override public MethodVisitor visitMethod(int access, final String name, String desc,
+                                                           String signature, String[] exceptions) {
+                    MethodVisitor original = super.visitMethod(access, name, desc, signature, exceptions);
+                    Type[] args = Type.getArgumentTypes(desc);
+                    final Type result = Type.getReturnType(desc);
+                    boolean operation = name.equals("getTextures") || name.equals("getPackedTextures")
+                            || name.equals("unpackTextures") || name.equals("fillProfileProperties") || name.equals("fetchProfile");
+                    if (!operation || (access & Opcodes.ACC_STATIC) != 0 || args.length == 0
+                            || args[0].getSort() != Type.OBJECT || result.getSort() != Type.OBJECT) return original;
+                    String subject = args[0].getClassName();
+                    if (!subject.equals("java.util.UUID") && !subject.equals("com.mojang.authlib.GameProfile")
+                            && !subject.equals("com.mojang.authlib.properties.Property")) return original;
+                    return new MethodVisitor(Opcodes.ASM9, original) {
+                        @Override public void visitCode() {
+                            super.visitCode();
+                            visitVarInsn(Opcodes.ALOAD, 0);
+                            visitVarInsn(Opcodes.ALOAD, 1);
+                            visitLdcInsn(name);
+                            visitLdcInsn(result.getClassName());
+                            visitMethodInsn(Opcodes.INVOKESTATIC, "oneforall/localskin/LocalTextures", "resolve",
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;", false);
+                            visitInsn(Opcodes.DUP);
+                            Label fallback = new Label();
+                            visitJumpInsn(Opcodes.IFNULL, fallback);
+                            visitTypeInsn(Opcodes.CHECKCAST, result.getInternalName());
+                            visitInsn(Opcodes.ARETURN);
+                            visitLabel(fallback);
+                            visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[]{"java/lang/Object"});
+                            visitInsn(Opcodes.POP);
+                        }
+                    };
+                }
+            }, 0);
+            return writer.toByteArray();
+        } catch (RuntimeException error) {
+            System.err.println("[OneForAll local skin] Unsupported authlib; keeping the default skin.");
+            return null;
+        }
+    }
+
+    private static boolean usesUrl(byte[] bytes) {
+        byte[] needle = {'j', 'a', 'v', 'a', '/', 'n', 'e', 't', '/', 'U', 'R', 'L'};
+        outer: for (int i = 0; i <= bytes.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) if (bytes[i + j] != needle[j]) continue outer;
+            return true;
+        }
+        return false;
+    }
+
+    private byte[] legacy(byte[] bytes) {
+        // Only classes calling URL(String) need a legacy rewrite. No JDK classes are changed.
+        final boolean[] changed = {false};
+        ClassReader reader = new ClassReader(bytes);
+        ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+        reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+            @Override public MethodVisitor visitMethod(int access, String name, String desc,
+                                                       String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, desc, signature, exceptions)) {
+                    @Override public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+                        if (opcode == Opcodes.INVOKESPECIAL && owner.equals("java/net/URL")
+                                && name.equals("<init>") && desc.equals("(Ljava/lang/String;)V")) {
+                            changed[0] = true;
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "oneforall/localskin/LocalTextures", "legacyUrl",
+                                    "(Ljava/lang/String;)Ljava/lang/String;", false);
+                        }
+                        super.visitMethodInsn(opcode, owner, name, desc, itf);
+                    }
+                };
+            }
+        }, 0);
+        return changed[0] ? writer.toByteArray() : null;
+    }
+
+}

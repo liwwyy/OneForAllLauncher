@@ -21,25 +21,32 @@ fn main() {
                 out.status.success() && (String::from_utf8_lossy(&out.stdout).starts_with("Python 3.")
                     || String::from_utf8_lossy(&out.stderr).starts_with("Python 3."))
             }))
-            .expect("Building the preview agent requires Python 3. Install it or set PYTHON to its executable path.").into()
+            .expect("Building the Java agents requires Python 3. Install it or set PYTHON to its executable path.").into()
     });
-    let output = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("elyby-preview-compat.jar");
-    let result = Command::new(python)
-        .arg(agent.join("build.py"))
-        .arg("--output")
-        .arg(&output)
-        .output()
-        .expect("Could not run the Java preview agent build script");
-    if !result.status.success() {
-        panic!(
-            "Could not compile the preview agent from source. Install Python 3 and JDK 17+ (or set JAVA_HOME/JAVAC).\n{}\n{}",
-            String::from_utf8_lossy(&result.stdout),
-            String::from_utf8_lossy(&result.stderr)
+    for (folder, filename) in [
+        ("elyby-preview-compat", "elyby-preview-compat.jar"),
+        ("offline-skin", "offline-skin.jar"),
+    ] {
+        let agent = workspace.join("distribution").join(folder);
+        println!("cargo:rerun-if-changed={}", agent.display());
+        let output = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join(filename);
+        let result = Command::new(&python)
+            .arg(agent.join("build.py"))
+            .arg("--output")
+            .arg(&output)
+            .output()
+            .expect("Could not run the Java agent build script");
+        if !result.status.success() {
+            panic!(
+                "Could not compile the Java agents from source. Install Python 3 and JDK 17+ (or set JAVA_HOME/JAVAC).\n{}\n{}",
+                String::from_utf8_lossy(&result.stdout),
+                String::from_utf8_lossy(&result.stderr)
+            );
+        }
+        assert!(
+            output.is_file(),
+            "Agent build did not produce {}",
+            output.display()
         );
     }
-    assert!(
-        output.is_file(),
-        "Agent build did not produce {}",
-        output.display()
-    );
 }

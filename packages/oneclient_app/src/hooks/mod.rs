@@ -334,3 +334,6 @@ pub fn use_microsoft_login_status() -> Option<LoginProgress> {
 pub use queries::{use_begin_elyby_login, use_finish_elyby_login, use_cancel_elyby_login};
 
 pub use queries::{BisectAction, BisectMutation, use_bisect, use_bisect_mutation, use_imported_modpacks, use_modpack_sources};
+
+pub use queries::{LocalSkinQuery, use_local_skin};
+pub use queries::use_player_skin_when;

@@ -12,6 +12,7 @@ pub mod game;
 pub mod images;
 mod java_store;
 pub mod logger;
+pub mod local_skin;
 pub mod migration;
 pub mod recovery;
 pub mod relocate;

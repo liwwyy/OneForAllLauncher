@@ -418,6 +418,11 @@ async fn start(
         updated,
     )?;
 
+    let local_skin = crate::local_skin::launch_files(account).await?;
+    if let Some((jar, _, _)) = &local_skin {
+        classpaths.push(if cfg!(windows) { ';' } else { ':' });
+        classpaths.push_str(&jar.to_string_lossy());
+    }
     let preview_agent = if account.authlib_url().is_some() && state.settings.read().preview_compatibility {
         super::elyby::preview_jar(&cluster.mc_version).await?
     } else {
@@ -442,6 +447,16 @@ async fn start(
         &java.os_arch,
         java.major,
     )?;
+
+    if let Some((jar, skin, slim)) = local_skin {
+        jvm_args.push(format!("-javaagent:{}", jar.display()));
+        jvm_args.push("-Doneforall.localSkin.offlineAccount=true".into());
+        jvm_args.push(format!("-Doneforall.localSkin.path={}", skin.display()));
+        jvm_args.push(format!("-Doneforall.localSkin.slim={slim}"));
+        jvm_args.push(format!("-Doneforall.localSkin.uuid={}", account.game_id()));
+        jvm_args.push(format!("-Doneforall.localSkin.username={}", account.username));
+        jvm_args.push(format!("-Doneforall.localSkin.ornithe189={}", cluster.mc_version == "1.8.9" && cluster.mc_loader == oneclient_common::GameLoader::Ornithe));
+    }
 
     let mods_dir = paths::cluster_mods_dir(&cluster.folder_name)?;
     if let Some(arg) = crate::game::mods_folder_argument(

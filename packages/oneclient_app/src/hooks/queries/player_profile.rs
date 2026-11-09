@@ -141,12 +141,20 @@ pub fn use_player_profile(
     uuid: impl Into<String>,
     access_token: Option<impl Into<String>>,
 ) -> UseQuery<FetchPlayerProfileQuery> {
+    use_player_profile_when(uuid, access_token, true)
+}
+
+pub fn use_player_profile_when(
+    uuid: impl Into<String>,
+    access_token: Option<impl Into<String>>,
+    enabled: bool,
+) -> UseQuery<FetchPlayerProfileQuery> {
     use_query(
         Query::new(
-            PlayerProfileQueryKeys {
+            enabled.then(|| PlayerProfileQueryKeys {
                 uuid: uuid.into(),
                 access_token: access_token.map(|s| s.into()),
-            },
+            }),
             FetchPlayerProfileQuery,
         )
         .stale_time(PROFILE_STALE)

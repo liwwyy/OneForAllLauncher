@@ -63,7 +63,9 @@ impl MinecraftAccount {
 
     /// Public profile key; Ely.by skins use their own username namespace.
     pub fn skin_profile_key(&self) -> String {
-        if self.is_elyby() {
+        if self.is_offline() {
+            format!("offline:{}", self.id)
+        } else if self.is_elyby() {
             format!("elyby:{}", self.username)
         } else if let Some(custom) = &self.custom {
             format!("custom:{}:{}", self.game_id(), custom.server.api_url)

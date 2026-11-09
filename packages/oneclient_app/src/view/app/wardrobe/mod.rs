@@ -1,3 +1,4 @@
+mod local;
 mod page;
 mod parts;
 mod preview;

@@ -15,7 +15,7 @@ use skia_safe::{
     Surface, TileMode, Vertices, surfaces,
 };
 
-use crate::hooks::use_player_skin;
+use crate::hooks::use_player_skin_when;
 use crate::hooks::wardrobe::CosmeticBundle;
 
 const PLAYER: usize = 0;
@@ -44,6 +44,7 @@ pub struct PlayerModel {
     zoom: f32,
     focus_y: f32,
     draggable: bool,
+    local_only: bool,
 }
 
 impl PlayerModel {
@@ -62,8 +63,11 @@ impl PlayerModel {
             zoom: 1.0,
             focus_y: 0.0,
             draggable: true,
+            local_only: false,
         }
     }
+
+    pub fn local_only(mut self) -> Self { self.local_only = true; self }
 
     pub fn skin(mut self, skin: Option<(Bytes, bool)>) -> Self {
         self.skin = skin;
@@ -310,7 +314,7 @@ impl Player {
 
 impl Component for PlayerModel {
     fn render(&self) -> impl IntoElement {
-        let (profile_skin, profile_slim) = use_player_skin(self.uuid.clone());
+        let (profile_skin, profile_slim) = use_player_skin_when(self.uuid.clone(), self.skin.is_none() && !self.local_only);
         let (skin, slim) = self.skin.clone().unwrap_or((profile_skin, profile_slim));
 
         let player = use_hook(|| Rc::new(RefCell::new(Player::default())));
