@@ -175,6 +175,7 @@ impl PartialEq for AccountRow {
     fn eq(&self, other: &Self) -> bool {
         self.account.id == other.account.id
             && self.account.username == other.account.username
+            && self.account.kind == other.account.kind
             && self.active == other.active
     }
 }
@@ -229,7 +230,7 @@ impl Component for AccountRow {
             .on_pointer_leave(move |_| hovered.set(false))
             .on_press(switch)
             .child(
-                Avatar::new(id.to_string())
+                Avatar::new(self.account.skin_profile_key())
                     .width(Size::px(32.))
                     .height(Size::px(32.)),
             )

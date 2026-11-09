@@ -394,13 +394,24 @@ async fn start(
 
     let arg_map = version_info.arguments.clone().unwrap_or_default();
 
-    let classpaths = arguments::classpaths(
+    let mut classpaths = arguments::classpaths(
         &libraries,
         &version_info.libraries,
         &client_jar,
         &java.os_arch,
         updated,
     )?;
+
+    let preview_agent = if account.authlib_url().is_some() {
+        super::elyby::preview_jar(&cluster.mc_version).await?
+    } else {
+        None
+    };
+    if let Some(jar) = &preview_agent {
+        // Fabric's isolated mod loader must be able to resolve the preview bridge.
+        classpaths.push(if cfg!(windows) { ';' } else { ':' });
+        classpaths.push_str(&jar.to_string_lossy());
+    }
 
     let mut jvm_args = arguments::java_arguments(
         arg_map.get(&ArgumentType::Jvm).map(Vec::as_slice),
@@ -436,6 +447,12 @@ async fn start(
     );
 
     oneclient_cluster::logs::censor_username(&account.username);
+    if let Some(auth_url) = account.authlib_url() {
+        jvm_args.push(super::elyby::java_argument(state, auth_url).await?);
+        if let Some(jar) = preview_agent {
+            jvm_args.push(format!("-javaagent:{}", jar.display()));
+        }
+    }
 
     let mut mc_args = arguments::minecraft_arguments(
         arg_map.get(&ArgumentType::Game).map(Vec::as_slice),
@@ -451,6 +468,13 @@ async fn start(
         profile.resolution.unwrap_or_default(),
         &java.os_arch,
     )?;
+    if account.authlib_url().is_some() {
+        for index in 1..mc_args.len() {
+            if mc_args[index - 1] == "--userType" {
+                mc_args[index] = "mojang".into();
+            }
+        }
+    }
     arguments::append_profile_game_arguments(
         &mut mc_args,
         profile.force_fullscreen,
@@ -492,7 +516,7 @@ async fn start(
         .current_dir(&cwd);
 
     let header = format!(
-        "OneClient {} · {} · {version_name} · Java {}\n\n{}\n\n",
+        "OneForAllLauncher {} · {} · {version_name} · Java {}\n\n{}\n\n",
         env!("CARGO_PKG_VERSION"),
         cluster.name,
         java.major,

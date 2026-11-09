@@ -477,6 +477,8 @@ mod tests {
 
     fn account(kind: oneclient_auth::AccountKind, token: &str, signed_out: bool) -> MinecraftAccount {
         MinecraftAccount {
+            elyby_client_id: None,
+            custom: None,
             id: Uuid::from_u128(1),
             username: "player".to_string(),
             access_token: token.to_string(),

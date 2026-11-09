@@ -108,7 +108,7 @@ impl Component for AccountHeader {
 
         let uuid = account
             .as_ref()
-            .map(|account| account.id.to_string())
+            .map(|account| account.skin_profile_key())
             .unwrap_or_else(|| uuid::Uuid::nil().to_string());
         let username = match account.as_ref() {
             Some(account) => account.username.clone(),
@@ -120,6 +120,8 @@ impl Component for AccountHeader {
             (Some(account), false) if account.is_microsoft() => {
                 t("oneclient.components.control_center.microsoft_account")
             }
+            (Some(account), false) if account.is_elyby() => t("fork.accounts.kind.elyby"),
+            (Some(account), false) if account.is_custom() => t("fork.accounts.kind.custom"),
             (Some(_), false) => t("oneclient.components.control_center.offline_account"),
             (None, false) if loading => t("oneclient.components.control_center.checking_accounts"),
             (None, false) => t("oneclient.components.control_center.no_account"),

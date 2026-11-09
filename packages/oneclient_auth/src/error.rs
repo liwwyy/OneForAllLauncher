@@ -112,6 +112,10 @@ pub type AuthResult<T> = Result<T, AuthError>;
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error(transparent)]
+    Custom(#[from] crate::custom::CustomAuthError),
+    #[error(transparent)]
+    Elyby(#[from] crate::elyby::ElybyAuthError),
+    #[error(transparent)]
     Minecraft(#[from] MinecraftAuthError),
 
     #[error(transparent)]
@@ -128,9 +132,6 @@ pub enum AuthError {
     #[error("sign-in was cancelled")]
     LoginCancelled,
 
-    #[error("offline mode requires at least one Microsoft account to be signed in")]
-    OfflineRequiresMicrosoft,
-
     #[error("invalid offline username: {reason}")]
     InvalidOfflineUsername { reason: String },
 
@@ -144,4 +145,9 @@ pub enum AuthError {
 
     #[error("account already exists for username {username:?}")]
     DuplicateUsername { username: String },
+
+    #[error(
+        "This profile UUID is already used by another account provider. Remove that account before adding this one."
+    )]
+    AccountProviderConflict,
 }

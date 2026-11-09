@@ -7,7 +7,7 @@ use oneclient_events::EventBus;
 
 use crate::data::{AccountKind, MinecraftAccount};
 use crate::error::{AuthError, AuthResult};
-use crate::offline::{offline_account, validate_offline_username};
+use crate::offline::{offline_account, validate_offline_username_with_override};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
 pub struct CredentialsStore {
@@ -60,6 +60,14 @@ impl CredentialsStore {
         account: MinecraftAccount,
         events: &EventBus,
     ) -> AuthResult<MinecraftAccount> {
+        if let Some(existing) = self.users.get(&account.id) {
+            if existing.kind != account.kind
+                || existing.custom.as_ref().map(|c| &c.server.api_url)
+                    != account.custom.as_ref().map(|c| &c.server.api_url)
+            {
+                return Err(AuthError::AccountProviderConflict);
+            }
+        }
         self.users.insert(account.id, account.clone());
 
         if self.default_user.is_none() {
@@ -76,7 +84,7 @@ impl CredentialsStore {
     }
 
     pub fn add_offline_account(&mut self, username: String) -> AuthResult<MinecraftAccount> {
-        let account = self.insert_offline_account(username)?;
+        let account = self.insert_offline_account(username, false)?;
         Ok(account)
     }
 
@@ -85,17 +93,35 @@ impl CredentialsStore {
         &mut self,
         username: String,
     ) -> AuthResult<MinecraftAccount> {
-        let account = self.insert_offline_account(username)?;
+        let account = self.insert_offline_account(username, false)?;
         self.save().await?;
         Ok(account)
     }
 
-    fn insert_offline_account(&mut self, username: String) -> AuthResult<MinecraftAccount> {
-        if !self.has_microsoft_account() {
-            return Err(AuthError::OfflineRequiresMicrosoft);
-        }
+    pub fn add_offline_account_with_override(
+        &mut self,
+        username: String,
+        allow_invalid: bool,
+    ) -> AuthResult<MinecraftAccount> {
+        self.insert_offline_account(username, allow_invalid)
+    }
 
-        validate_offline_username(&username)?;
+    pub async fn add_offline_account_with_override_and_save(
+        &mut self,
+        username: String,
+        allow_invalid: bool,
+    ) -> AuthResult<MinecraftAccount> {
+        let account = self.insert_offline_account(username, allow_invalid)?;
+        self.save().await?;
+        Ok(account)
+    }
+
+    fn insert_offline_account(
+        &mut self,
+        username: String,
+        allow_invalid: bool,
+    ) -> AuthResult<MinecraftAccount> {
+        validate_offline_username_with_override(&username, allow_invalid)?;
 
         if self
             .users
@@ -107,6 +133,9 @@ impl CredentialsStore {
 
         let account = offline_account(username);
         self.users.insert(account.id, account.clone());
+        if self.default_user.is_none() {
+            self.default_user = Some(account.id);
+        }
         Ok(account)
     }
 
@@ -114,7 +143,7 @@ impl CredentialsStore {
     pub async fn commit_refreshed_account(&mut self, account: MinecraftAccount) -> AuthResult<()> {
         self.users.insert(account.id, account);
         self.save().await?;
-        tracing::debug!("stored refreshed Microsoft account");
+        tracing::debug!("stored refreshed account");
         Ok(())
     }
 
@@ -205,10 +234,6 @@ impl CredentialsStore {
             return Ok(None);
         };
 
-        if account.is_offline() && !self.has_microsoft_account() {
-            return Err(AuthError::OfflineRequiresMicrosoft);
-        }
-
         Ok(Some(account))
     }
 }
@@ -216,6 +241,12 @@ impl CredentialsStore {
 /// A transient failure must keep the existing token discarding it because
 /// Wi-Fi dropped would sign the user out of a working account
 pub(crate) fn is_transient_auth_error(err: &AuthError) -> bool {
+    if let AuthError::Custom(error) = err {
+        return error.is_transient();
+    }
+    if let AuthError::Elyby(error) = err {
+        return error.is_transient();
+    }
     matches!(
         err,
         AuthError::Minecraft(crate::error::MinecraftAuthError::RequestError { source, .. })

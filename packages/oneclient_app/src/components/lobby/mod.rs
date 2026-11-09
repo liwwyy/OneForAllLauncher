@@ -520,6 +520,8 @@ mod tests {
     #[test]
     fn a_failed_renewal_only_keeps_a_social_account() {
         let account = |kind| MinecraftAccount {
+            elyby_client_id: None,
+            custom: None,
             id: id(1),
             username: "player".to_string(),
             access_token: "token".to_string(),

@@ -7,7 +7,8 @@ use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
-use crate::data::{MicrosoftLoginSession, MinecraftAccount};
+use crate::data::{ElybyLoginSession, MicrosoftLoginSession, MinecraftAccount};
+use crate::elyby;
 use crate::error::{AuthError, AuthResult, MinecraftAuthError};
 use crate::msa::{self, PendingBrowserLogin};
 use crate::store::{self, CredentialsStore};
@@ -19,6 +20,8 @@ pub const MICROSOFT_LOGIN_PROGRESS: Uuid =
 
 /// `finish_microsoft_login` takes the listener and runs with it while the
 /// token stays here so a cancel from the UI has something to flip
+pub const ELYBY_LOGIN_PROGRESS: Uuid = Uuid::from_u128(0x454C_5942_5941_5554_0000_0000_0000_0001);
+
 struct PendingLogin {
     /// `None` once a flow owns the listener or once a cancel freed the port
     /// before any flow got that far
@@ -30,6 +33,7 @@ pub struct AuthService {
     store: Mutex<CredentialsStore>,
     /// Keyed by CSRF state token
     pending_logins: Mutex<HashMap<String, PendingLogin>>,
+    pending_elyby: Mutex<HashMap<String, (CancellationToken, bool)>>,
     /// Serialises token renewal per account Microsoft rotates the refresh token
     /// on every use so concurrent renewals would sign the account out
     refresh_guards: StdMutex<HashMap<Uuid, Arc<Mutex<()>>>>,
@@ -53,6 +57,7 @@ impl AuthService {
         Self {
             store: Mutex::new(store),
             pending_logins: Mutex::new(HashMap::new()),
+            pending_elyby: Mutex::new(HashMap::new()),
             refresh_guards: StdMutex::new(HashMap::new()),
             net,
             events,
@@ -189,6 +194,69 @@ impl AuthService {
         login.browser = None;
     }
 
+    pub async fn begin_elyby_login(&self, client_id: String) -> AuthResult<ElybyLoginSession> {
+        let session = elyby::begin(self.net.http(), client_id).await?;
+        let mut pending = self.pending_elyby.lock().await;
+        pending.retain(|_, (token, _)| !token.is_cancelled());
+        pending.insert(
+            session.device.device_code.clone(),
+            (CancellationToken::new(), false),
+        );
+        Ok(session)
+    }
+
+    pub async fn cancel_elyby_login(&self, device_code: &str) {
+        if let Some((cancel, _)) = self.pending_elyby.lock().await.get(device_code) {
+            cancel.cancel();
+        }
+    }
+
+    pub async fn finish_elyby_login(
+        &self,
+        session: ElybyLoginSession,
+    ) -> AuthResult<MinecraftAccount> {
+        let cancel = {
+            let mut pending = self.pending_elyby.lock().await;
+            let entry = pending
+                .get_mut(&session.device.device_code)
+                .ok_or(AuthError::LoginCancelled)?;
+            if entry.0.is_cancelled() {
+                pending.remove(&session.device.device_code);
+                return Err(AuthError::LoginCancelled);
+            }
+            if entry.1 {
+                return Err(AuthError::LoginCancelled);
+            }
+            entry.1 = true;
+            entry.0.clone()
+        };
+        let flow = elyby::finish(self.net.http(), &session, |label| {
+            self.events.progress(ELYBY_LOGIN_PROGRESS, label, 0, 1);
+        });
+        let result = tokio::select! {
+            biased;
+            () = cancel.cancelled() => Err(AuthError::LoginCancelled),
+            result = flow => result.map_err(AuthError::from),
+        };
+        self.pending_elyby
+            .lock()
+            .await
+            .remove(&session.device.device_code);
+        self.events
+            .progress(ELYBY_LOGIN_PROGRESS, "Ely.by sign-in finished", 1, 1);
+        if cancel.is_cancelled() {
+            return Err(AuthError::LoginCancelled);
+        }
+        if let Err(error) = &result {
+            tracing::warn!(%error, "Ely.by sign-in failed");
+        }
+        self.store
+            .lock()
+            .await
+            .commit_account(result?, &self.events)
+            .await
+    }
+
     #[tracing::instrument(skip(self), fields(username = %username))]
     pub async fn add_offline_account(&self, username: String) -> AuthResult<MinecraftAccount> {
         self.store
@@ -196,6 +264,60 @@ impl AuthService {
             .await
             .add_offline_account_and_save(username)
             .await
+    }
+
+    pub async fn add_offline_account_with_override(
+        &self,
+        username: String,
+        allow_invalid: bool,
+    ) -> AuthResult<MinecraftAccount> {
+        self.store
+            .lock()
+            .await
+            .add_offline_account_with_override_and_save(username, allow_invalid)
+            .await
+    }
+
+    pub async fn discover_custom_server(
+        &self,
+        api_url: &str,
+        login_path: &str,
+        refresh_path: &str,
+    ) -> AuthResult<crate::custom::CustomServer> {
+        Ok(crate::custom::discover_custom_server(
+            self.net.http(),
+            api_url,
+            login_path,
+            refresh_path,
+        )
+        .await?)
+    }
+
+    pub async fn begin_custom_login(
+        &self,
+        server: crate::custom::CustomServer,
+        username: &str,
+        password: &str,
+    ) -> AuthResult<crate::custom::CustomLoginResponse> {
+        Ok(crate::custom::login(server, username, password).await?)
+    }
+
+    pub async fn finish_custom_login(
+        &self,
+        response: crate::custom::CustomLoginResponse,
+        profile: Uuid,
+        cancel: CancellationToken,
+    ) -> AuthResult<MinecraftAccount> {
+        let account = tokio::select! {
+            biased;
+            () = cancel.cancelled() => return Err(AuthError::LoginCancelled),
+            result = crate::custom::select_profile(response, profile) => result?,
+        };
+        let mut store = self.store.lock().await;
+        if cancel.is_cancelled() {
+            return Err(AuthError::LoginCancelled);
+        }
+        store.commit_account(account, &self.events).await
     }
 
     pub async fn list_accounts(&self) -> Vec<MinecraftAccount> {
@@ -272,8 +394,11 @@ impl AuthService {
                 username: existing.username,
             });
         }
-        if !existing.is_microsoft()
-            || (!force && !existing.needs_sign_in() && !existing.is_expired())
+        if existing.is_offline()
+            || (!force
+                && !existing.needs_sign_in()
+                && !existing.is_expired()
+                && !existing.is_custom())
         {
             return Ok(existing);
         }
@@ -288,14 +413,30 @@ impl AuthService {
                 username: existing.username,
             });
         }
-        if !existing.is_microsoft()
-            || (!force && !existing.needs_sign_in() && !existing.is_expired())
+        if existing.is_offline()
+            || (!force
+                && !existing.needs_sign_in()
+                && !existing.is_expired()
+                && !existing.is_custom())
         {
             return Ok(existing);
         }
 
-        tracing::info!(username = %existing.username, "renewing Microsoft access token");
-        match msa::refresh_microsoft_account(self.net.http(), &existing).await {
+        tracing::info!(username = %existing.username, "renewing account access token");
+        let result = if existing.is_custom() {
+            crate::custom::refresh(&existing)
+                .await
+                .map_err(AuthError::from)
+        } else if existing.is_elyby() {
+            elyby::refresh(self.net.http(), &existing)
+                .await
+                .map_err(AuthError::from)
+        } else {
+            msa::refresh_microsoft_account(self.net.http(), &existing)
+                .await
+                .map_err(AuthError::from)
+        };
+        match result {
             Ok(refreshed) => {
                 self.store
                     .lock()
@@ -304,7 +445,7 @@ impl AuthService {
                     .await?;
                 Ok(refreshed)
             }
-            Err(MinecraftAuthError::RefreshTokenRevoked { .. }) => {
+            Err(AuthError::Minecraft(MinecraftAuthError::RefreshTokenRevoked { .. })) => {
                 tracing::warn!(username = %existing.username, "refresh token rejected, marking account signed out");
                 self.store.lock().await.mark_signed_out(id).await?;
                 Err(AuthError::SessionExpired {
@@ -312,7 +453,6 @@ impl AuthService {
                 })
             }
             Err(err) => {
-                let err = AuthError::from(err);
                 if store::is_transient_auth_error(&err) {
                     tracing::warn!("keeping existing token after transient renewal failure: {err}");
                     Ok(existing)
@@ -387,10 +527,6 @@ impl AuthService {
             Err(err) => return Err(err),
         };
 
-        if account.is_offline() && !self.has_microsoft_account().await {
-            return Err(AuthError::OfflineRequiresMicrosoft);
-        }
-
         Ok(account)
     }
 
@@ -439,6 +575,36 @@ mod tests {
                 message: String::new(),
             },
         }
+    }
+
+    #[tokio::test]
+    async fn cancelled_elyby_login_never_requests_tokens_or_commits_an_account() {
+        let (events, _rx) = EventBus::channel();
+        let service = service(events);
+        let session = ElybyLoginSession {
+            client_id: "oneforalllauncher".into(),
+            device: DeviceCodeLogin {
+                user_code: "user".into(),
+                device_code: "private-device".into(),
+                verification_uri: "https://account.ely.by/code".into(),
+                expires_in: 600,
+                interval: 5,
+                message: String::new(),
+            },
+        };
+        service.pending_elyby.lock().await.insert(
+            session.device.device_code.clone(),
+            (CancellationToken::new(), false),
+        );
+        service
+            .cancel_elyby_login(&session.device.device_code)
+            .await;
+        assert!(matches!(
+            service.finish_elyby_login(session).await,
+            Err(AuthError::LoginCancelled)
+        ));
+        assert!(service.pending_elyby.lock().await.is_empty());
+        assert!(service.store.lock().await.users.is_empty());
     }
 
     #[tokio::test]

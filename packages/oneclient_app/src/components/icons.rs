@@ -123,6 +123,8 @@ pub enum IconType {
     DotsVertical,
     Download01,
     DownloadCloud02,
+    Offline,
+    Elyby,
     Eye,
     FaceSmile,
     File02,

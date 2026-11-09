@@ -1,5 +1,6 @@
 mod analytics;
 mod error;
+mod elyby;
 pub mod fabric;
 mod game_options;
 pub mod gpu;
