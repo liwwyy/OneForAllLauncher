@@ -127,6 +127,7 @@ impl RequestClient {
 impl RequestClient {
     #[tracing::instrument(level = "debug", skip_all)]
     pub async fn send(&self, request: impl Into<HttpRequest>) -> Result<Response, RequestError> {
+        if crate::offline::active() { return Err(RequestError::Offline); }
         let mut request: HttpRequest = request.into();
         let mut retries = 0;
         let mut throttle_retries = 0u32;

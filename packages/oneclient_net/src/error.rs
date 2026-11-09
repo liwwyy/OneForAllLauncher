@@ -20,6 +20,8 @@ pub fn error_chain(err: &dyn std::error::Error) -> String {
 
 #[derive(Debug, thiserror::Error)]
 pub enum RequestError {
+    #[error("This file is not cached for offline launch. Connect to the internet to install it first.")]
+    Offline,
     #[error("{}", error_chain(.0))]
     ReqwestError(#[from] reqwest::Error),
 

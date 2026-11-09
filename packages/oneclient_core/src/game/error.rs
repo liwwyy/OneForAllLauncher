@@ -2,6 +2,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum GameError {
+    #[error("Offline launch needs {0} already installed. Connect once to finish installing this instance.")]
+    OfflineMissing(String),
     #[error("no client download exists for version {0}")]
     NoClientDownload(String),
 

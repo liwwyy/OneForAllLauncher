@@ -139,23 +139,16 @@ impl Component for ActiveClusterPanel {
 
 fn launch_button(
     cluster_id: i64,
-    dispatch: crate::Actions,
+    _dispatch: crate::Actions,
     state: (&'static str, bool),
 ) -> impl IntoElement {
     let (label, enabled) = state;
-    Button::new()
-        .primary()
-        .medium()
-        .font_size(text_size(16.))
-        .font_weight(FontWeight::from(450))
-        .enabled(enabled)
-        .padding(Gaps::new_symmetric(8., 24.))
-        .on_press(move |_| {
-            if enabled {
-                dispatch.launch_cluster(cluster_id);
-            }
-        })
-        .text(label)
+    crate::components::InstanceLaunchButton {
+        cluster_id, label, enabled, grow: false,
+        button: Button::new().primary().medium().font_size(text_size(16.))
+            .font_weight(FontWeight::from(450)).padding(Gaps::new_symmetric(8., 24.)),
+    }
+
 }
 
 fn cluster_settings_button(cluster_id: i64) -> impl IntoElement {

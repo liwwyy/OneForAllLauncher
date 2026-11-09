@@ -34,6 +34,7 @@ public final class PreviewProfiles {
     }
 
     private static Object lookup(Class<?> type, UUID id) {
+        if (Boolean.getBoolean("oneforall.preview.offline")) return null;
         HttpURLConnection connection = null;
         try {
             // Public preview lookup only: never attach the Ely.by access token.

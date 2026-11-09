@@ -43,7 +43,7 @@ pub use error::{LauncherError, LauncherResult, SentryExclusion};
 pub use game::{
     GameError, GameVersionInfo, GameVersionKind, LaunchedGame, get_loader_versions,
     get_loaders_for_version, get_version_ids, get_versions_for_loader, launch_cluster,
-    launch_cluster_with,
+    launch_cluster_with, launch_cluster_with_mode,
 };
 pub use images::ImageCacheStore;
 pub use migration::launchers::{
@@ -106,3 +106,5 @@ pub use versions::{
     ReleaseTarget, RemoteMigration, VersionArts, VersionMetadata, VersionsManager,
     VersionsManifest, resolve_migration_chain,
 };
+
+pub mod launch_mode;

@@ -7,6 +7,7 @@ mod response;
 mod service;
 
 pub mod status;
+pub mod offline;
 
 pub use cache::{EtagPolicy, Fetched, commit_etag, fetch_cached};
 pub use config::NetConfig;

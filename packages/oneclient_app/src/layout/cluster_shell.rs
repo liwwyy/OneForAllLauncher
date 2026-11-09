@@ -383,17 +383,10 @@ fn cluster_header(
                     )
                 })
                 .child(
-                    Button::new()
-                        .primary()
-                        .large()
-                        .height(Size::px(ACTION_HEIGHT))
-                        .enabled(launch_enabled)
-                        .on_press(move |_| {
-                            if launch_enabled {
-                                dispatch.launch_cluster(cluster_id);
-                            }
-                        })
-                        .text(launch_label),
+                    crate::components::InstanceLaunchButton {
+                        cluster_id, label: launch_label, enabled: launch_enabled, grow: false,
+                        button: Button::new().primary().large().height(Size::px(ACTION_HEIGHT)),
+                    },
                 ),
         )
 }

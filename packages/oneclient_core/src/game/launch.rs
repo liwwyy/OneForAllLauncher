@@ -58,8 +58,16 @@ pub async fn launch_cluster_with(
     account: &MinecraftAccount,
     search_for_java: bool,
     extra_jvm_arg: Option<&str>,
+ ) -> LauncherResult<LaunchedGame> {
+    let offline = crate::launch_mode::resolve(state, cluster_id, false).await?;
+    launch_cluster_with_mode(state, cluster_id, account, search_for_java, extra_jvm_arg, offline).await
+}
+
+pub async fn launch_cluster_with_mode(
+    state: &Arc<LauncherState>, cluster_id: i64, account: &MinecraftAccount,
+    search_for_java: bool, extra_jvm_arg: Option<&str>, offline: bool,
 ) -> LauncherResult<LaunchedGame> {
-    tracing::info!(cluster_id, search_for_java, "launching cluster");
+    tracing::info!(cluster_id, search_for_java, offline, "launching cluster");
 
     // Parallel clusters or not a cluster runs only once a second game would
     // share its directory and its slot in the process manager
@@ -71,7 +79,9 @@ pub async fn launch_cluster_with(
         return Err(GameError::AlreadyRunning(cluster_id).into());
     }
 
-    let result = start(state, cluster_id, account, search_for_java, extra_jvm_arg).await;
+    let mut launch_account = account.clone();
+    if offline { launch_account.access_token.clear(); }
+    let result = oneclient_net::offline::scope(offline, start(state, cluster_id, &launch_account, search_for_java, extra_jvm_arg, offline)).await;
 
     if result.is_err() {
         state.games.remove(cluster_id);
@@ -98,6 +108,7 @@ async fn start(
     account: &MinecraftAccount,
     search_for_java: bool,
     extra_jvm_arg: Option<&str>,
+    offline: bool,
 ) -> LauncherResult<LaunchedGame> {
     let events = state.services.events.clone();
     let stage = |s: LaunchStage| {
@@ -177,7 +188,7 @@ async fn start(
         format!("Launching {}", existing.name),
     );
 
-    if existing.uses_bundles()
+    if !offline && existing.uses_bundles()
         && let Err(err) = crate::clusters::apply_bundle_java_override(
             state,
             cluster_id,
@@ -192,6 +203,8 @@ async fn start(
 
     let cluster = if existing.stage == ClusterStage::Ready {
         existing
+    } else if offline {
+        return Err(GameError::OfflineMissing("the installed instance".into()).into());
     } else {
         stage(LaunchStage::Downloading);
         match crate::clusters::prepare_cluster_locked(
@@ -212,7 +225,7 @@ async fn start(
             }
         }
     };
-    if cluster.uses_bundles()
+    if !offline && cluster.uses_bundles()
         && let Err(err) = oneclient_content::bundles::install_cluster_bundles(
             cluster_id,
             state.bundles.as_ref(),
@@ -223,13 +236,13 @@ async fn start(
     {
         tracing::warn!(cluster_id, error = %err, "failed to install bundle content");
     }
-    let cluster = match crate::clusters::auto_update_loader(state, &cluster).await {
+    let cluster = if offline { cluster } else { match crate::clusters::auto_update_loader(state, &cluster).await {
         Ok(updated) => updated.unwrap_or(cluster),
         Err(err) => {
             tracing::warn!(cluster_id, error = %err, "failed to update the loader");
             cluster
         }
-    };
+    } };
 
     let global = state.settings.read().global_game_settings.clone();
     let profile = state.clusters.resolve_settings(&global, &cluster).await?;
@@ -299,6 +312,8 @@ async fn start(
         .await?
     {
         runtime
+    } else if offline {
+        return Err(GameError::OfflineMissing("a compatible Java runtime".into()).into());
     } else {
         let major = version_info
             .java_version
@@ -319,6 +334,7 @@ async fn start(
         game_files_missing(&version_info, &java.os_arch, updated)
     });
     match missing {
+        Ok(true) if offline => return Err(GameError::OfflineMissing("required game files".into()).into()),
         Ok(true) => {
             tracing::info!(cluster_id, "missing game files; repairing");
             let _ = state
@@ -451,6 +467,7 @@ async fn start(
         jvm_args.push(super::elyby::java_argument(state, auth_url).await?);
         if let Some(jar) = preview_agent {
             jvm_args.push(format!("-javaagent:{}", jar.display()));
+            if offline { jvm_args.push("-Doneforall.preview.offline=true".into()); }
         }
     }
 

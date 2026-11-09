@@ -791,6 +791,7 @@ pub async fn download_version_info(
 
     if let Some(cached) = cached {
         if loader.is_some()
+            && !oneclient_net::offline::active()
             && oneclient_net::status::current().online
             && VERSION_INFO_REFRESHED.lock().unwrap().insert(path.clone())
         {

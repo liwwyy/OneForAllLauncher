@@ -402,7 +402,6 @@ struct ClusterList;
 
 impl Component for ClusterList {
     fn render(&self) -> impl IntoElement {
-        let dispatch = use_dispatch();
         let active_id = use_active_cluster_id();
         let clusters = settled_or_loading(&use_clusters()).unwrap_or_default();
 
@@ -419,7 +418,6 @@ impl Component for ClusterList {
 
         for cluster in clusters {
             let cluster_id = cluster.id;
-            let launch = dispatch.clone();
             let mut active_id = active_id;
             let loader_version = cluster
                 .mc_loader_version
@@ -460,10 +458,13 @@ impl Component for ClusterList {
                             .horizontal()
                             .spacing(8.)
                             .child(
-                                Button::new()
-                                    .primary()
-                                    .on_press(move |_| launch.launch_cluster(cluster_id))
-                                    .text("Launch"),
+                                crate::components::InstanceLaunchButton {
+                                    cluster_id,
+                                    button: Button::new().primary(),
+                                    label: crate::i18n::t("oneclient.app.launch.launch"),
+                                    enabled: true,
+                                    grow: false,
+                                },
                             )
                             .child(
                                 Button::new()

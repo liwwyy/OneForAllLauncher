@@ -62,6 +62,12 @@ public final class CompatTest {
             GameProfile isolatedProfile = (GameProfile) manager.getMethod("preview", UUID.class).invoke(manager.getConstructor().newInstance(), id);
             require("PreviewDev".equals(isolatedProfile.getName()), "Isolated mod loader must resolve the preview bridge");
         }
+        int beforeOffline = requests;
+        System.setProperty("oneforall.preview.offline", "true");
+        GameProfile offline = (GameProfile) PreviewProfiles.resolve(new GameProfile(UUID.randomUUID(), null));
+        require(offline.getName().startsWith("Preview_") && requests == beforeOffline, "Offline preview must not make HTTP requests");
+        require(PreviewProfiles.resolve(real) == real, "Offline mode must retain named profiles");
+        System.clearProperty("oneforall.preview.offline");
         try (ZipFile mod = new ZipFile(args[0])) {
             String name = "org/polyfrost/vanillahud/util/TabListManager";
             byte[] bytes;

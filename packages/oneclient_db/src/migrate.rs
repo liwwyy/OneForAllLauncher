@@ -133,4 +133,19 @@ mod tests {
 
         assert!(has_pending(&pool, &sqlx::migrate!()).await);
     }
+    #[tokio::test]
+    async fn offline_preference_defaults_off_persists_and_cascades() {
+        let (_dir, _path, pool) = migrated().await;
+        sqlx::query("PRAGMA foreign_keys = ON").execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO clusters (id, name, folder_name, mc_version) VALUES (123, 'offline test', 'offline-test', '1.8.9')").execute(&pool).await.unwrap();
+        let get = || sqlx::query_scalar::<_, i64>("SELECT COALESCE((SELECT always_offline FROM offline_launch_settings WHERE cluster_id = 123), 0)");
+        assert_eq!(get().fetch_one(&pool).await.unwrap(), 0);
+        sqlx::query("INSERT INTO offline_launch_settings(cluster_id, always_offline) VALUES (123, 1)").execute(&pool).await.unwrap();
+        assert_eq!(get().fetch_one(&pool).await.unwrap(), 1);
+        sqlx::query("UPDATE offline_launch_settings SET always_offline = 0 WHERE cluster_id = 123").execute(&pool).await.unwrap();
+        assert_eq!(get().fetch_one(&pool).await.unwrap(), 0);
+        sqlx::query("DELETE FROM clusters WHERE id = 123").execute(&pool).await.unwrap();
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM offline_launch_settings").fetch_one(&pool).await.unwrap(), 0);
+    }
+
 }
