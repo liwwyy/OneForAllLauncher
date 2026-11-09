@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent / "elyby-preview-compat"))
 from build import build as compile_agent, DEFAULT_CACHE
 
-BRIDGE = "offline-skin-bridge-3.jar"
+BRIDGE = "offline-skin-bridge-4.jar"
 
 
 def archive(entries):

@@ -105,6 +105,11 @@ Resolve authlib/legacy hook calls through the source-built bootstrap bridge;
 do not load helper classes through a mod loader from inside a transformer.
 Keep regression coverage for a loader that denies the bridge package as well as
 real loader isolation. Keep diagnostics brief and free of names, paths or credentials.
+Exercise the real Secure Skins URL rewrite when changing local skin transport.
+Restore HTTP only for the exact private skin capability URL (host, port and
+random path), after URL-modifying mods run. Preserve other HTTPS requests,
+certificate validation and unrelated loopback endpoints; never disable TLS
+validation globally to support a local skin.
 
 ## Verification
 

@@ -16,6 +16,7 @@ public final class LocalTextures {
     private static boolean warned;
     private static boolean failed;
     private static boolean reported;
+    private static boolean reportedDownload;
 
     public static synchronized boolean initialize() {
         if (packed != null) return true;
@@ -120,10 +121,17 @@ public final class LocalTextures {
                 .newInstance(texture(loader), null, null, Enum.valueOf(signature, "UNSIGNED"));
     }
 
-    /** Pre-authlib clients request skins by username; change only the selected offline name. */
+    /** Handle legacy own-name URLs and restore the exact private PNG capability. */
     public static String legacyUrl(String original) {
         try {
             if (!initialize()) return original;
+            // HTTPS-enforcing skin mods can rewrite our loopback capability.
+            // Restore only this exact URL; remote HTTPS and other local URLs
+            // retain their original transport and validation.
+            if (("https" + url.substring(4)).equals(original)) {
+                reportDownload();
+                return url;
+            }
             URL source = new URL(original);
             String host = source.getHost().toLowerCase(Locale.ROOT);
             String path = source.getPath();
@@ -135,6 +143,13 @@ public final class LocalTextures {
             if (username.equalsIgnoreCase(name) || username.equalsIgnoreCase(URLDecoder.decode(name, "UTF-8"))) return url;
         } catch (Exception ignored) {}
         return original;
+    }
+
+    private static synchronized void reportDownload() {
+        if (!reportedDownload) {
+            reportedDownload = true;
+            System.err.println("[OneForAll local skin] Restored the private skin endpoint after an HTTPS rewrite.");
+        }
     }
 
     private static String escape(String text) {

@@ -162,6 +162,36 @@ tests. The refreshed Linux debug build passed. Clippy completed with the same
 syntax, changed Markdown links, Rust formatting for the changed module and diff
 whitespace checks passed. No UI screenshots or visual comparisons were performed.
 
+## Follow-up: Secure Skins transport compatibility
+
+The [next owner log](https://mclo.gs/TGH7I2i) confirms the version 3 hook activates
+and supplies local textures, followed by the same skin-download TLS failure.
+The installed pack includes Secure Skins 1.0.1. Its actual `useHttpsUrl` method
+unconditionally replaces HTTP with HTTPS at the head of `downloadAndRegisterSkin`.
+This changes the private HTTP skin endpoint into an HTTPS endpoint the loopback
+server does not implement. The previous classloader correction was insufficient
+for this pack; the new log establishes a distinct transport conflict.
+
+Reviewed authlib-injector's scoped URL-routing design. The offline hook keeps its
+independent source implementation and now normalizes the exact private capability
+at URL/URI creation, after the mod's rewrite. Other HTTPS URLs, certificate checks
+and unrelated local endpoints are preserved. Version 4 helper files distinguish
+this correction from the version 3 test build.
+
+A regression downloads the checksum-pinned official Secure Skins artifact and
+executes its unchanged URL-rewrite method. It failed before the correction and
+passes afterward, including retrieving the selected PNG and retaining HTTPS for
+other endpoints. It also checks `URL(String)`, `URI(String)` and `URI.create` paths.
+This is a concrete transport regression; the owner still verifies actual rendering.
+
+The corrected 18-version matrix passed on Java 25, with nine older version cases
+also passing Java 8. Real Fabric normal/compatibility loader runs passed for
+1.8.9, 1.21.11 and 26.3, including the Secure Skins transport regression on 26.3.
+Ornithe/fallback smoke checks and all 679 core/app tests passed; the same 14
+rendering tests were excluded. The Linux debug build passed, Clippy completed
+with the same 11 upstream diagnostics, and formatting/link/diff checks passed.
+No screenshots or automated visual comparisons were performed.
+
 ## Manual acceptance before release
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
@@ -185,8 +215,8 @@ whitespace checks passed. No UI screenshots or visual comparisons were performed
    not enable authenticated multiplayer. Test equal names on different providers
    and reject a second equal name on the same provider.
 4. Minecraft 1.8.9/Ornithe local skins have now been confirmed in game by the
-   owner. Recheck the reported 26.3/Fabric failure with the version 3 hook and its
-   activation/local-texture messages. Manually test Vanilla/Fabric/Forge/NeoForge/Quilt
+   owner. Recheck the reported 26.3/Fabric failure with the version 4 hook and its
+   activation/local-texture/HTTPS-restoration messages. Manually test Vanilla/Fabric/Forge/NeoForge/Quilt
    and representative old and new versions as available: choose a PNG, switch classic/slim, restart and
    restore the default. Verify only the local player's skin changes. Other
    account kinds must receive no hook, including when launched offline. Versions

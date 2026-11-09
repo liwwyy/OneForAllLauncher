@@ -5,7 +5,7 @@
 - Allow equal account names across different account types, preserving legacy account selections and Minecraft profile UUIDs.
 - Add automatic and explicit cache-only launches, a launch-button context menu and a per-instance Always launch Offline setting. Installed game files and Java are required.
 - Add an offline account wardrobe with local PNG skins. The source-built client hook uses shared authlib and legacy skin paths across versions/loaders and never loads for other account types. Minecraft 1.8.9/Ornithe has been tested in game by the owner.
-- Fix silent skin-hook skipping under restricted classloaders using explicit bootstrap dispatch, with real Fabric and restricted-loader regression checks. The reported 26.3 rendering failure still needs an in-game recheck.
+- Preserve local skin loading under restricted classloaders and HTTPS-enforcing skin mods, while leaving remote TLS unchanged. Validate with real authlib, Fabric loaders and Secure Skins. The reported 26.3 rendering failure still needs an in-game recheck.
 - Restore the automatic-update choice between Preferences and Summary during initial setup, preselect automatic updates, and allow Enter to confirm without changing existing installs' preferences.
 - Default fresh setup to stock OneLauncher's active game folder, including configured custom locations, while preserving existing fork installs' paths and private accounts/settings. Add library choices under Launcher Settings → Folders and files; share catalogs, game files and managed Java without nesting or copying libraries. Protect reused libraries from old-copy cleanup.
 - Document unsigned-installer warnings, per-app Windows/macOS opening steps and macOS compatibility checks.

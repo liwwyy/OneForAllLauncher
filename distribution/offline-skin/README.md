@@ -49,9 +49,19 @@ Authlib and legacy URL call sites resolve the bridge explicitly through the
 bootstrap loader using JDK reflection. They do not ask the mod loader to load a
 helper package during class transformation. This avoids a silent fallback when
 loader isolation rejects that package and avoids reentrant game-class loading.
-The launcher installs version 3 agent/bridge filenames so old and new running
-JVMs cannot disagree about an updated helper. Two brief status messages report
+The launcher installs version 4 agent/bridge filenames so old and new running
+JVMs cannot disagree about an updated helper. Brief status messages report
 activation and use of local textures without exposing names, paths or credentials.
+
+Secure Skins 1.0.1 changes all skin-download URLs from HTTP to HTTPS, including
+the private loopback endpoint. The agent normalizes only that exact endpoint
+back to its original local transport at `URL(String)`, `URI(String)` and
+`URI.create(String)` call sites, after the mod's change. Other HTTPS URLs, other
+loopback addresses/paths and certificate validation remain unchanged. A scoped
+URL-routing approach was reviewed in
+[authlib-injector](https://github.com/yushijinhun/authlib-injector); its authentication
+and key-verification transformers are not needed for this standalone PNG hook.
+The implementation here is independent; no injector source was copied.
 
 The hook does not modify game/mod JARs on disk. Unsupported future API changes
 fall back to normal skin loading. Mods that replace the native skin-loading or
@@ -70,6 +80,7 @@ and `Minecraft.m_20213497` / `m_65924382`.
 python3 -B distribution/offline-skin/test_agent.py
 python3 -B distribution/offline-skin/test_matrix.py
 python3 -B distribution/offline-skin/test_matrix.py --versions 1.8.9 1.21.11 26.3 --fabric
+python3 -B distribution/offline-skin/test_matrix.py --versions 26.3 --secure-skins
 ```
 
 The first suite tests the retained Ornithe renderer, opt-in gating and missing
@@ -94,6 +105,13 @@ complete matrix; `--java /path/to/java`, `--versions VERSION ...`,
 `--legacy-java /path/to/java8` and `--cache-dir PATH` select runtimes/subsets/cache.
 The owner still tests actual rendering on game/loader combinations.
 
+`--secure-skins` downloads the SHA-1-pinned Secure Skins 1.0.1 artifact from its
+official Modrinth release. The test removes only the Mixin class's abstract flag
+so its unchanged `useHttpsUrl` method can run without Minecraft. It then exercises
+native URL-creation patterns, checks the returned PNG bytes and verifies that
+remote HTTPS and other local URLs are preserved. This reproduces the reported
+transport failure without screenshots or launching a game. Use Java 25+.
+
 The owner confirmed Ornithe 1.8.9 rendering but reported a missing skin on 26.3
-before the loader correction. That game/pack still needs an in-game recheck;
+before the loader/transport corrections. That game/pack still needs an in-game recheck;
 passing library/classloader tests alone is not evidence of visible rendering.

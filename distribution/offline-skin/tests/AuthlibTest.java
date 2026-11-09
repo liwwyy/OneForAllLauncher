@@ -81,7 +81,7 @@ public final class AuthlibTest {
         require(new URL("http://www.minecraft.net/skin/Player.png").getHost().equals(enabled ? "127.0.0.1" : "www.minecraft.net"), "Legacy beta skin");
     }
 
-    static void checkAuthlib(ClassLoader loader, boolean enabled, boolean slim, String png) throws Exception {
+    static URL checkAuthlib(ClassLoader loader, boolean enabled, boolean slim, String png) throws Exception {
         Class<?> profileType = Class.forName("com.mojang.authlib.GameProfile", true, loader);
         Object local = profileType.getConstructor(UUID.class, String.class).newInstance(ID, "Player");
         Object remote = profileType.getConstructor(UUID.class, String.class).newInstance(UUID.randomUUID(), "Other");
@@ -97,7 +97,7 @@ public final class AuthlibTest {
             Method textures = service.getMethod("getTextures", profileType, boolean.class);
             Map<?, ?> own = (Map<?, ?>) textures.invoke(target, local, true);
             require(((Map<?, ?>) textures.invoke(target, remote, true)).isEmpty(), "Changed another profile's textures");
-            if (!enabled) { require(own.isEmpty(), "Agent was enabled without opt-in"); return; }
+            if (!enabled) { require(own.isEmpty(), "Agent was enabled without opt-in"); return null; }
             texture = own.values().iterator().next();
             Object filled;
             try { filled = service.getMethod("fillProfileProperties", profileType, boolean.class).invoke(target, local, true); }
@@ -110,7 +110,7 @@ public final class AuthlibTest {
             Method packed = service.getMethod("getPackedTextures", profileType);
             Object own = packed.invoke(target, local);
             require(packed.invoke(target, remote) == null, "Changed another profile's packed textures");
-            if (!enabled) { require(own == null, "Agent was enabled without opt-in"); return; }
+            if (!enabled) { require(own == null, "Agent was enabled without opt-in"); return null; }
             Object value = access(own, "getValue", "value");
             String json = new String(Base64.getDecoder().decode((String) value), "UTF-8");
             require(json.contains(ID.toString().replace("-", "")), "Wrong UUID in the texture property");
@@ -135,6 +135,7 @@ public final class AuthlibTest {
         upload.setRequestMethod("POST");
         require(upload.getResponseCode() == 405, "Allowed an upload");
         upload.disconnect();
+        return url;
     }
 
     private static Object access(Object value, String oldName, String recordName) throws Exception {

@@ -36,7 +36,7 @@ public final class LocalSkinAgent implements ClassFileTransformer {
         // Do not ask the game loader for bridge classes while defining another
         // class. Loader isolation/reentrant loading can otherwise skip hooks.
         if (session) return authlib(bytes);
-        if (!ornithe) return legacy(bytes);
+        if (!ornithe) return urls(bytes);
         try {
             ClassReader reader = new ClassReader(bytes);
             ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
@@ -150,7 +150,7 @@ public final class LocalSkinAgent implements ClassFileTransformer {
     }
 
     private static boolean usesUrl(byte[] bytes) {
-        byte[] needle = {'j', 'a', 'v', 'a', '/', 'n', 'e', 't', '/', 'U', 'R', 'L'};
+        byte[] needle = {'j', 'a', 'v', 'a', '/', 'n', 'e', 't', '/', 'U', 'R'};
         outer: for (int i = 0; i <= bytes.length - needle.length; i++) {
             for (int j = 0; j < needle.length; j++) if (bytes[i + j] != needle[j]) continue outer;
             return true;
@@ -158,8 +158,9 @@ public final class LocalSkinAgent implements ClassFileTransformer {
         return false;
     }
 
-    private byte[] legacy(byte[] bytes) {
-        // Only classes calling URL(String) need a legacy rewrite. No JDK classes are changed.
+    private byte[] urls(byte[] bytes) {
+        // Normalize at URL creation, after skin mods have modified the argument.
+        // No JDK classes or remote TLS settings are changed.
         final boolean[] changed = {false};
         ClassReader reader = new ClassReader(bytes);
         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
@@ -168,8 +169,12 @@ public final class LocalSkinAgent implements ClassFileTransformer {
                                                        String signature, String[] exceptions) {
                 return new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, desc, signature, exceptions)) {
                     @Override public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-                        if (opcode == Opcodes.INVOKESPECIAL && owner.equals("java/net/URL")
-                                && name.equals("<init>") && desc.equals("(Ljava/lang/String;)V")) {
+                        boolean constructor = opcode == Opcodes.INVOKESPECIAL
+                                && (owner.equals("java/net/URL") || owner.equals("java/net/URI"))
+                                && name.equals("<init>") && desc.equals("(Ljava/lang/String;)V");
+                        boolean uriFactory = opcode == Opcodes.INVOKESTATIC && owner.equals("java/net/URI")
+                                && name.equals("create") && desc.equals("(Ljava/lang/String;)Ljava/net/URI;");
+                        if (constructor || uriFactory) {
                             changed[0] = true;
                             // Pack the existing URL string without disturbing
                             // the pending URL constructor's uninitialized object.

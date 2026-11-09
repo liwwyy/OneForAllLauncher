@@ -27,6 +27,9 @@ FABRIC = [
      "03f0065023bfc3045d71bfb99872451d9ad5a0800a5a0dac34ab8c7d5c134f5d"),
 ]
 
+SECURE_SKINS_URL = "https://cdn.modrinth.com/data/4C4XkPCE/versions/cFBMxP98/secureskins-1.0.1%2B26.1.1-fabric.jar"
+SECURE_SKINS_SHA1 = "7d791989170b504270940aca1aaa690689cd41c0"
+
 
 def fabric_libraries(cache):
     result = []
@@ -60,19 +63,25 @@ def main():
     parser.add_argument('--legacy-java', help='Optional Java 8 executable for legacy/older authlib coverage')
     parser.add_argument('--versions', nargs='+', help='Run only these Minecraft versions')
     parser.add_argument('--fabric', action='store_true', help='Also test real Fabric 0.20.1 classloaders using the primary Java runtime (17+)')
+    parser.add_argument('--secure-skins', action='store_true', help='Test the real Secure Skins 1.0.1 HTTPS rewrite on 26.3 (Java 25+)')
     args = parser.parse_args()
     versions = json.loads((ROOT / 'test-matrix.json').read_text())
     if args.versions:
         versions = [entry for entry in versions if entry['minecraft'] in args.versions]
         if len(versions) != len(set(args.versions)):
             parser.error('Version is not in test-matrix.json')
+    if args.secure_skins and not any(entry['minecraft'] == '26.3' for entry in versions):
+        parser.error('--secure-skins requires 26.3 in the selected versions')
     with tempfile.TemporaryDirectory() as temporary:
         work = Path(temporary)
         agent = work / 'offline-skin.jar'
         subprocess.run([sys.executable, str(ROOT / "build.py"), "--output", str(agent)], check=True, capture_output=True)
-        subprocess.run([builder.javac(), '--release', '8', '-Xlint:-options', '-d', str(work),
-                        str(ROOT / 'tests/AuthlibTest.java'), str(ROOT / 'tests/FabricLoaderTest.java')], check=True)
+        asm = builder.verified_asm(builder.DEFAULT_CACHE)
+        subprocess.run([builder.javac(), '--release', '8', '-Xlint:-options', '-cp', str(asm), '-d', str(work),
+                        str(ROOT / 'tests/AuthlibTest.java'), str(ROOT / 'tests/FabricLoaderTest.java'),
+                        str(ROOT / 'tests/SecureSkinsTest.java')], check=True)
         fabric = fabric_libraries(args.cache_dir) if args.fabric else []
+        secure_skins = fetch(SECURE_SKINS_URL, SECURE_SKINS_SHA1, args.cache_dir / 'mods/secureskins.jar') if args.secure_skins else None
         png = work / 'skin.png'
         subprocess.run([args.java, '-Djava.awt.headless=true', '-cp', str(work), 'AuthlibTest', 'prepare', str(png)], check=True)
         for entry in versions:
@@ -121,8 +130,17 @@ def main():
                         result = subprocess.run(fabric_command, capture_output=True, text=True, timeout=30)
                         if result.returncode:
                             raise RuntimeError(f'{version} / Fabric failed:\n{result.stdout}\n{result.stderr}')
+                    if secure_skins and version == '26.3' and enabled and java == args.java:
+                        secure_command = command[:command.index('-cp')]
+                        secure_command.extend(['-cp', os.pathsep.join(map(str, [work, agent, *libraries, asm])),
+                            'SecureSkinsTest', str(png), str(secure_skins), str(slim).lower()])
+                        result = subprocess.run(secure_command, capture_output=True, text=True, timeout=30)
+                        if result.returncode:
+                            raise RuntimeError(f'{version} / Secure Skins failed:\n{result.stdout}\n{result.stderr}')
                 loaders = ', real Fabric Knot/compatibility loaders' if fabric and not legacy and java == args.java else ''
                 print(f'PASS Minecraft {version}, authlib {authlib or "legacy URLs"}, {java}: slim/classic/disabled{loaders}', flush=True)
+                if secure_skins and version == '26.3' and java == args.java:
+                    print('PASS real Secure Skins 1.0.1: private PNG transport restored, remote HTTPS unchanged', flush=True)
 
 
 if __name__ == '__main__':
