@@ -1,5 +1,7 @@
 # Ely.by preview compatibility
 
+The Launcher settings toggle controls this workaround independently of authlib-injector. It defaults on for existing installations. Offline launches suppress its profile lookups.
+
 This Java 8 agent is enabled only for Ely.by/custom-account launches of Minecraft 1.8.9.
 Both use authlib-injector, which can leave VanillaHUD's Mojang preview profiles unnamed.
 It transforms VanillaHUD's `TabListManager.getProfile(UUID)` return values.
@@ -48,7 +50,7 @@ the installed VanillaHUD JAR (no Minecraft launch or GUI interaction):
 ```sh
 python3 distribution/elyby-preview-compat/test.py \
   --libraries /path/to/metadata/libraries \
-  --vanillahud /path/to/vanillahud-3.5.7+1.8.9.jar \
+  --vanillahud /path/to/vanillahud-3.5.10+1.8.9.jar \
   --java /path/to/java8/bin/java --java /path/to/java25/bin/java
 ```
 
