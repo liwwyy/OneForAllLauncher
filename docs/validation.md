@@ -279,7 +279,7 @@ from the reviewed release commit after the owner's manual UI test result, as
 required by [AGENTS.md](../AGENTS.md). Do not dispatch the release workflow from
 a development snapshot.
 
-The maintainer-approved [offline setup guide](offline-setup.md) now walks through
+The maintainer-approved [offline setup guide](oneclient-modpack-alternative-guide.md) now walks through
 Freesm offline-account creation, installing the official OneClient Modrinth pack,
 the `.mrpack` import alternative, initial downloads and authenticated-service
 limitations. The README links to it. Interface labels were checked against

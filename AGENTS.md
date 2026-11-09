@@ -179,9 +179,10 @@ instructions accurate and link to focused guides instead of duplicating them.
 The proposed application changes and their acceptance checks are recorded in
 `docs/implementation-plan.md`; keep planned behavior distinct from shipped
 features and respect the owner's authorized implementation scope.
-The maintainer-approved community route in `docs/offline-setup.md` uses a
-standalone launcher with offline-account and Modrinth modpack support (Freesm is
-the documented example) to install the official OneClient pack. Keep its README
+The maintainer-approved community route in
+`docs/oneclient-modpack-alternative-guide.md` uses a standalone launcher with
+offline-account and Modrinth modpack support (Freesm is the documented example)
+to install the official OneClient pack. Keep its README
 link current and verify UI/download links against the projects' official sources.
 Distinguish an offline player identity from playing without internet or accessing
 authenticated services. Do not invent installation steps or additional community

@@ -12,11 +12,15 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 <div>
 
+[![Latest GitHub release](https://img.shields.io/github/v/release/liwwyy/OneForAllLauncher?label=Release&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases/latest)
 [![GitHub Repo stars](https://img.shields.io/github/stars/liwwyy/OneForAllLauncher?label=Stars&style=for-the-badge&color=%23f5c2e7&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIC05NjAgOTYwIDk2MCIgd2lkdGg9IjI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoIGQ9Im0zNTQtMjQ3IDEyNi03NiAxMjYgNzctMzMtMTQ0IDExMS05Ni0xNDYtMTMtNTgtMTM2LTU4IDEzNS0xNDYgMTMgMTExIDk3LTMzIDE0M1pNMjMzLTgwbDY1LTI4MUw4MC01NTBsMjg4LTI1IDExMi0yNjUgMTEyIDI2NSAyODgtMjUtMjE4IDE4OSA2NSAyODEtMjQ3LTE0OUwyMzMtODBabTI0Ny0zNTBaIiBzdHlsZT0iZmlsbDogcmdiKDI0NSwgMTk0LCAyMzEpOyIvPgo8L3N2Zz4%3D)](https://github.com/liwwyy/OneForAllLauncher/stargazers) [![GitHub release downloads](https://img.shields.io/github/downloads/liwwyy/OneForAllLauncher/total?label=Downloads&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases)
 
 </div>
 
 </div>
+
+> [!NOTE]
+> **Don't trust this fork?** Install the official OneClient modpack through a standalone launcher with offline-account and Modrinth support, using the community-recommended route for offline/cracked players. Follow the [OneClient modpack alternative guide](docs/oneclient-modpack-alternative-guide.md).
 
 ## Screenshots
 
@@ -56,10 +60,8 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 </details>
 
-## Warning
-
 > [!WARNING]
-> This is a fork modified and maintained with **AI**.
+> This is a fork modified with **AI**. and maintained independently
 
 ## Features
 
@@ -91,7 +93,7 @@ Offline accounts can be used for singleplayer and servers configured to accept o
 
 ### OneClient setup for offline accounts
 
-Follow the [community setup guide for offline accounts](docs/offline-setup.md):
+Follow the [community setup guide for offline accounts](docs/oneclient-modpack-alternative-guide.md):
 use a standalone launcher with offline-account and Modrinth modpack support,
 such as Freesm, and install the official OneClient modpack through it.
 
