@@ -57,6 +57,7 @@ pub struct LauncherSettings {
     pub settings_version: u32,
     pub log_debug: bool,
     pub auto_update: bool,
+    pub preview_compatibility: bool,
     pub crash_reporting: bool,
     pub enable_gamemode: bool,
     pub discord_enabled: bool,
@@ -120,6 +121,7 @@ impl Default for LauncherSettings {
         Self {
             settings_version: CURRENT_SETTINGS_VERSION,
             log_debug: false,
+            preview_compatibility: true,
             auto_update: false, // Users opt in during onboarding or in Launcher settings.
             crash_reporting: true,
             discord_enabled: true,
@@ -156,5 +158,19 @@ impl Default for LauncherSettings {
             data_dir: None,
             previous_data_dir: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+    #[test]
+    fn old_settings_keep_preview_compatibility_and_toggle_round_trips() {
+        let legacy: LauncherSettings = serde_json::from_str("{}").unwrap();
+        assert!(legacy.preview_compatibility);
+        let mut disabled = legacy;
+        disabled.preview_compatibility = false;
+        let restored: LauncherSettings = serde_json::from_value(serde_json::to_value(disabled).unwrap()).unwrap();
+        assert!(!restored.preview_compatibility);
     }
 }

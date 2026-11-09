@@ -402,7 +402,7 @@ async fn start(
         updated,
     )?;
 
-    let preview_agent = if account.authlib_url().is_some() {
+    let preview_agent = if account.authlib_url().is_some() && state.settings.read().preview_compatibility {
         super::elyby::preview_jar(&cluster.mc_version).await?
     } else {
         None
