@@ -48,8 +48,8 @@ and incremental compilation were disabled to keep resource use bounded.
 
 The initial replacement series contains seven focused commits: installation/updates,
 retained account support, the preview toggle, provider identities, offline launch,
-local wardrobe and maintenance documentation. The onboarding and shared-library
-follow-ups add two focused commits. The assembled tree was checked
+local wardrobe and maintenance documentation. Follow-up commits cover onboarding,
+shared libraries, skin-loader compatibility and user documentation. The assembled tree was checked
 against the archived implementation snapshot before the validation report was
 finalized. Backups are local and excluded from the replacement history.
 
@@ -118,6 +118,50 @@ finalized. Backups are local and excluded from the replacement history.
   checks passed. Cargo.lock is unchanged. No screenshots or visual comparisons
   were performed.
 
+## Owner checks and 26.3 log review
+
+The owner confirms shared OneClient data/instances and Launch Offline work. The
+game library has been moved to the stock default; the test launcher's saved path
+already points there. No live settings were changed during this investigation.
+Ornithe 1.8.9 skins remain confirmed, but the owner reports other versions,
+including 26.3/Fabric, still render without the selected local skin.
+
+Reviewed [the supplied 26.3 log](https://mclo.gs/K7KDjNY) before changing the hook:
+
+- The agent and offline-account/PNG properties are present. The skin downloader
+  later reports an HTTPS handshake failure for the selected profile, rather than
+  a successful private HTTP skin request. The hostname is not shown in that stack.
+- Mojang user-properties/Realms and PolyPlus cosmetics, WebSocket and EOS/P2P
+  authorization fail with invalid sessions/401 responses. These are authenticated
+  game/mod features that an offline identity does not provide; the launcher must
+  not manufacture successful authentication or suppress those service checks.
+- OpenGL backend creation fails, then Vulkan initializes successfully on the
+  recorded AMD/Mesa setup. This is a separate graphics/native-path concern, not
+  evidence of a local-skin failure or a fatal startup crash in this log.
+- Missing optional integration classes, refmaps and mod version-format warnings
+  originate in the modpack. The game proceeds through resource loading.
+
+The old authlib and basic Knot tests passed before the correction. A new loader
+that explicitly refuses the bridge package reproduced silent hook skipping on
+real authlib 10.0.77. Calls now resolve the bootstrap bridge directly through JDK
+reflection without consulting the game loader during transformation. That
+regression passes for 1.8.9, 1.21.11 and 26.3; real Fabric 0.20.1 Knot and
+compatibility loaders also pass with isolated classpaths. Version 3 filenames
+separate the new helpers, and credential-free activation/use messages aid the
+next owner test. This fixes a reproduced loader defect; it does **not** establish
+that every cause of the supplied modpack's skin failure is resolved. Recheck
+26.3 in game before describing it as verified or publishing a release.
+
+The corrected 18-version matrix passed on Java 25, with the supported older cases
+also passing Java 8. Ornithe/gating/missing-file and missing-bridge checks passed.
+The targeted real Fabric runs passed for 1.8.9, 1.21.11 and 26.3, covering slim,
+classic and disabled modes under normal and compatibility Knot loaders. The
+679 core/app library tests passed (363 + 316), excluding the same 14 rendering
+tests. The refreshed Linux debug build passed. Clippy completed with the same
+11 upstream diagnostics and none in the changed skin-hook integration. Python
+syntax, changed Markdown links, Rust formatting for the changed module and diff
+whitespace checks passed. No UI screenshots or visual comparisons were performed.
+
 ## Manual acceptance before release
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
@@ -141,8 +185,9 @@ finalized. Backups are local and excluded from the replacement history.
    not enable authenticated multiplayer. Test equal names on different providers
    and reject a second equal name on the same provider.
 4. Minecraft 1.8.9/Ornithe local skins have now been confirmed in game by the
-   owner. Manually test Vanilla/Fabric/Forge/NeoForge/Quilt and representative old
-   and new versions as available: choose a PNG, switch classic/slim, restart and
+   owner. Recheck the reported 26.3/Fabric failure with the version 3 hook and its
+   activation/local-texture messages. Manually test Vanilla/Fabric/Forge/NeoForge/Quilt
+   and representative old and new versions as available: choose a PNG, switch classic/slim, restart and
    restore the default. Verify only the local player's skin changes. Other
    account kinds must receive no hook, including when launched offline. Versions
    before 1.8 use the classic model. Check installed skin mods separately.

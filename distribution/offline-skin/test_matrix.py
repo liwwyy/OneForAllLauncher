@@ -19,6 +19,29 @@ spec = importlib.util.spec_from_file_location('agent_build', ROOT.parent / 'elyb
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
 
+# Test-only artifacts from Fabric's own Maven, pinned independently of game data.
+FABRIC = [
+    ("fabric-loader-0.20.1.jar", "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.20.1/fabric-loader-0.20.1.jar",
+     "d0c5a082e07410aaff9de7ab196aa6b4236002870f9ba3ad5c1260fcce5110ad"),
+    ("sponge-mixin.jar", "https://maven.fabricmc.net/net/fabricmc/sponge-mixin/0.17.5+mixin.0.8.7/sponge-mixin-0.17.5+mixin.0.8.7.jar",
+     "03f0065023bfc3045d71bfb99872451d9ad5a0800a5a0dac34ab8c7d5c134f5d"),
+]
+
+
+def fabric_libraries(cache):
+    result = []
+    for name, url, digest in FABRIC:
+        path = cache / 'fabric' / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            data = urllib.request.urlopen(url, timeout=30).read()
+            if hashlib.sha256(data).hexdigest() != digest:
+                raise ValueError(f'Checksum mismatch: {url}')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        result.append(path)
+    result.append(builder.verified_asm(builder.DEFAULT_CACHE))
+    return result
+
 
 def fetch(url, checksum, target):
     if not target.is_file() or hashlib.sha1(target.read_bytes()).hexdigest() != checksum:
@@ -36,6 +59,7 @@ def main():
     parser.add_argument('--java', default='java', help='JDK 25+ runtime for the full matrix')
     parser.add_argument('--legacy-java', help='Optional Java 8 executable for legacy/older authlib coverage')
     parser.add_argument('--versions', nargs='+', help='Run only these Minecraft versions')
+    parser.add_argument('--fabric', action='store_true', help='Also test real Fabric 0.20.1 classloaders using the primary Java runtime (17+)')
     args = parser.parse_args()
     versions = json.loads((ROOT / 'test-matrix.json').read_text())
     if args.versions:
@@ -47,7 +71,8 @@ def main():
         agent = work / 'offline-skin.jar'
         subprocess.run([sys.executable, str(ROOT / "build.py"), "--output", str(agent)], check=True, capture_output=True)
         subprocess.run([builder.javac(), '--release', '8', '-Xlint:-options', '-d', str(work),
-                        str(ROOT / 'tests/AuthlibTest.java')], check=True)
+                        str(ROOT / 'tests/AuthlibTest.java'), str(ROOT / 'tests/FabricLoaderTest.java')], check=True)
+        fabric = fabric_libraries(args.cache_dir) if args.fabric else []
         png = work / 'skin.png'
         subprocess.run([args.java, '-Djava.awt.headless=true', '-cp', str(work), 'AuthlibTest', 'prepare', str(png)], check=True)
         for entry in versions:
@@ -88,7 +113,16 @@ def main():
                     result = subprocess.run(command, capture_output=True, text=True, timeout=30)
                     if result.returncode:
                         raise RuntimeError(f'{version} / {java} failed:\n{result.stdout}\n{result.stderr}')
-                print(f'PASS Minecraft {version}, authlib {authlib or "legacy URLs"}, {java}: slim/classic/disabled', flush=True)
+                    if fabric and not legacy and java == args.java:
+                        fabric_command = command[:command.index('-cp')]
+                        fabric_command.extend(['-cp', os.pathsep.join(map(str, [work, agent, *libraries, *fabric])),
+                            'FabricLoaderTest', os.pathsep.join(map(str, libraries)),
+                            str(enabled).lower(), str(slim).lower(), str(png)])
+                        result = subprocess.run(fabric_command, capture_output=True, text=True, timeout=30)
+                        if result.returncode:
+                            raise RuntimeError(f'{version} / Fabric failed:\n{result.stdout}\n{result.stderr}')
+                loaders = ', real Fabric Knot/compatibility loaders' if fabric and not legacy and java == args.java else ''
+                print(f'PASS Minecraft {version}, authlib {authlib or "legacy URLs"}, {java}: slim/classic/disabled{loaders}', flush=True)
 
 
 if __name__ == '__main__':

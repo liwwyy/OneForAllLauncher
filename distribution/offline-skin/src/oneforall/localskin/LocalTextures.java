@@ -15,6 +15,7 @@ public final class LocalTextures {
     private static String packed;
     private static boolean warned;
     private static boolean failed;
+    private static boolean reported;
 
     public static synchronized boolean initialize() {
         if (packed != null) return true;
@@ -43,11 +44,11 @@ public final class LocalTextures {
             ClassLoader loader = service.getClass().getClassLoader();
             if (operation.equals("unpackTextures")) {
                 if (subject == null || !packed.equals(access(subject, "getValue", "value"))) return null;
-                return textures(loader);
+                return provided(textures(loader));
             }
             if (!own(subject)) return null;
-            if (operation.equals("getTextures")) return resultType.equals("java.util.Map") ? textureMap(loader) : textures(loader);
-            if (operation.equals("getPackedTextures")) return property(loader);
+            if (operation.equals("getTextures")) return provided(resultType.equals("java.util.Map") ? textureMap(loader) : textures(loader));
+            if (operation.equals("getPackedTextures")) return provided(property(loader));
             Object profile = profile(loader);
             if (operation.equals("fillProfileProperties")) return profile;
             if (operation.equals("fetchProfile")) {
@@ -151,5 +152,13 @@ public final class LocalTextures {
             warned = true;
             System.err.println("[OneForAll local skin] Could not use the local skin; keeping the default skin.");
         }
+    }
+
+    private static synchronized Object provided(Object value) {
+        if (value != null && !reported) {
+            reported = true;
+            System.err.println("[OneForAll local skin] Providing local textures for the selected offline player.");
+        }
+        return value;
     }
 }

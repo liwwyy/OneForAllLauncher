@@ -69,7 +69,7 @@ if (!local.m_63406370().equals(expected ? "slim" : "default")) throw new Asserti
                                 '-cp', os.pathsep.join([str(work), str(agent)]), 'TestSkin', str(enabled and exists).lower(), path], check=True)
 
             # A damaged/missing optional bridge must fall back instead of aborting the JVM.
-            agent.with_name('offline-skin-bridge-2.jar').unlink()
+            agent.with_name('offline-skin-bridge-3.jar').unlink()
             subprocess.run([java, '-Xverify:all', '-Djava.awt.headless=true', f'-javaagent:{agent}',
                             '-Doneforall.localSkin.offlineAccount=true',
                             f'-Doneforall.localSkin.path={work / "skin.png"}',

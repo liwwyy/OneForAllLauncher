@@ -16,6 +16,7 @@ public final class LocalSkinAgent implements ClassFileTransformer {
                     && System.getProperty("oneforall.localSkin.path") != null
                     && LocalTextures.initialize()) {
                 instrumentation.addTransformer(new LocalSkinAgent());
+                System.err.println("[OneForAll local skin] Enabled for the selected offline account.");
             }
         } catch (Throwable error) {
             // An optional cosmetic must not abort the JVM if its bridge is unavailable.
@@ -32,8 +33,8 @@ public final class LocalSkinAgent implements ClassFileTransformer {
                 || name.equals("com/mojang/authlib/services/MinecraftServicesSessionService");
         boolean ornithe = PLAYER.equals(name) && Boolean.getBoolean("oneforall.localSkin.ornithe189");
         if (!session && !ornithe && !usesUrl(bytes)) return null;
-        try { Class.forName("oneforall.localskin.LocalTextures", false, loader); }
-        catch (ClassNotFoundException ignored) { return null; }
+        // Do not ask the game loader for bridge classes while defining another
+        // class. Loader isolation/reentrant loading can otherwise skip hooks.
         if (session) return authlib(bytes);
         if (!ornithe) return legacy(bytes);
         try {
@@ -92,12 +93,17 @@ public final class LocalSkinAgent implements ClassFileTransformer {
                     return new MethodVisitor(Opcodes.ASM9, original) {
                         @Override public void visitCode() {
                             super.visitCode();
-                            visitVarInsn(Opcodes.ALOAD, 0);
-                            visitVarInsn(Opcodes.ALOAD, 1);
-                            visitLdcInsn(name);
-                            visitLdcInsn(result.getClassName());
-                            visitMethodInsn(Opcodes.INVOKESTATIC, "oneforall/localskin/LocalTextures", "resolve",
-                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;", false);
+                            visitInsn(Opcodes.ICONST_4);
+                            visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
+                            for (int i = 0; i < 4; i++) {
+                                visitInsn(Opcodes.DUP);
+                                visitInsn(Opcodes.ICONST_0 + i);
+                                if (i < 2) visitVarInsn(Opcodes.ALOAD, i);
+                                else visitLdcInsn(i == 2 ? name : result.getClassName());
+                                visitInsn(Opcodes.AASTORE);
+                            }
+                            invokeBridge(this, "resolve", "java/lang/Object", "java/lang/Object",
+                                    "java/lang/String", "java/lang/String");
                             visitInsn(Opcodes.DUP);
                             Label fallback = new Label();
                             visitJumpInsn(Opcodes.IFNULL, fallback);
@@ -115,6 +121,32 @@ public final class LocalSkinAgent implements ClassFileTransformer {
             System.err.println("[OneForAll local skin] Unsupported authlib; keeping the default skin.");
             return null;
         }
+    }
+
+    /** The argument array is on the stack. Resolve the JDK-only bridge through
+     * the bootstrap loader, independent of a mod loader's package filters. */
+    private static void invokeBridge(MethodVisitor visitor, String method, String... parameters) {
+        visitor.visitLdcInsn("oneforall.localskin.LocalTextures");
+        visitor.visitInsn(Opcodes.ICONST_0);
+        visitor.visitInsn(Opcodes.ACONST_NULL);
+        visitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Class", "forName",
+                "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
+        visitor.visitLdcInsn(method);
+        visitor.visitInsn(Opcodes.ICONST_0 + parameters.length);
+        visitor.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
+        for (int i = 0; i < parameters.length; i++) {
+            visitor.visitInsn(Opcodes.DUP);
+            visitor.visitInsn(Opcodes.ICONST_0 + i);
+            visitor.visitLdcInsn(Type.getObjectType(parameters[i]));
+            visitor.visitInsn(Opcodes.AASTORE);
+        }
+        visitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class", "getMethod",
+                "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", false);
+        visitor.visitInsn(Opcodes.SWAP);
+        visitor.visitInsn(Opcodes.ACONST_NULL);
+        visitor.visitInsn(Opcodes.SWAP);
+        visitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke",
+                "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", false);
     }
 
     private static boolean usesUrl(byte[] bytes) {
@@ -139,8 +171,17 @@ public final class LocalSkinAgent implements ClassFileTransformer {
                         if (opcode == Opcodes.INVOKESPECIAL && owner.equals("java/net/URL")
                                 && name.equals("<init>") && desc.equals("(Ljava/lang/String;)V")) {
                             changed[0] = true;
-                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "oneforall/localskin/LocalTextures", "legacyUrl",
-                                    "(Ljava/lang/String;)Ljava/lang/String;", false);
+                            // Pack the existing URL string without disturbing
+                            // the pending URL constructor's uninitialized object.
+                            visitInsn(Opcodes.ICONST_1);
+                            visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
+                            visitInsn(Opcodes.DUP_X1);
+                            visitInsn(Opcodes.SWAP);
+                            visitInsn(Opcodes.ICONST_0);
+                            visitInsn(Opcodes.SWAP);
+                            visitInsn(Opcodes.AASTORE);
+                            invokeBridge(this, "legacyUrl", "java/lang/String");
+                            visitTypeInsn(Opcodes.CHECKCAST, "java/lang/String");
                         }
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
                     }

@@ -45,6 +45,14 @@ access to the system classpath; ASM and the transformer stay outside that
 bootstrap JAR. Both JARs are embedded and verified/written by the launcher.
 The Ornithe direct renderer reads the PNG locally.
 
+Authlib and legacy URL call sites resolve the bridge explicitly through the
+bootstrap loader using JDK reflection. They do not ask the mod loader to load a
+helper package during class transformation. This avoids a silent fallback when
+loader isolation rejects that package and avoids reentrant game-class loading.
+The launcher installs version 3 agent/bridge filenames so old and new running
+JVMs cannot disagree about an updated helper. Two brief status messages report
+activation and use of local textures without exposing names, paths or credentials.
+
 The hook does not modify game/mod JARs on disk. Unsupported future API changes
 fall back to normal skin loading. Mods that replace the native skin-loading or
 rendering paths can override these integrations and need their own game testing.
@@ -61,6 +69,7 @@ and `Minecraft.m_20213497` / `m_65924382`.
 ```sh
 python3 -B distribution/offline-skin/test_agent.py
 python3 -B distribution/offline-skin/test_matrix.py
+python3 -B distribution/offline-skin/test_matrix.py --versions 1.8.9 1.21.11 26.3 --fabric
 ```
 
 The first suite tests the retained Ornithe renderer, opt-in gating and missing
@@ -68,7 +77,12 @@ PNG fallback. The matrix downloads checksum-pinned official Mojang version
 metadata and authlib dependencies into `target/offline-skin-tests`. It exercises
 **actual authlib methods**, rather than simulations of those APIs, with JVM
 bytecode verification, local/remote UUID isolation, classic/slim models, the
-private PNG endpoint, rejected paths/uploads and a game-library loader whose parent excludes the system classpath. Legacy
+private PNG endpoint, rejected paths/uploads, a game-library loader whose parent
+excludes the system classpath, and a loader that explicitly rejects bridge classes.
+The restricted-loader case failed before the bootstrap-dispatch correction.
+`--fabric` adds SHA-256-pinned Fabric Loader 0.20.1 and Mixin test artifacts from
+Fabric's Maven, and checks real Knot and compatibility loaders with isolated
+classpaths. It does not start Minecraft, initialize game Mixins or render a UI. Legacy
 cases also audit original Minecraft client classes for URL rewrites without
 launching the game. No screenshots or visual comparisons are made.
 
@@ -79,3 +93,7 @@ launching the game. No screenshots or visual comparisons are made.
 complete matrix; `--java /path/to/java`, `--versions VERSION ...`,
 `--legacy-java /path/to/java8` and `--cache-dir PATH` select runtimes/subsets/cache.
 The owner still tests actual rendering on game/loader combinations.
+
+The owner confirmed Ornithe 1.8.9 rendering but reported a missing skin on 26.3
+before the loader correction. That game/pack still needs an in-game recheck;
+passing library/classloader tests alone is not evidence of visible rendering.

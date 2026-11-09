@@ -46,24 +46,29 @@ public final class AuthlibTest {
         String[] paths = System.getProperty("java.class.path").split(java.util.regex.Pattern.quote(File.pathSeparator));
         URL[] urls = new URL[paths.length];
         for (int i = 0; i < paths.length; i++) urls[i] = new File(paths[i]).toURI().toURL();
-        try (URLClassLoader isolated = new URLClassLoader(urls, ClassLoader.getSystemClassLoader().getParent()) {
-            @Override protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                if (name.endsWith("YggdrasilMinecraftSessionService") || name.endsWith("MinecraftServicesSessionService")) {
-                    Class<?> type = findLoadedClass(name);
-                    if (type == null) type = findClass(name);
-                    if (resolve) resolveClass(type);
-                    return type;
+        for (final boolean hideBridge : new boolean[]{false, true}) {
+            try (URLClassLoader isolated = new URLClassLoader(urls, ClassLoader.getSystemClassLoader().getParent()) {
+                @Override protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                    // Mod loaders may refuse helper packages even when the JVM has
+                    // already loaded the bridge on its bootstrap search path.
+                    if (hideBridge && name.startsWith("oneforall.localskin.")) throw new ClassNotFoundException(name);
+                    if (name.endsWith("YggdrasilMinecraftSessionService") || name.endsWith("MinecraftServicesSessionService")) {
+                        Class<?> type = findLoadedClass(name);
+                        if (type == null) type = findClass(name);
+                        if (resolve) resolveClass(type);
+                        return type;
+                    }
+                    return super.loadClass(name, resolve);
                 }
-                return super.loadClass(name, resolve);
+            }) {
+                Thread thread = Thread.currentThread();
+                ClassLoader previous = thread.getContextClassLoader();
+                thread.setContextClassLoader(isolated);
+                try { checkAuthlib(isolated, enabled, slim, args[2]); }
+                finally { thread.setContextClassLoader(previous); }
             }
-        }) {
-            Thread thread = Thread.currentThread();
-            ClassLoader previous = thread.getContextClassLoader();
-            thread.setContextClassLoader(isolated);
-            try { checkAuthlib(isolated, enabled, slim, args[2]); }
-            finally { thread.setContextClassLoader(previous); }
         }
-        System.out.println("PASS: real authlib, local UUID only, classic/slim, private PNG endpoint and isolated loader");
+        System.out.println("PASS: real authlib, local UUID only, classic/slim, private PNG endpoint and isolated/restricted loaders");
     }
 
     private static void checkLegacy(boolean enabled, String png) throws Exception {
@@ -76,7 +81,7 @@ public final class AuthlibTest {
         require(new URL("http://www.minecraft.net/skin/Player.png").getHost().equals(enabled ? "127.0.0.1" : "www.minecraft.net"), "Legacy beta skin");
     }
 
-    private static void checkAuthlib(ClassLoader loader, boolean enabled, boolean slim, String png) throws Exception {
+    static void checkAuthlib(ClassLoader loader, boolean enabled, boolean slim, String png) throws Exception {
         Class<?> profileType = Class.forName("com.mojang.authlib.GameProfile", true, loader);
         Object local = profileType.getConstructor(UUID.class, String.class).newInstance(ID, "Player");
         Object remote = profileType.getConstructor(UUID.class, String.class).newInstance(UUID.randomUUID(), "Other");
