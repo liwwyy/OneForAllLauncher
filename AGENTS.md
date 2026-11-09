@@ -1,5 +1,8 @@
 # Working on OneForAllLauncher
 
+For the current implementation status, owner test results and remaining
+publication work, start with [the maintainer handoff](docs/maintainer-handoff.md).
+
 ## Fork scope
 
 Maintain a small, reviewable set of changes over Polyfrost OneLauncher/OneClient.

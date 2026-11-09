@@ -89,7 +89,7 @@ Offline accounts can be used for singleplayer and servers configured to accept o
 ## Installation
 
 > [!WARNING]
-> Windows installers do not have trusted code signing, and macOS builds are not Developer ID signed/notarized. **Windows SmartScreen or macOS Gatekeeper may block the launcher.** Some macOS versions and hardware combinations may also be incompatible. See [installation warnings and troubleshooting](docs/installation-troubleshooting.md) for per-app opening steps, compatibility checks and screenshot placeholders.
+> Windows installers do not have trusted code signing, and macOS builds are not Developer ID signed/notarized. **Windows SmartScreen or macOS Gatekeeper may block the launcher.** Some macOS versions and hardware combinations may also be incompatible. See [installation warnings and troubleshooting](docs/installation-troubleshooting.md) for per-app opening steps, compatibility checks and Windows screenshots.
 
 ### OneClient setup for offline accounts
 
@@ -264,6 +264,8 @@ VanillaHUD [fixed missing preview names in its 3.5.8 source](https://github.com/
 ### Maintenance
 
 [AGENTS.md](AGENTS.md) records the fork's scope, coding conventions, upgrade requirements and validation workflow. Keep fork changes focused and reviewable against the upstream release they extend. UI changes are tested manually by the maintainer.
+
+Start with the [maintainer handoff](docs/maintainer-handoff.md) for implementation status, confirmed owner tests and the remaining publication steps. The [implementation plan](docs/implementation-plan.md) and [validation record](docs/validation.md) retain the design decisions and test evidence.
 
 ## Privacy & Network Requests
 

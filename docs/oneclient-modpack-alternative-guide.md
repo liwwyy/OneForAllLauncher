@@ -27,7 +27,7 @@ or select a Java version that matches the Minecraft version required by the pack
 Freesm supports adding this account without first adding a Microsoft account.
 Keep the same player name when returning to an existing offline world/server;
 changing names can change the offline player identity used for inventory and
-permissions.
+permissions. Ely.by accounts are also supported!
 
 ## 3. Install the official OneClient modpack
 
@@ -56,19 +56,5 @@ offline account. Realms, servers requiring Microsoft/Mojang authentication and
 authenticated PolyPlus features such as cosmetics or P2P hosting still require
 the corresponding valid account/session. Authentication errors for those services
 do not mean that the local modpack installation failed.
-
-## Using this alongside OneForAllLauncher
-
-This recipe installs and runs the modpack in Freesm's own instance. Keep that
-instance separate from OneClient's shared game library; selecting a OneClient
-folder in OneForAllLauncher does not automatically import Freesm instances.
-OneForAllLauncher's shared-library option is for stock OneLauncher/OneClient's
-catalog and game files. Its accounts, settings and local wardrobe remain private
-to the fork. Local skins selected in this fork's wardrobe apply when launching
-through this fork; Freesm's skin support is managed separately.
-
-If a pack fails to install, record its version, the launcher version and the first
-relevant error from the instance log. For opening downloaded builds, see the
-[installation troubleshooting guide](installation-troubleshooting.md).
 
 [Return to the README](../README.md#installation).
