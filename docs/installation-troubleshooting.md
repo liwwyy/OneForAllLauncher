@@ -46,20 +46,15 @@ If the option is unavailable because of an organizational policy, contact the
 device administrator. Keep Defender and SmartScreen enabled; no global security
 setting needs to be changed for these steps.
 
-<table>
-<tr><td align="center" width="680" height="180">
-<strong>Screenshot placeholder: Windows SmartScreen</strong><br>
-Show the initial dialog and the More info button.
-</td></tr>
-<tr><td align="center" width="680" height="180">
-<strong>Screenshot placeholder: Windows Run anyway</strong><br>
-Show the expanded dialog and Run anyway button.
-</td></tr>
-</table>
+### 1. Select More info
 
-<!-- Maintainer: replace the two placeholder cells with your screenshots after
-manual verification. Suggested files in docs/screenshots/installation/:
-windows-smartscreen.png and windows-run-anyway.png. Do not capture personal paths. -->
+![Windows SmartScreen warning with More info](screenshots/windows-smartscreen.jpg)
+
+### 2. Select Run anyway
+
+![Expanded Windows SmartScreen dialog with Run anyway](screenshots/windows-smartscreen-runanyways.png)
+
+These screenshots were supplied by the maintainer from Windows testing.
 
 ## macOS: unidentified developer / Apple cannot verify this app
 
@@ -83,21 +78,6 @@ should not automatically be treated as an unsigned-app warning. Download the
 correct asset again and check the exact message before proceeding; Apple's
 [alert descriptions](https://support.apple.com/en-us/102445) distinguish
 these cases.
-
-<table>
-<tr><td align="center" width="680" height="180">
-<strong>Screenshot placeholder: macOS blocked-app dialog</strong><br>
-Show the exact warning and include the macOS version in the caption.
-</td></tr>
-<tr><td align="center" width="680" height="180">
-<strong>Screenshot placeholder: macOS Open Anyway</strong><br>
-Show the application-specific exception under Privacy & Security.
-</td></tr>
-</table>
-
-<!-- Maintainer: suggested files in docs/screenshots/installation/:
-macos-gatekeeper.png and macos-open-anyway.png. Add separate captions/steps if
-older macOS releases show a different dialog. -->
 
 ## macOS: wrong architecture, unsupported OS, or launch failure
 

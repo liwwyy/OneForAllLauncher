@@ -220,6 +220,10 @@ and diff whitespace checks; no application rebuild was needed.
 
 ## Manual acceptance before release
 
+Owner update (2026-11-09): opening the OneConfig HUD with an Ely.by account
+works in the owner's test. The compatibility-agent toggle state was not specified,
+so this does not establish that the workaround can be removed.
+
 Owner update (2026-11-09): offline skins now work on modern versions after the
 version 4 correction, in addition to the previously confirmed Ornithe 1.8.9 setup.
 Shared library operation and offline launch were already confirmed. This records
