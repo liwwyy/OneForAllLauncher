@@ -82,7 +82,9 @@ Offline accounts can be used for singleplayer and servers configured to accept o
 
 ### OneClient setup for offline accounts
 
-The maintainer's community setup guide will live at [OneClient setup for offline accounts](docs/offline-setup.md). The instructions are being prepared.
+Follow the [community setup guide for offline accounts](docs/offline-setup.md):
+use a standalone launcher with offline-account and Modrinth modpack support,
+such as Freesm, and install the official OneClient modpack through it.
 
 ### Stable Releases
 

@@ -218,5 +218,11 @@ from the reviewed release commit after the owner's manual UI test result, as
 required by [AGENTS.md](../AGENTS.md). Do not dispatch the release workflow from
 a development snapshot.
 
-The owner will write [offline-setup.md](offline-setup.md); it remains a clearly
-marked placeholder rather than claiming unverified installation instructions.
+The maintainer-approved [offline setup guide](offline-setup.md) now walks through
+Freesm offline-account creation, installing the official OneClient Modrinth pack,
+the `.mrpack` import alternative, initial downloads and authenticated-service
+limitations. The README links to it. Interface labels were checked against
+Freesm 2.3.2's [account controls](https://github.com/FreesmTeam/FreesmLauncher/blob/2.3.2/launcher/ui/pages/global/AccountListPage.ui)
+and [import page](https://github.com/FreesmTeam/FreesmLauncher/blob/2.3.2/launcher/ui/pages/modplatform/ImportPage.h),
+and the pack link against [Polyfrost's Modrinth listing](https://modrinth.com/modpack/oneclient-modpack).
+These are source/documentation checks, not a claimed manual Freesm installation.

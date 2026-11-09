@@ -101,6 +101,10 @@ injection in the launcher before starting Minecraft. Never load this hook for
 Microsoft, Ely.by or custom accounts, even if internet is unavailable or offline
 launch mode is selected. This restriction is separate from authlib-injector and
 the VanillaHUD preview workaround, which retain their own provider-specific scope.
+Resolve authlib/legacy hook calls through the source-built bootstrap bridge;
+do not load helper classes through a mod loader from inside a transformer.
+Keep regression coverage for a loader that denies the bridge package as well as
+real loader isolation. Keep diagnostics brief and free of names, paths or credentials.
 
 ## Verification
 
@@ -165,7 +169,10 @@ instructions accurate and link to focused guides instead of duplicating them.
 The proposed application changes and their acceptance checks are recorded in
 `docs/implementation-plan.md`; keep planned behavior distinct from shipped
 features and respect the owner's authorized implementation scope.
-The maintainer writes the offline OneClient setup guide at
-`docs/offline-setup.md`; keep its README link current. Do not invent installation
-steps or claim a method is community-trusted without evidence. Keep upstream and
-fork attribution clear. Do not recreate README_LOCAL.md.
+The maintainer-approved community route in `docs/offline-setup.md` uses a
+standalone launcher with offline-account and Modrinth modpack support (Freesm is
+the documented example) to install the official OneClient pack. Keep its README
+link current and verify UI/download links against the projects' official sources.
+Distinguish an offline player identity from playing without internet or accessing
+authenticated services. Do not invent installation steps or additional community
+endorsements. Keep upstream/fork attribution clear. Do not recreate README_LOCAL.md.
