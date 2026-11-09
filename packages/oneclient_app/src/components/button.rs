@@ -51,6 +51,7 @@ pub struct Button {
 
     enabled: bool,
     focusable: bool,
+    auto_focus: bool,
     foreground: Option<Color>,
     alt: Option<Box<str>>,
     tooltip: Option<Box<str>>,
@@ -113,6 +114,7 @@ impl Button {
             variant,
             enabled: true,
             focusable: true,
+            auto_focus: false,
             foreground: None,
             alt: None,
             tooltip: None,
@@ -123,6 +125,11 @@ impl Button {
             key: DiffKey::None,
             cursor_icon: CursorIcon::Pointer,
         }
+    }
+
+    pub fn auto_focus(mut self, auto_focus: bool) -> Self {
+        self.auto_focus = auto_focus;
+        self
     }
 
     pub fn variant(mut self, variant: ButtonVariant) -> Self {
@@ -327,6 +334,7 @@ impl Component for Button {
         let mut rect = rect()
             .a11y_id(a11y_id)
             .a11y_focusable(enabled() && self.focusable)
+            .a11y_auto_focus(enabled() && self.auto_focus)
             .a11y_role(AccessibilityRole::Button)
             .map(self.alt.clone(), |rect, alt| rect.a11y_alt(alt))
             .overflow(self.overflow)

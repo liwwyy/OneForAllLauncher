@@ -302,3 +302,17 @@ Minecraft/loader combinations before the feature is described as complete.
 
 Keep each commit reviewable and avoid mixing a future feature's partial UI into
 an earlier commit that cannot support its advertised behavior.
+
+## Optional upstream library reuse
+
+Onboarding keeps This PC as the fork's default and adds OneClient default folder
+alongside Another drive. Resolve the upstream release path using the same legacy
+settings marker as upstream, without changing fork configuration/account identity.
+The explicit upstream choice applies the exact directory. Custom folder selection
+recognizes the existing SQLite catalog read-only so a valid library is reused
+without a nested OneClient folder. Do not replace upstream settings or auth files.
+
+Sharing targets matching stable versions, with one launcher open at a time.
+Preserve shared migration checksums and verify upstream → fork → upstream database
+round trips with a temporary library. Automatic updates are preselected in fresh
+setup, with Next focused for Enter; Next confirms the displayed preference.

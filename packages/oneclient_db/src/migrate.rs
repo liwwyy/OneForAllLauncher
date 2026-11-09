@@ -148,4 +148,55 @@ mod tests {
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM offline_launch_settings").fetch_one(&pool).await.unwrap(), 0);
     }
 
+    #[tokio::test]
+    async fn an_upstream_library_can_be_reopened_after_the_fork_adds_preferences() {
+        let dir = TempDir::new().await.unwrap();
+        let path = dir.dir_path().join("user_data.db");
+        let pool = SqlitePool::connect(&format!("sqlite://{}?mode=rwc", path.display()))
+            .await
+            .unwrap();
+        // These shared migrations are unchanged from the pinned upstream 2.10.0 release.
+        let mut upstream = sqlx::migrate!();
+        upstream.migrations = std::borrow::Cow::Owned(
+            upstream
+                .iter()
+                .filter(|migration| migration.version != 20261109000000)
+                .cloned()
+                .collect(),
+        );
+        upstream.set_ignore_missing(true);
+        upstream.run(&pool).await.unwrap();
+        sqlx::query("INSERT INTO clusters (id, name, folder_name, mc_version) VALUES (456, 'Upstream instance', 'upstream-instance', '1.8.9')")
+            .execute(&pool).await.unwrap();
+        run(&pool, &path).await.unwrap();
+        sqlx::query(
+            "INSERT INTO offline_launch_settings(cluster_id, always_offline) VALUES (456, 1)",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        pool.close().await;
+        let reopened = SqlitePool::connect(&format!("sqlite://{}?mode=rw", path.display()))
+            .await
+            .unwrap();
+        upstream
+            .run(&reopened)
+            .await
+            .expect("upstream must tolerate the fork's additive migration");
+        let name: String = sqlx::query_scalar("SELECT name FROM clusters WHERE id = 456")
+            .fetch_one(&reopened)
+            .await
+            .unwrap();
+        assert_eq!(name, "Upstream instance");
+        let always: i64 = sqlx::query_scalar(
+            "SELECT always_offline FROM offline_launch_settings WHERE cluster_id = 456",
+        )
+        .fetch_one(&reopened)
+        .await
+        .unwrap();
+        assert_eq!(always, 1);
+        run(&reopened, &path).await.unwrap();
+        reopened.close().await;
+    }
+
 }

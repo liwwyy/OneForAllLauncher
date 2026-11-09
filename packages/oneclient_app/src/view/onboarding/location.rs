@@ -14,6 +14,13 @@ use crate::view::onboarding::{
     choice_row, onboarding_illustration, onboarding_nav_action, onboarding_page, step_heading,
 };
 
+#[derive(Clone, PartialEq)]
+enum FolderChoice {
+    ThisPc,
+    OneClient(PathBuf),
+    AnotherDrive(PathBuf),
+}
+
 #[derive(PartialEq)]
 pub struct OnboardingLocation;
 
@@ -23,7 +30,7 @@ impl Component for OnboardingLocation {
         let launcher = use_launcher();
         let selection = use_onboarding_selection();
 
-        let mut picked = use_state(|| None::<PathBuf>);
+        let mut picked = use_state(|| FolderChoice::ThisPc);
         let mut warning = use_state(|| None::<String>);
         let mut error = use_state(|| None::<String>);
         let mut waiting = use_state(|| false);
@@ -45,6 +52,10 @@ impl Component for OnboardingLocation {
             .map(|dir| dir.display().to_string())
             .unwrap_or_default();
 
+        let upstream_dir =
+            oneclient_common::paths::oneclient_default_dir().map_err(|err| err.to_string());
+        let upstream_choice = upstream_dir.clone();
+
         let confirm = move |()| {
             if *waiting.peek() {
                 return;
@@ -65,7 +76,18 @@ impl Component for OnboardingLocation {
 
             spawn_in_window(async move {
                 if !answered {
-                    if let Err(message) = oneclient_core::settings::data_dir::apply(chosen).await {
+                    let result = match chosen {
+                        FolderChoice::ThisPc => {
+                            oneclient_core::settings::data_dir::apply(None).await
+                        }
+                        FolderChoice::OneClient(path) => {
+                            oneclient_core::settings::data_dir::apply_exact(path).await
+                        }
+                        FolderChoice::AnotherDrive(path) => {
+                            oneclient_core::settings::data_dir::apply(Some(path)).await
+                        }
+                    };
+                    if let Err(message) = result {
                         error.set(Some(message));
                         waiting.set(false);
                         return;
@@ -100,10 +122,12 @@ impl Component for OnboardingLocation {
 
         content = if answered {
             let folder = if launcher.data_dir.is_empty() {
-                chosen
-                    .as_ref()
-                    .map(|path| path.display().to_string())
-                    .unwrap_or_else(|| default_dir.clone())
+                match &chosen {
+                    FolderChoice::ThisPc => default_dir.clone(),
+                    FolderChoice::OneClient(path) | FolderChoice::AnotherDrive(path) => {
+                        path.display().to_string()
+                    }
+                }
             } else {
                 launcher.data_dir.clone()
             };
@@ -131,26 +155,47 @@ impl Component for OnboardingLocation {
                     .child(choice_row(
                         t("oneclient.onboarding.location.this_pc"),
                         &default_dir,
-                        chosen.is_none(),
+                        matches!(chosen, FolderChoice::ThisPc),
                         move |()| {
-                            picked.set(None);
+                            picked.set(FolderChoice::ThisPc);
                             warning.set(None);
                             error.set(None);
                         },
                     ))
                     .child(choice_row(
-                        t("oneclient.onboarding.location.another_drive"),
-                        &chosen
+                        t("fork.onboarding.location.oneclient"),
+                        &upstream_dir
                             .as_ref()
                             .map(|path| path.display().to_string())
-                            .unwrap_or_else(|| {
-                                t("oneclient.onboarding.location.pick_folder").to_string()
-                            }),
-                        chosen.is_some(),
+                            .unwrap_or_default(),
+                        matches!(chosen, FolderChoice::OneClient(_)),
+                        move |()| match &upstream_choice {
+                            Ok(path) => {
+                                picked.set(FolderChoice::OneClient(path.clone()));
+                                warning.set(None);
+                                error.set(None);
+                            }
+                            Err(message) => error.set(Some(message.clone())),
+                        },
+                    ))
+                    .child(choice_row(
+                        t("oneclient.onboarding.location.another_drive"),
+                        &match &chosen {
+                            FolderChoice::AnotherDrive(path) => path.display().to_string(),
+                            _ => t("oneclient.onboarding.location.pick_folder").to_string(),
+                        },
+                        matches!(chosen, FolderChoice::AnotherDrive(_)),
                         move |()| browse(picked, warning, error),
                     )),
             )
         };
+
+        if matches!(chosen, FolderChoice::OneClient(_)) {
+            content = content.child(note(
+                t("fork.onboarding.location.shared").to_string(),
+                colors::fg_secondary(),
+            ));
+        }
 
         if let Some(message) = warning.read().clone() {
             content = content.child(note(message, colors::code_warn()));
@@ -185,7 +230,7 @@ impl Component for OnboardingLocation {
 }
 
 fn browse(
-    mut picked: State<Option<PathBuf>>,
+    mut picked: State<FolderChoice>,
     mut warning: State<Option<String>>,
     mut error: State<Option<String>>,
 ) {
@@ -202,10 +247,10 @@ fn browse(
             Ok(checked) => {
                 error.set(None);
                 warning.set(checked.warning);
-                picked.set(Some(checked.path));
+                picked.set(FolderChoice::AnotherDrive(checked.path));
             }
             Err(message) => {
-                picked.set(None);
+                picked.set(FolderChoice::ThisPc);
                 warning.set(None);
                 error.set(Some(message));
             }

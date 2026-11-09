@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 use oneclient_common::paths;
+use sqlx::{Connection, sqlite::SqliteConnectOptions};
 
 use super::launcher::LauncherSettings;
 use super::store::save_settings;
@@ -56,13 +57,35 @@ pub async fn looks_empty(dir: &Path, ignored: &[OsString]) -> bool {
     true
 }
 
-pub async fn resolve(picked: &Path) -> PathBuf {
-    if picked.file_name().is_some_and(|name| name == FOLDER_NAME) || looks_empty(picked, &[]).await
+pub async fn resolve(picked: &Path) -> Result<PathBuf, String> {
+    if picked.file_name().is_some_and(|name| name == FOLDER_NAME)
+        || looks_empty(picked, &[]).await
+        || contains_launcher_library(picked).await?
     {
-        picked.to_path_buf()
+        Ok(picked.to_path_buf())
     } else {
-        picked.join(FOLDER_NAME)
+        Ok(picked.join(FOLDER_NAME))
     }
+}
+
+/// Reuse explicitly picked existing libraries, including custom roots named "data".
+/// The read-only probe must not initialize or migrate a database during browsing.
+async fn contains_launcher_library(dir: &Path) -> Result<bool, String> {
+    let file = dir.join(paths::DATABASE_FILE);
+    if !file.is_file() {
+        return Ok(false);
+    }
+    let options = SqliteConnectOptions::new().filename(&file).read_only(true);
+    let mut db = sqlx::SqliteConnection::connect_with(&options)
+        .await
+        .map_err(|error| format!("Couldn't inspect {}: {error}", file.display()))?;
+    let result = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name IN ('clusters', 'setting_profiles')"
+    ).fetch_one(&mut db).await;
+    db.close().await.map_err(|error| error.to_string())?;
+    result
+        .map(|count| count == 2)
+        .map_err(|error| format!("Couldn't inspect {}: {error}", file.display()))
 }
 
 pub fn default_path() -> Result<PathBuf, String> {
@@ -77,7 +100,7 @@ pub fn is_default(dir: &Path) -> bool {
 }
 
 pub async fn check(picked: &Path) -> Result<DataDirCheck, String> {
-    check_exact(&resolve(picked).await).await
+    check_exact(&resolve(picked).await?).await
 }
 
 pub async fn check_exact(path: &Path) -> Result<DataDirCheck, String> {
@@ -110,28 +133,32 @@ pub async fn check_exact(path: &Path) -> Result<DataDirCheck, String> {
 }
 
 pub async fn apply(picked: Option<PathBuf>) -> Result<(), String> {
+    let checked = match picked {
+        Some(path) => Some(check(&path).await?),
+        None => None,
+    };
+    apply_checked(checked).await
+}
+
+/// OneClient's default may use an older layout whose leaf is not "OneClient".
+pub async fn apply_exact(path: PathBuf) -> Result<(), String> {
+    apply_checked(Some(check_exact(&path).await?)).await
+}
+
+async fn apply_checked(checked: Option<DataDirCheck>) -> Result<(), String> {
     let mut settings = LauncherSettings::default();
-    let mut chosen = None;
-
-    if let Some(picked) = picked {
-        let checked = check(&picked).await?;
-
+    if let Some(checked) = checked {
         polyio::create_dir_all(&checked.path)
             .await
             .map_err(|err| format!("Couldn't create {}: {err}", checked.path.display()))?;
-
-        settings.data_dir = Some(checked.path.clone());
-        chosen = Some(checked.path);
+        settings.data_dir = Some(checked.path);
     }
-
     save_settings(&settings)
         .await
         .map_err(|err| format!("Couldn't save your settings: {err}"))?;
-
-    if let Some(chosen) = chosen {
+    if let Some(chosen) = settings.data_dir {
         paths::set_data_dir(chosen);
     }
-
     Ok(())
 }
 
@@ -171,7 +198,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(resolve(dir).await, dir.join(FOLDER_NAME));
+        assert_eq!(resolve(dir).await.unwrap(), dir.join(FOLDER_NAME));
 
         std::fs::remove_dir_all(dir).ok();
     }
@@ -183,7 +210,7 @@ mod tests {
         polyio::create_dir_all(dir).await.unwrap();
 
         assert_eq!(
-            resolve(dir).await,
+            resolve(dir).await.unwrap(),
             dir.to_path_buf(),
             "a folder made for this should not get another one inside it"
         );
@@ -201,7 +228,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            resolve(dir).await,
+            resolve(dir).await.unwrap(),
             dir.to_path_buf(),
             "the folder looks empty to the person who picked it"
         );
@@ -218,8 +245,8 @@ mod tests {
             .await
             .unwrap();
 
-        let once = resolve(dir).await;
-        assert_eq!(resolve(&once).await, once);
+        let once = resolve(dir).await.unwrap();
+        assert_eq!(resolve(&once).await.unwrap(), once);
 
         std::fs::remove_dir_all(dir).ok();
     }
@@ -267,5 +294,50 @@ mod tests {
         );
 
         std::fs::remove_dir_all(root.path()).ok();
+    }
+
+    #[tokio::test]
+    async fn an_existing_oneclient_library_is_reused_without_nesting_or_config_changes() {
+        let root = polyio::testing::ScratchDir::new("oneclient_shared_library");
+        let dir = root.join("custom-data");
+        let pool = oneclient_db::connect(dir.join(paths::DATABASE_FILE))
+            .await
+            .unwrap();
+        polyio::write(dir.join("settings.json"), b"{\"auto_update\":false}")
+            .await
+            .unwrap();
+        polyio::write(dir.join("auth.json"), b"upstream accounts")
+            .await
+            .unwrap();
+        assert_eq!(check(&dir).await.unwrap().path, dir);
+        assert_eq!(check_exact(&dir).await.unwrap().path, dir);
+        assert!(!dir.join(FOLDER_NAME).exists());
+        assert_eq!(
+            polyio::read(dir.join("settings.json")).await.unwrap(),
+            b"{\"auto_update\":false}"
+        );
+        assert_eq!(
+            polyio::read(dir.join("auth.json")).await.unwrap(),
+            b"upstream accounts"
+        );
+        pool.close().await;
+    }
+
+    #[tokio::test]
+    async fn an_unrelated_database_does_not_turn_a_folder_into_a_launcher_library() {
+        let root = polyio::testing::ScratchDir::new("data_dir_other_database");
+        polyio::create_dir_all(root.path()).await.unwrap();
+        let options = SqliteConnectOptions::new()
+            .filename(root.join(paths::DATABASE_FILE))
+            .create_if_missing(true);
+        let mut db = sqlx::SqliteConnection::connect_with(&options)
+            .await
+            .unwrap();
+        sqlx::query("CREATE TABLE unrelated (value TEXT)")
+            .execute(&mut db)
+            .await
+            .unwrap();
+        db.close().await.unwrap();
+        assert_eq!(resolve(root.path()).await.unwrap(), root.join(FOLDER_NAME));
     }
 }

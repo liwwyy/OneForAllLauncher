@@ -44,11 +44,21 @@ upgrade existing fork installs and coexist with upstream:
 - Preserve the fork-owned updater endpoint, public verification key and release
   tag scheme. Existing installed versions must trust the next release. Do not
   replace the signing identity or direct fork users to upstream update packages.
+- In fresh onboarding, preselect automatic updates and focus Next for Enter.
+  Confirm/save that choice on Next, preserve a manual selection when revisiting
+  the step, and retain existing installs' saved update preferences. Merely opening
+  the page must not start updates.
 - Preserve automatic-update consent and manual installation confirmation. Keep
   fork crash reporting unconfigured unless explicitly enabled for the build.
-- Do not automatically import or modify upstream OneClient installations. Use
-  temporary data directories for automated tests, never a user's live accounts
-  or game library.
+- Keep the fork's data location as its default. The explicit onboarding choice
+  **OneClient default folder** may reuse upstream game data/database, including
+  its existing legacy location. Keep fork configuration, accounts, logs and IPC
+  separate. Recognize compatible existing libraries selected through the folder
+  picker without nesting a new OneClient directory. Shared libraries are intended
+  for matching stable releases; use one launcher at a time.
+- Do not automatically import or modify upstream OneClient installations. Test
+  sharing and database round trips only in temporary directories, never a user's
+  live accounts or game library.
 
 ## Code and UI conventions
 

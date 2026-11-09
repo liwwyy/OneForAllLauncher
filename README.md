@@ -99,11 +99,25 @@ Download OneForAll Launcher from [GitHub Releases](https://github.com/liwwyy/One
 
 macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. See the [installation troubleshooting guide](docs/installation-troubleshooting.md) if your operating system blocks the launcher or your Mac cannot run the build.
 
+### Choosing the game data folder
+
+Initial setup offers **This PC**, **OneClient default folder**, and **Another drive**.
+This PC keeps the fork's own directory. OneClient default folder reuses upstream
+OneClient's release library, including its existing legacy location. For an
+upstream custom data location, use Another drive and select the existing library;
+its instances/database are recognized without adding a nested OneClient folder.
+
+Sharing reuses games, instances, libraries and the catalog database. Fork accounts,
+launcher settings, update preferences and logs remain separate. Use matching
+stable launcher versions and **one launcher at a time** with a shared library;
+changes to instances and game files affect both. Nothing automatically switches
+existing fork installations to upstream data.
+
 ### Launcher updates
 
 Version numbers now follow upstream OneLauncher: **2.10.0** targets upstream 2.10.0 plus the fork’s account features. This checkout is awaiting release validation. GitHub release tags retain the `oneforall-` prefix.
 
-Starting with **2.6.10**, setup asks whether to enable automatic launcher updates. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
+Setup shows **automatic updates selected by default**. Press **Enter** or **Next** to confirm it, or select **Update manually** to opt out. Viewing the page alone does not enable updates, and existing installations retain their saved preference. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
 
 Updates come from this fork’s stable GitHub releases, and package signatures are verified before installation. Restart the launcher to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates; DEB/RPM installations and development builds show a download notice instead.
 

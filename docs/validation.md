@@ -46,9 +46,10 @@ and incremental compilation were disabled to keep resource use bounded.
   identifiers and the updater public key match the previous fork; application
   artwork matches upstream exactly. `README_LOCAL.md` is absent.
 
-The replacement series contains seven focused commits: installation/updates,
+The initial replacement series contains seven focused commits: installation/updates,
 retained account support, the preview toggle, provider identities, offline launch,
-local wardrobe and maintenance documentation. The assembled tree was checked
+local wardrobe and maintenance documentation. The onboarding follow-up adds one
+focused commit. The assembled tree was checked
 against the archived implementation snapshot before the validation report was
 finalized. Backups are local and excluded from the replacement history.
 
@@ -76,11 +77,31 @@ finalized. Backups are local and excluded from the replacement history.
   and four clearly marked owner screenshot placeholders. No screenshots were
   captured by automation.
 
+## Follow-up: shared libraries and onboarding defaults
+
+- Added an explicit OneClient default folder choice using upstream's release path
+  and legacy-location detection. Existing custom libraries are recognized through
+  a read-only catalog check. Fork accounts/configuration remain independent.
+- Verified upstream → fork → upstream migration/reopen behavior with temporary
+  data, including instance preservation and the additive offline preference.
+  No live upstream or fork library was used for these tests.
+- Fresh setup preselects automatic updates and focuses Next. Next confirms the
+  choice; existing installs keep their saved preference. A headless keyboard-event
+  test confirmed Enter activates Next without a click, rendering or pixel capture.
+- Passed 736 common/database/core/app tests (31 + 30 + 359 + 316), including the
+  added keyboard-event test in the final app run. The same 14 rendering tests were
+  excluded. The Linux debug build passed. Clippy completed with the same 11
+  upstream diagnostics; Cargo.lock is unchanged.
+
 ## Manual acceptance before release
 
 1. Check the account screens, onboarding, approved icons and local wardrobe in
    light/dark and Minecraft themes. The README gallery deliberately uses the
-   owner's existing 2.9 screenshots pending replacements.
+   owner's existing 2.9 screenshots pending replacements. Check all three data
+   location choices, including a legacy/custom upstream library, then restart to
+   verify persistence. Use one launcher at a time when sharing; verify accounts
+   and launcher settings remain separate. On fresh setup, press Enter on Updates
+   without clicking a choice; also check manual selection and Back/Next behavior.
 2. Disconnect before startup and launch a fully installed game. Check the
    eight-second shared probe, all launch labels, right-click Launch Offline,
    the per-instance toggle (default off), busy-state guards and recovery online.

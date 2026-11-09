@@ -2606,5 +2606,7 @@
   "fork.updates.setting_title": "Automatic launcher updates",
   "fork.updates.setting_description": "Check GitHub on startup and install verified updates automatically. Restart to apply. DEB/RPM installs receive an update notice.",
   "fork.updates.check": "Check for updates",
-  "fork.updates.check_description": "Check GitHub now, even when automatic updates are off. You’ll be asked before installation."
+  "fork.updates.check_description": "Check GitHub now, even when automatic updates are off. You’ll be asked before installation.",
+  "fork.onboarding.location.oneclient": "OneClient default folder",
+  "fork.onboarding.location.shared": "Shares games and instances with OneClient. Accounts and launcher settings stay separate. Use one launcher at a time with a shared library."
 }

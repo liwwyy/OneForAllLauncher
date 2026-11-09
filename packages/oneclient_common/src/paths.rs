@@ -52,6 +52,21 @@ fn resolve_default_dir() -> PathsResult<PathBuf> {
     standard_dir()
 }
 
+/// Upstream's release location, offered only when explicitly selected by the user.
+/// The fork's own configuration/account directory remains independent.
+pub fn oneclient_default_dir() -> PathsResult<PathBuf> {
+    let base = BaseDirs::new().ok_or(PathsError::DataDirUnavailable)?;
+    let legacy = ProjectDirs::from("org", "Polyfrost", "OneClient")
+        .map(|dirs| dirs.data_local_dir().to_path_buf());
+    Ok(oneclient_dir_from(base.data_dir(), legacy))
+}
+
+fn oneclient_dir_from(base: &Path, legacy: Option<PathBuf>) -> PathBuf {
+    legacy
+        .filter(|dir| dir.join(SETTINGS_FILE).is_file())
+        .unwrap_or_else(|| base.join("Polyfrost").join("OneClient"))
+}
+
 pub fn standard_dir() -> PathsResult<PathBuf> {
     Ok(organization_dir()?.join(APPLICATION))
 }
@@ -370,5 +385,25 @@ mod tests {
                 "OneForAllLauncher"
             }
         );
+    }
+
+    #[test]
+    fn explicit_oneclient_choice_uses_release_paths_and_existing_legacy_data() {
+        let temp = std::env::temp_dir().join(format!(
+            "oneclient-paths-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let legacy = temp.join("legacy").join("data");
+        std::fs::create_dir_all(&legacy).unwrap();
+        let standard = temp.join("Polyfrost").join("OneClient");
+        assert_eq!(oneclient_dir_from(&temp, Some(legacy.clone())), standard);
+        std::fs::write(legacy.join(SETTINGS_FILE), b"{}").unwrap();
+        assert_eq!(oneclient_dir_from(&temp, Some(legacy.clone())), legacy);
+        assert_eq!(std::fs::read(legacy.join(SETTINGS_FILE)).unwrap(), b"{}");
+        std::fs::remove_dir_all(temp).unwrap();
     }
 }
