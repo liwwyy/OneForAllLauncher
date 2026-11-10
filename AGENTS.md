@@ -184,6 +184,12 @@ UI test result before publishing. Do not describe planned features as released.
 
 README.md is the user entry point and source-build guide. Keep user-visible
 instructions accurate and link to focused guides instead of duplicating them.
+For every stable release, refresh the README's Stable Releases table against the
+actual GitHub release assets. Include direct download links for every application
+package, its operating system and architecture, and mark packages supporting
+in-launcher automatic updates with 🔄. Keep the release version and checksum link
+current. The custom fork icon in `docs/fork-icon/` is for the README only;
+preserve upstream application artwork and branding.
 The proposed application changes and their acceptance checks are recorded in
 `docs/implementation-plan.md`; keep planned behavior distinct from shipped
 features and respect the owner's authorized implementation scope.

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="160" height="160" align="center" src="./packages/oneclient_app/icons/icon.png" alt="OneForAll Launcher icon">
+<img width="160" height="160" align="center" src="docs/fork-icon/oneforall-icon.svg" alt="OneForAll Launcher icon">
 
 <h1>
 <a style="color:#f5c2e7">OneForAll Launcher</a>
@@ -21,14 +21,43 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 </div>
 
 > [!NOTE]
-> **Don't trust this fork?** Install the official OneClient modpack through a standalone launcher with offline-account and Modrinth support, using the community-recommended route for offline/cracked players. Follow the [OneClient modpack alternative guide](docs/oneclient-modpack-alternative-guide.md).
+> **Don't trust this fork?** Install the official OneClient modpack through a well known standalone launcher with offline-account and Modrinth support, using the community-recommended route for offline/cracked players. Follow the [OneClient modpack alternative guide](docs/oneclient-modpack-alternative-guide.md).
+
+## Stable Releases
+
+Download **OneForAllLauncher 2.10.0** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
+
+| Operating system | Architecture | Direct download | Installation |
+| --- | --- | --- | --- |
+| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_windows_x86_64.exe) | Run the installer. |
+| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_linux_x86_64.AppImage) | Mark executable, then run. |
+| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_linux_x86_64.deb) | Install with your package manager. |
+| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_linux_x86_64.rpm) | Install with your package manager. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/OneForAllLauncher_2.10.0_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
+
+🔄 Supports in-launcher automatic updates when enabled. For DEB/RPM installations, download and install newer packages manually.
+
+Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.10.0/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
+
+## Fork Sync Notice
+
+This fork follows **stable OneLauncher/OneClient releases** rather than individual upstream commits or development builds. It will usually be updated within a day of an upstream stable release.
+
+The **Upstream sync** badge checks hourly whether this fork's `main` includes the latest stable OneClient release commit. It shows **Up to date**, **Update available**, or **Check unavailable**. It describes the source branch; the Release badge separately shows the latest published build.
+
+If an update is taking longer, you can contact me via **[Discord](https://discord.com/users/1476376719668674620)** or open a **[GitHub Issue](https://github.com/liwwyy/OneForAllLauncher/issues)**.
+
+### My Discord
+
+<a href="https://discord.com/users/1476376719668674620"><img alt="My Discord" src="https://dcbadge.limes.pink/api/shield/1476376719668674620?style=flat"></a>
 
 ## Screenshots
 
 <details>
   <summary>Browse the screenshot gallery</summary>
-
-  <p>Screenshots are supplied by the maintainer. The onboarding and account-manager screenshots have been refreshed; the other account-dialog screenshots are from version 2.9.0.</p>
 
   <table>
     <tr>
@@ -57,12 +86,20 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
         <sub>Offline launch</sub>
       </td>
     </tr>
+    <tr>
+      <td align="center" colspan="2">
+        <a href="docs/screenshots/offline-local-skin-picker.png"><img src="docs/screenshots/offline-local-skin-picker.png" alt="Local skin picker for offline accounts" width="840" /></a><br />
+        <sub>Offline account local skin picker</sub>
+      </td>
+    </tr>
   </table>
 
 </details>
 
+## AI Usage disclosure
+
 > [!WARNING]
-> This is a fork modified with **AI**. and maintained independently
+> This is a fork modified with **AI**, and maintained independently
 
 ## Features
 
@@ -97,21 +134,6 @@ Offline accounts can be used for singleplayer and servers configured to accept o
 Follow the [community setup guide for offline accounts](docs/oneclient-modpack-alternative-guide.md):
 use a standalone launcher with offline-account and Modrinth modpack support,
 such as Freesm, and install the official OneClient modpack through it.
-
-### Stable Releases
-
-Download OneForAll Launcher from [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest). Choose the package for your operating system and processor:
-
-| Platform | Download | Installation |
-| --- | --- | --- |
-| Windows x86_64 | `.exe` | Run the installer. |
-| Linux x86_64 | `.AppImage` | Mark the file executable, then run it. |
-| Debian/Ubuntu x86_64 | `.deb` | Install with your distribution's package installer. |
-| Fedora/openSUSE x86_64 | `.rpm` | Install with your distribution's package manager. |
-| macOS Apple Silicon | `darwin_aarch64.dmg` | Open the DMG and copy the app to Applications. |
-| macOS Intel | `darwin_x86_64.dmg` | Open the DMG and copy the app to Applications. |
-
-macOS also has `.app.tar.gz` archives for each processor type. Releases include `SHA256SUMS.txt` for checking downloads. See the [installation troubleshooting guide](docs/installation-troubleshooting.md) if your operating system blocks the launcher or your Mac cannot run the build.
 
 ### Choosing the game data folder
 
@@ -167,18 +189,6 @@ Report fork-specific bugs and suggestions in [GitHub Issues](https://github.com/
 This fork only adds or modifies features directly associated with **standalone offline accounts, Ely.by, and custom authentication server support**. Contributions must stay within that scope and keep modifications to OneLauncher minimal so the fork remains easy to maintain and update.
 
 Code, documentation and translation contributions supporting those account features are welcome. Reuse upstream implementations and UI patterns, keep changes focused, and preserve compatibility with existing fork installations. Propose unrelated features and improvements to upstream OneLauncher. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution rules.
-
-## Fork Sync Notice
-
-This fork follows **stable OneLauncher/OneClient releases** rather than individual upstream commits or development builds. It will usually be updated within a day of an upstream stable release.
-
-The **Upstream sync** badge checks hourly whether this fork's `main` includes the latest stable OneClient release commit. It shows **Up to date**, **Update available**, or **Check unavailable**. It describes the source branch; the Release badge separately shows the latest published build.
-
-If an update is taking longer, you can contact me via **[Discord](https://discord.com/users/1476376719668674620)** or open a **[GitHub Issue](https://github.com/liwwyy/OneForAllLauncher/issues)**.
-
-### My Discord
-
-<a href="https://discord.com/users/1476376719668674620"><img alt="My Discord" src="https://dcbadge.limes.pink/api/shield/1476376719668674620?style=flat"></a>
 
 ## Building from Source
 

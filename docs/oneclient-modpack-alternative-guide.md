@@ -1,8 +1,8 @@
-# Community setup: OneClient with an offline account
+# Community recommended setup for offline/cracked players: OneClient with an offline account
 
-The community route recommended by this fork's maintainer is to use a standalone
+The community route recommended by me is to use a standalone
 launcher that supports both **offline accounts without a Microsoft sign-in** and
-**Modrinth modpacks**, then install the official OneClient modpack through it.
+**Modrinth modpacks**, then install the official [OneClient modpack](https://modrinth.com/modpack/oneclient-modpack) through it.
 This guide uses [Freesm Launcher](https://github.com/FreesmTeam/FreesmLauncher)
 as the example; another launcher with both capabilities can follow the same route.
 
@@ -27,7 +27,7 @@ or select a Java version that matches the Minecraft version required by the pack
 Freesm supports adding this account without first adding a Microsoft account.
 Keep the same player name when returning to an existing offline world/server;
 changing names can change the offline player identity used for inventory and
-permissions. Ely.by accounts are also supported!
+permissions.
 
 ## 3. Install the official OneClient modpack
 

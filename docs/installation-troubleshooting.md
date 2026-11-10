@@ -12,24 +12,8 @@ Windows publisher certificate or Apple notarization.
 ## Before opening a blocked download
 
 Download only from [this fork's GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases).
-Compare the downloaded file's SHA-256 with its entry in that release's
-`SHA256SUMS.txt`. Replace `VERSION` and the filename below with your download.
 
-Windows PowerShell:
-
-```powershell
-Get-FileHash ".\OneForAllLauncher_VERSION_windows_x86_64.exe" -Algorithm SHA256
-```
-
-macOS Terminal (example for Apple Silicon):
-
-```sh
-shasum -a 256 ~/Downloads/OneForAllLauncher_VERSION_darwin_aarch64.dmg
-```
-
-If the checksum differs, delete the file and download it again. A matching
-checksum checks file integrity; it does not mean Microsoft or Apple has reviewed
-the application.
+If the installation executable gives you an error, verify that you got the correct executable version for your pc (for example using the arm version on a x64 machine) and try redownloading to see if it fixes the issue. Furthermore you can check the checksums provided in the releases if you're a geek
 
 ## Windows: SmartScreen / Windows protected your PC
 
