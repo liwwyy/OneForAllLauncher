@@ -2,6 +2,7 @@ mod analytics;
 mod error;
 mod elyby;
 pub mod fabric;
+mod folder_packs;
 mod game_options;
 pub mod gpu;
 mod heal;
@@ -31,6 +32,9 @@ pub use crashdata::CrashData;
 pub use diagnosis::{CrashDiagnosis, diagnose, suspected_mods};
 pub use error::GameError;
 pub use fabric::{mods_folder_argument, uses_cluster_mods_folder};
+pub use folder_packs::{
+    FolderPack, list_folder_packs, remove_folder_pack, set_folder_pack_enabled,
+};
 pub use game_options::{read_graphics_backend, write_graphics_backend};
 pub use heal::clear_zeroed_files;
 pub use launch::{
