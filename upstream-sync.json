@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "label": "Upstream sync",
-  "message": "Update available (2.10.1)",
-  "color": "orange"
+  "message": "Up to date (2.10.1)",
+  "color": "f5c2e7"
 }
