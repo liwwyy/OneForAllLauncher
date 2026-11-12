@@ -114,6 +114,21 @@ random path), after URL-modifying mods run. Preserve other HTTPS requests,
 certificate validation and unrelated loopback endpoints; never disable TLS
 validation globally to support a local skin.
 
+PolyPlus/OneConfig head previews also perform direct session-profile lookups.
+Preserve the version 5 hook's route for the selected offline UUID to its private
+unsigned profile response, alongside the PNG capability. Do not broaden this
+route to other UUIDs or authentication services. Keep the checksum-pinned shipped
+OneConfig head-reader regression; authlib-only tests do not cover this path.
+The owner confirmed offline and Ely.by skins and head previews work in game on
+2026-11-12; this does not establish every game/loader combination.
+
+Accept PolyPlus showing an Ely.by launch account as Microsoft as a documented
+display quirk. The owner explicitly chose not to maintain a PolyPlus fork or add
+a label workaround. Keep the README note; do not treat the label as eligibility
+for Microsoft/PolyPlus authenticated services. Do not expose or redirect the
+fork's private auth store to PolyPlus to supply provider labels: its writer does
+not preserve the fork's provider-specific fields.
+
 ## Verification
 
 Read Cargo.toml and README.md for current toolchain and build requirements. The

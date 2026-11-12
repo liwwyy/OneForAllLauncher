@@ -92,6 +92,12 @@ If an update is taking longer, you can contact me via **[Discord](https://discor
         <sub>Offline account local skin picker</sub>
       </td>
     </tr>
+    <tr>
+      <td align="center" colspan="2">
+        <a href="docs/screenshots/elyby-skin-ingame.png"><img src="docs/screenshots/elyby-skin-ingame.png" alt="Ely.by skin in game" width="840" /></a><br />
+        <sub>Ely.by skin in game</sub>
+      </td>
+    </tr>
   </table>
 
 </details>
@@ -111,6 +117,7 @@ recommended free checks, what they establish, and their current status.
 - Launch installed instances without waiting for authentication, cloud sync or update requests when offline. Use **Launch Offline** from a launch button's context menu, or enable **Always launch Offline** in an instance's settings. Missing game files still require one online installation.
 - Keep the same username on different account types without changing Minecraft profile UUIDs.
 - Set a local PNG skin in the offline account wardrobe, with no registration or upload. Local skins use shared authlib and legacy skin paths across Minecraft versions and loaders; versions before 1.8 use the classic model. Mods that replace skin loading may take precedence.
+- Display offline local skins and Ely.by skins in game, including PolyPlus skin head previews. The maintainer confirmed both skin methods and head previews work in game; local-skin head support is part of the pending **2.10.1** update.
 - Toggle the VanillaHUD preview compatibility workaround in Launcher settings independently of authlib-injector.
 - Choose automatic, signature-verified updates from this fork’s GitHub releases, or check for updates manually in Launcher settings.
 - Install alongside upstream OneClient using separate accounts, settings and game data.
@@ -123,6 +130,9 @@ Offline accounts can be used for singleplayer and servers configured to accept o
 
 > [!IMPORTANT]
 > **PolyPlus world hosting, social and cosmetic features do not work with offline accounts.** The launcher's current PolyPlus integration requires an authenticated Microsoft Minecraft account; Ely.by and custom accounts also do not enable these services.
+
+> [!NOTE]
+> **PolyPlus may show an Ely.by account as “Microsoft” in its in-game account switcher.** This is a provider-label quirk; the account still uses Ely.by authentication and skins. The label does not grant access to Microsoft or PolyPlus authenticated services.
 
 ## Installation
 
@@ -167,7 +177,7 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers now follow upstream OneLauncher: **2.10.0** targets upstream 2.10.0 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
+Version numbers follow upstream OneLauncher. The **2.10.1** source update targets upstream 2.10.1 plus the fork’s account features. The maintainer has verified offline and Ely.by skins and PolyPlus head previews in game; release packages are produced by the automatic workflow. The Stable Releases table still links to the published **2.10.0** packages until fork 2.10.1 downloads are available. GitHub release tags retain the `oneforall-` prefix.
 
 Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 

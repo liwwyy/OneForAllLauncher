@@ -81,12 +81,12 @@ pub(crate) async fn launch_files(
     let libraries = paths::libraries_dir()?.join("oneforall/local-skin");
     let assets: [(&str, &[u8]); 2] = [
         (
-            "offline-skin-4.jar",
+            "offline-skin-5.jar",
             include_bytes!(concat!(env!("OUT_DIR"), "/offline-skin.jar")),
         ),
         (
-            "offline-skin-bridge-4.jar",
-            include_bytes!(concat!(env!("OUT_DIR"), "/offline-skin-bridge-4.jar")),
+            "offline-skin-bridge-5.jar",
+            include_bytes!(concat!(env!("OUT_DIR"), "/offline-skin-bridge-5.jar")),
         ),
     ];
     for (name, bytes) in assets {
@@ -98,7 +98,7 @@ pub(crate) async fn launch_files(
             polyio::write_atomic(&path, bytes).await?;
         }
     }
-    let jar = libraries.join("offline-skin-4.jar");
+    let jar = libraries.join("offline-skin-5.jar");
     Ok(Some((jar, directory(account.id)?.join("skin.png"), slim)))
 }
 

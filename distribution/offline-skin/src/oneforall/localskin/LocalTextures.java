@@ -12,6 +12,7 @@ public final class LocalTextures {
     private static UUID id;
     private static String username;
     private static String url;
+    private static String profileUrl;
     private static String packed;
     private static boolean warned;
     private static boolean failed;
@@ -25,12 +26,18 @@ public final class LocalTextures {
             id = UUID.fromString(System.getProperty("oneforall.localSkin.uuid"));
             username = System.getProperty("oneforall.localSkin.username");
             if (username == null) throw new IllegalArgumentException("Missing account name");
-            url = new SkinServer(new File(System.getProperty("oneforall.localSkin.path"))).url();
+            SkinServer server = new SkinServer(new File(System.getProperty("oneforall.localSkin.path")));
+            url = server.url();
+            profileUrl = server.profileUrl();
             String json = "{\"timestamp\":" + System.currentTimeMillis() + ",\"profileId\":\""
                     + id.toString().replace("-", "") + "\",\"profileName\":\"" + escape(username)
                     + "\",\"textures\":{\"SKIN\":{\"url\":\"" + url + "\",\"metadata\":{\"model\":\""
                     + (Boolean.getBoolean("oneforall.localSkin.slim") ? "slim" : "default") + "\"}}}}";
-            packed = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+            String encoded = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+            server.setProfile("{\"id\":\"" + id.toString().replace("-", "")
+                    + "\",\"name\":\"" + escape(username)
+                    + "\",\"properties\":[{\"name\":\"textures\",\"value\":\"" + encoded + "\"}]}");
+            packed = encoded;
             return true;
         } catch (Exception error) {
             failed = true;
@@ -121,20 +128,36 @@ public final class LocalTextures {
                 .newInstance(texture(loader), null, null, Enum.valueOf(signature, "UNSIGNED"));
     }
 
-    /** Handle legacy own-name URLs and restore the exact private PNG capability. */
+    /** Route only the selected player's public profile and legacy skin requests. */
     public static String legacyUrl(String original) {
         try {
             if (!initialize()) return original;
             // HTTPS-enforcing skin mods can rewrite our loopback capability.
             // Restore only this exact URL; remote HTTPS and other local URLs
             // retain their original transport and validation.
-            if (("https" + url.substring(4)).equals(original)) {
+            if (("https" + url.substring(4)).equals(original)
+                    || ("https" + profileUrl.substring(4)).equals(original)) {
                 reportDownload();
-                return url;
+                return "http" + original.substring(5);
             }
             URL source = new URL(original);
             String host = source.getHost().toLowerCase(Locale.ROOT);
             String path = source.getPath();
+            // PolyPlus PlayerHead uses OneConfig's direct session-profile lookup,
+            // rather than authlib. Supply the same response shape through the
+            // URL-routing boundary used by authentication injectors, scoped to
+            // this offline UUID. Never redirect auth/account service endpoints.
+            String scheme = source.getProtocol();
+            int port = source.getPort();
+            String query = source.getQuery();
+            if ((scheme.equals("https") || scheme.equals("http"))
+                    && host.equals("sessionserver.mojang.com")
+                    && source.getUserInfo() == null && source.getRef() == null
+                    && (port == -1 || port == (scheme.equals("https") ? 443 : 80))
+                    && path.equals("/session/minecraft/profile/" + id.toString().replace("-", ""))
+                    && (query == null || query.equals("unsigned=true") || query.equals("unsigned=false"))) {
+                return profileUrl;
+            }
             boolean legacy = ((host.equals("skins.minecraft.net") || host.equals("s3.amazonaws.com"))
                     && path.startsWith("/MinecraftSkins/"))
                     || ((host.equals("www.minecraft.net") || host.equals("minecraft.net")) && path.startsWith("/skin/"));

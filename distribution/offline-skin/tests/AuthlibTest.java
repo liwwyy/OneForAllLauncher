@@ -40,6 +40,7 @@ public final class AuthlibTest {
         boolean enabled = Boolean.parseBoolean(args[0]);
         boolean slim = Boolean.parseBoolean(args[1]);
         checkLegacy(enabled, args[2]);
+        checkProfileLookup(enabled, args[2]);
         if (args[3].equals("legacy")) return;
         checkAuthlib(AuthlibTest.class.getClassLoader(), enabled, slim, args[2]);
         // The platform/extension parent exposes JDK libraries, but cannot see the system agent classpath.
@@ -79,6 +80,53 @@ public final class AuthlibTest {
         require(new URL("https://example.org/MinecraftSkins/Player.png").getHost().equals("example.org"), "Changed unrelated URL");
         require(new URL("http://s3.amazonaws.com/MinecraftSkins/Player.png").getHost().equals(enabled ? "127.0.0.1" : "s3.amazonaws.com"), "Legacy S3 skin");
         require(new URL("http://www.minecraft.net/skin/Player.png").getHost().equals(enabled ? "127.0.0.1" : "www.minecraft.net"), "Legacy beta skin");
+    }
+
+    private static void checkProfileLookup(boolean enabled, String png) throws Exception {
+        String endpoint = "https://sessionserver.mojang.com/session/minecraft/profile/"
+                + ID.toString().replace("-", "");
+        URL profile = new URI(endpoint).toURL();
+        require(profile.getHost().equals(enabled ? "127.0.0.1" : "sessionserver.mojang.com"),
+                "Direct head-preview profile request bypassed the local skin");
+        if (enabled) {
+            require(new URL(endpoint).equals(profile), "URL profile route differs from URI");
+            require(URI.create(endpoint).toURL().equals(profile), "URI factory profile route differs");
+            require(new URL(endpoint + "?unsigned=false").equals(profile), "Unsigned query lost local profile");
+            String json;
+            try (InputStream input = profile.openStream()) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096]; int count;
+                while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
+                json = new String(bytes.toByteArray(), "UTF-8");
+            }
+            require(json.contains("\"id\":\"" + ID.toString().replace("-", "") + "\""), "Wrong profile ID");
+            require(!json.contains("\"signature\""), "Local profile must not pretend to be signed");
+            java.util.regex.Matcher property = java.util.regex.Pattern.compile(
+                    "\\\"name\\\"\\s*:\\s*\\\"textures\\\"\\s*,\\s*\\\"value\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"").matcher(json);
+            require(property.find(), "Head-preview reader cannot find the textures property");
+            String textures = new String(Base64.getDecoder().decode(property.group(1)), "UTF-8");
+            java.util.regex.Matcher skin = java.util.regex.Pattern.compile(
+                    "\\\"SKIN\\\"\\s*:\\s*\\{\\s*\\\"url\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"").matcher(textures);
+            require(skin.find(), "Head-preview reader cannot find the skin URL");
+            checkImage(new URI(skin.group(1)).toURL(), png);
+            HttpURLConnection head = (HttpURLConnection) profile.openConnection();
+            head.setRequestMethod("HEAD");
+            require(head.getResponseCode() == 200 && head.getContentType().startsWith("application/json"), "Profile HEAD/type");
+            head.disconnect();
+            HttpURLConnection post = (HttpURLConnection) profile.openConnection();
+            post.setRequestMethod("POST");
+            require(post.getResponseCode() == 405, "Profile endpoint allowed uploads");
+            post.disconnect();
+        }
+        for (String other : new String[]{
+                endpoint.replace(ID.toString().replace("-", ""), "00000000000000000000000000000000"),
+                endpoint.replace("sessionserver.mojang.com", "example.org"),
+                endpoint.replace("sessionserver.mojang.com", "sessionserver.mojang.com:12345"),
+                endpoint.replace("sessionserver.mojang.com", "other@sessionserver.mojang.com"),
+                endpoint + "/extra", endpoint + "?other=true", endpoint + "#fragment",
+                "https://api.minecraftservices.com/minecraft/profile"}) {
+            require(new URI(other).toString().equals(other), "Changed an unrelated profile/service request");
+        }
     }
 
     static URL checkAuthlib(ClassLoader loader, boolean enabled, boolean slim, String png) throws Exception {

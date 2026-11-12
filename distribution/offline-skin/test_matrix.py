@@ -29,6 +29,10 @@ FABRIC = [
 
 SECURE_SKINS_URL = "https://cdn.modrinth.com/data/4C4XkPCE/versions/cFBMxP98/secureskins-1.0.1%2B26.1.1-fabric.jar"
 SECURE_SKINS_SHA1 = "7d791989170b504270940aca1aaa690689cd41c0"
+ONECONFIG_HEAD_URL = "https://cdn.modrinth.com/data/AibBIVmj/versions/uXzmmgO2/OneConfig-26.3-fabric-1.7.0.jar"
+ONECONFIG_HEAD_SHA1 = "b96e5deb7ae1ee6fe5d3da1dab9f44e967081832"
+KOTLIN_URL = "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar"
+KOTLIN_SHA1 = "c343e135bd1e7dd94b7ed76b4159068d888d09db"
 
 
 def fabric_libraries(cache):
@@ -64,6 +68,7 @@ def main():
     parser.add_argument('--versions', nargs='+', help='Run only these Minecraft versions')
     parser.add_argument('--fabric', action='store_true', help='Also test real Fabric 0.20.1 classloaders using the primary Java runtime (17+)')
     parser.add_argument('--secure-skins', action='store_true', help='Test the real Secure Skins 1.0.1 HTTPS rewrite on 26.3 (Java 25+)')
+    parser.add_argument('--oneconfig-head', action='store_true', help='Test the shipped OneConfig PlayerHead reader used by PolyPlus on 26.3 (Java 25+)')
     args = parser.parse_args()
     versions = json.loads((ROOT / 'test-matrix.json').read_text())
     if args.versions:
@@ -72,6 +77,8 @@ def main():
             parser.error('Version is not in test-matrix.json')
     if args.secure_skins and not any(entry['minecraft'] == '26.3' for entry in versions):
         parser.error('--secure-skins requires 26.3 in the selected versions')
+    if args.oneconfig_head and not any(entry['minecraft'] == '26.3' for entry in versions):
+        parser.error('--oneconfig-head requires 26.3 in the selected versions')
     with tempfile.TemporaryDirectory() as temporary:
         work = Path(temporary)
         agent = work / 'offline-skin.jar'
@@ -79,9 +86,11 @@ def main():
         asm = builder.verified_asm(builder.DEFAULT_CACHE)
         subprocess.run([builder.javac(), '--release', '8', '-Xlint:-options', '-cp', str(asm), '-d', str(work),
                         str(ROOT / 'tests/AuthlibTest.java'), str(ROOT / 'tests/FabricLoaderTest.java'),
-                        str(ROOT / 'tests/SecureSkinsTest.java')], check=True)
+                        str(ROOT / 'tests/SecureSkinsTest.java'), str(ROOT / 'tests/OneConfigHeadTest.java')], check=True)
         fabric = fabric_libraries(args.cache_dir) if args.fabric else []
         secure_skins = fetch(SECURE_SKINS_URL, SECURE_SKINS_SHA1, args.cache_dir / 'mods/secureskins.jar') if args.secure_skins else None
+        oneconfig = fetch(ONECONFIG_HEAD_URL, ONECONFIG_HEAD_SHA1, args.cache_dir / 'mods/oneconfig-head.jar') if args.oneconfig_head else None
+        kotlin = fetch(KOTLIN_URL, KOTLIN_SHA1, args.cache_dir / 'libraries/kotlin-stdlib-2.4.21.jar') if args.oneconfig_head else None
         png = work / 'skin.png'
         subprocess.run([args.java, '-Djava.awt.headless=true', '-cp', str(work), 'AuthlibTest', 'prepare', str(png)], check=True)
         for entry in versions:
@@ -137,10 +146,19 @@ def main():
                         result = subprocess.run(secure_command, capture_output=True, text=True, timeout=30)
                         if result.returncode:
                             raise RuntimeError(f'{version} / Secure Skins failed:\n{result.stdout}\n{result.stderr}')
+                    if oneconfig and version == '26.3' and enabled and java == args.java:
+                        head_command = command[:command.index('-cp')]
+                        head_command.extend(['-cp', os.pathsep.join(map(str, [work, agent, *libraries, asm, kotlin])),
+                            'OneConfigHeadTest', str(png), str(oneconfig), str(slim).lower()])
+                        result = subprocess.run(head_command, capture_output=True, text=True, timeout=30)
+                        if result.returncode:
+                            raise RuntimeError(f'{version} / PlayerHead failed:\n{result.stdout}\n{result.stderr}')
                 loaders = ', real Fabric Knot/compatibility loaders' if fabric and not legacy and java == args.java else ''
                 print(f'PASS Minecraft {version}, authlib {authlib or "legacy URLs"}, {java}: slim/classic/disabled{loaders}', flush=True)
                 if secure_skins and version == '26.3' and java == args.java:
                     print('PASS real Secure Skins 1.0.1: private PNG transport restored, remote HTTPS unchanged', flush=True)
+                if oneconfig and version == '26.3' and java == args.java:
+                    print('PASS shipped OneConfig 1.7.0 PlayerHead reader used by PolyPlus: private profile and skin PNG', flush=True)
 
 
 if __name__ == '__main__':

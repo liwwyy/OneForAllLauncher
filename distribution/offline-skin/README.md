@@ -49,7 +49,7 @@ Authlib and legacy URL call sites resolve the bridge explicitly through the
 bootstrap loader using JDK reflection. They do not ask the mod loader to load a
 helper package during class transformation. This avoids a silent fallback when
 loader isolation rejects that package and avoids reentrant game-class loading.
-The launcher installs version 4 agent/bridge filenames so old and new running
+The launcher installs version 5 agent/bridge filenames so old and new running
 JVMs cannot disagree about an updated helper. Brief status messages report
 activation and use of local textures without exposing names, paths or credentials.
 
@@ -111,6 +111,44 @@ so its unchanged `useHttpsUrl` method can run without Minecraft. It then exercis
 native URL-creation patterns, checks the returned PNG bytes and verifies that
 remote HTTPS and other local URLs are preserved. This reproduces the reported
 transport failure without screenshots or launching a game. Use Java 25+.
+
+## PolyPlus head previews
+
+PolyPlus 2.0.2 uses OneConfig's public `PlayerHead` component for account and
+social heads. OneConfig 1.7.0's UI bridge requests
+`https://sessionserver.mojang.com/session/minecraft/profile/<uuid>` directly,
+then reads its `textures` property. That path bypasses authlib, so supplying
+textures through authlib alone does not supply this preview.
+
+Like authlib-injector's profile-routing approach for Ely.by, the offline hook
+now routes that lookup to a compatible profile response. The implementation is
+independent and local: only the exact selected offline UUID's session-profile
+URL is routed to an unpredictable loopback capability serving GET/HEAD. The JSON
+contains an unsigned textures property pointing to the existing private PNG.
+Other UUIDs, account/authentication endpoints and remote HTTPS remain unchanged.
+No registration, upload, external signing key or public skin server is involved.
+The server rejects uploads and arbitrary paths. Local profiles do not claim
+Mojang/Ely.by signatures or authenticated PolyPlus access.
+
+```sh
+python3 -B distribution/offline-skin/test_matrix.py --versions 26.3 --fabric --secure-skins --oneconfig-head
+```
+
+This downloads the checksum-pinned official OneConfig 1.7.0 mod and Kotlin
+stdlib into the test cache. It executes the shipped UI bridge's actual
+`skinUrl`/`httpGet` bytecode and original regex patterns, stubbing only
+game/Compose initialization and proxy access. It verifies the private JSON-to-PNG
+lookup in classic/slim modes, with an external-HTTPS tripwire. It does not start
+Minecraft, render a head or replace installed mod JARs. The normal matrix also
+checks direct profile routing, opt-in, other-UUID isolation and endpoint limits.
+
+Sources inspected: [PolyPlus account heads](https://github.com/Polyfrost/PolyPlus/blob/70bc4ca7ff7b43676aa51161157ea7cb09a54fae/src/main/kotlin/org/polyfrost/polyplus/client/gui/AccountSwitcher.kt),
+[OneConfig profile reader](https://github.com/Polyfrost/OneConfig/blob/629b7bfd0263e7b28e8697a048d042379dd7775c/minecraft/src/main/kotlin/org/polyfrost/oneconfig/api/ui/v1/internal/OneConfigUIPlayerHeadBridgeImpl.kt),
+and [authlib-injector profile routing](https://github.com/yushijinhun/authlib-injector/blob/develop/src/main/java/moe/yushi/authlibinjector/httpd/QueryProfileFilter.java).
+
+On 2026-11-12, the owner confirmed that offline and Ely.by skin hooks and skin
+head previews work in game with this fix. This confirms the tested setup, not
+every game/loader combination.
 
 The owner has confirmed Ornithe 1.8.9 rendering and now reports that local skins
 also work on modern versions after the version 4 transport correction. This is
