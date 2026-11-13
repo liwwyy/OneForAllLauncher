@@ -164,6 +164,12 @@ mod tests {
             &pattern,
             &mut used,
         );
+        // Settings search translates registered keys at runtime rather than at
+        // their declaration sites, so direct-call scanning cannot find them.
+        for item in inventory::iter::<crate::layout::SearchItem> {
+            used.insert(item.title.to_owned());
+            used.insert(item.description.to_owned());
+        }
         used.retain(|key| key.starts_with("oneclient.") || key.starts_with("fork."));
         let defined: BTreeSet<String> = EN_US.keys().cloned().collect();
 
