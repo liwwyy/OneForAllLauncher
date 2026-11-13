@@ -50,8 +50,10 @@ use crate::notifications::{
     OptionalModsGroup, OptionalModsOutcome, PackageUpdateGroup, PendingPrompt,
 };
 use crate::state::{
-    AppChannel, AppState, AsyncStatus, FlaggedInstallPrompt, MissingModInstall, RelocationState,
+    AppChannel, AppState, AsyncStatus, FlaggedInstallPrompt, IncompatibleInstallPrompt, MissingModInstall,
+    RelocationState,
 };
+use crate::install::IncompatibleMode;
 use crate::{invalidate_java_queries, launcher};
 
 /// Over-disabling is the cheaper mistake a dead button beats a second game
@@ -1352,6 +1354,7 @@ impl Actions {
                     target.project_id,
                     target.version_id,
                     None,
+                    IncompatibleMode::Refuse,
                 ),
                 Ok(None) => state
                     .services
@@ -1453,6 +1456,7 @@ impl Actions {
         project_id: impl Into<String>,
         version_id: impl Into<String>,
         world: Option<String>,
+        incompatible: IncompatibleMode,
     ) {
         self.start_install(
             cluster_id,
@@ -1461,6 +1465,7 @@ impl Actions {
             version_id.into(),
             world,
             false,
+            incompatible,
         );
     }
 
@@ -1473,7 +1478,29 @@ impl Actions {
             prompt.version_id,
             None,
             true,
+            prompt.incompatible,
         );
+    }
+
+    pub fn install_incompatible_anyway(&self, prompt: IncompatibleInstallPrompt) {
+        self.dismiss_incompatible_install();
+        self.start_install(
+            prompt.cluster_id,
+            prompt.provider,
+            prompt.project_id,
+            prompt.version_id,
+            None,
+            prompt.allow_flagged,
+            IncompatibleMode::Allow,
+        );
+    }
+
+    pub fn dismiss_incompatible_install(&self) {
+        self.station
+            .clone()
+            .write_channel(AppChannel::Installs)
+            .installs
+            .incompatible = None;
     }
 
     pub fn dismiss_flagged_install(&self) {
@@ -1484,6 +1511,7 @@ impl Actions {
             .flagged = None;
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn start_install(
         &self,
         cluster_id: ClusterId,
@@ -1492,6 +1520,7 @@ impl Actions {
         version_id: String,
         world: Option<String>,
         allow_flagged: bool,
+        incompatible: IncompatibleMode,
     ) {
         if self.refuse_during_update_check(cluster_id) {
             return;
@@ -1533,6 +1562,7 @@ impl Actions {
                         cluster_id,
                         world,
                         allow_flagged,
+                        incompatible,
                     )
                     .await
                 }
@@ -1540,7 +1570,21 @@ impl Actions {
             .await
             {
                 Ok(install) => install,
-                Err(flagged) => {
+                Err(crate::install::InstallBlocked::Incompatible { name }) => {
+                    let mut station = actions.station;
+                    let mut app = station.write_channel(AppChannel::Installs);
+                    app.installs.incompatible = Some(IncompatibleInstallPrompt {
+                        cluster_id,
+                        provider,
+                        project_id: project_id.clone(),
+                        version_id: version_id.clone(),
+                        name,
+                        allow_flagged,
+                    });
+                    app.installs.finish(cluster_id, provider, &project_id);
+                    return;
+                }
+                Err(crate::install::InstallBlocked::Flagged(flagged)) => {
                     let mut station = actions.station;
                     let mut app = station.write_channel(AppChannel::Installs);
                     app.installs.flagged = Some(FlaggedInstallPrompt {
@@ -1552,6 +1596,7 @@ impl Actions {
                         mc_version: flagged.mc_version,
                         explanation: flagged.explanation,
                         alternatives: flagged.alternatives,
+                        incompatible,
                     });
                     app.installs.finish(cluster_id, provider, &project_id);
                     return;
