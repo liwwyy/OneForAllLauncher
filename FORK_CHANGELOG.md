@@ -1,3 +1,13 @@
+## OneForAllLauncher 2.10.2 — local testing, not released
+
+- Integrate stable upstream OneClient 2.10.2, commit `43815efac80072c255528d558f6325534327e4ec`, retaining fork accounts, local skin/head-preview hooks, private settings, shared-library choices and signed updater identity.
+- Include upstream context-menu dismissal and overlay fixes, grid-card badge outlines, responsive wardrobe layout, instance migration and browser compatibility overrides.
+- Include upstream group renaming, the Special chat tab, paginated social endpoints, settings search registration and the partial ZIP64 modpack import fix. The new `inventory` dependency comes from upstream's settings-search implementation.
+- Add a pink macOS / Windows / Linux platform badge to the README.
+- Adapt the translation-key audit to include registered settings-search titles and descriptions, retaining checks for genuinely missing or unused translations.
+
+This update is held locally for testing. Published downloads remain at fork 2.10.1; do not publish or replace existing releases without owner approval. UI/game behavior and platform packages still require owner verification.
+
 ## OneForAllLauncher 2.10.1 — upstream OneClient 2.10.1
 
 - Integrate stable upstream OneClient 2.10.1, commit `ec784c912792f619dd88c788f97d7477be361bd2`, preserving the fork's account features, private settings, shared-library choices and signed updater identity.

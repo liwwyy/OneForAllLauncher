@@ -1,5 +1,67 @@
 # Fork validation and release handoff
 
+## Local 2.10.2 integration (2026-11-13)
+
+The owner requested the stable 2.10.2 update with commits held locally, plus a
+pink supported-platform badge. Starting fork commit: `b6b1456d`. Upstream tag
+`oneclient-2.10.2` resolves to `43815efac80072c255528d558f6325534327e4ec`.
+Its ten commits were merged without conflicts, with upstream ancestry retained.
+No push, release workflow dispatch or publication is authorized for this update.
+The README retains verified published 2.10.1 packages and checksum links.
+
+The merge exactly retained all 52 upstream-changed files that were not already
+fork-modified. Reviewed the remaining intersections in account settings, wardrobe,
+launch actions, chat, translations and settings registration. Account storage,
+private paths, shared-library choices, game-launch/skin-agent gates, distribution,
+workflow files, updater identity and application artwork are unchanged.
+Cargo.lock aligns the 15 workspace package versions and adds only upstream's
+pinned `inventory` 0.3.25; no other external package versions changed.
+
+Checks run with Rust 1.98.0, Python 3 and Java 25 on Linux:
+
+- The debug launcher build passed: `target/debug/oneforall_app`, version 2.10.2.
+  It was not opened and no live launcher settings or game library were changed.
+- The first Rust library-test run exposed the translation scanner's outdated
+  direct-call-only assumption after upstream introduced registered search keys.
+  The same scanner assumption exists in the upstream tag. A six-line test-only
+  fix includes registered search titles/descriptions as uses, preserving missing
+  and unused key checks. It fixes the failing audit without removing translations.
+- After that adjustment, all **1,206 workspace library tests** passed. The same
+  **14 rendering tests** in the markdown-image and lobby-panel suites were
+  explicitly excluded. The new search-registration and wardrobe-grid tests pass.
+- All **16 offline-account integration tests** and **8 shared-library/archive
+  integration tests** passed. These cover old account/provider data, private
+  settings, temporary shared instances/Java and archive handling.
+  No live upstream accounts or game library were accessed for these tests.
+- All **10 distribution Python tests** passed.
+- Skin-agent smoke checks passed, including opt-in and missing files/bridge.
+  The real authlib/Fabric normal and compatibility-loader matrix passed on
+  **1.8.9 and 26.3**, in classic/slim/disabled modes. The real Secure Skins 1.0.1
+  transport test and shipped OneConfig 1.7.0 head-reader regression passed.
+  These are fresh headless checks, not new in-game rendering verification.
+- Workspace all-target Clippy completed with **13 diagnostics** in existing or
+  upstream code; none concern the translation-audit adjustment. No lint cleanup
+  was applied.
+- Whole-workspace formatting checks report **90 files**, all also unformatted
+  in the pre-update fork or pinned upstream input under the same formatter.
+  Diff whitespace checking reports only an extra trailing blank line already in
+  upstream's exact `components/package_row.rs`. Retained upstream formatting.
+- Changed documentation links were checked. The platform badge returned an SVG
+  containing macOS/Windows/Linux and `#f5c2e7`. No screenshot or automated visual
+  comparison was taken or performed.
+
+Logs: `/tmp/oneforall-2.10.2-validation/`. Recovery bundle and final metadata:
+`/home/user/.codex/backups/OneForAllLauncher/20261113T090947-2.10.2/`.
+The merge, audit correction and documentation are separate local commits.
+
+Owner testing still needed: wardrobe resizing and offline skin selection,
+PolyPlus heads, offline/Ely.by/custom launches, context menus and overlays,
+settings search/folder choices, migration to a new instance, compatibility
+prompts and representative ZIP64 imports. Windows GPU behavior and Windows/macOS
+package validation require their respective platforms. The 2.10.1 owner results
+below are historical evidence and do not establish new 2.10.2 UI/game coverage.
+
+
 ## Local 2.10.1 integration (2026-11-12)
 
 Publication authorization (2026-11-12): after confirming offline/Ely.by skins

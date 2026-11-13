@@ -14,6 +14,7 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 [![Latest GitHub release](https://img.shields.io/github/v/release/liwwyy/OneForAllLauncher?label=Release&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases/latest)
 [![Stable upstream sync](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fliwwyy%2FOneForAllLauncher%2Fbadges%2Fupstream-sync.json&style=for-the-badge&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/upstream_sync.yml)
+<img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-f5c2e7?style=for-the-badge" alt="Supported platforms: macOS, Windows and Linux" />
 [![GitHub Repo stars](https://img.shields.io/github/stars/liwwyy/OneForAllLauncher?label=Stars&style=for-the-badge&color=%23f5c2e7&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIC05NjAgOTYwIDk2MCIgd2lkdGg9IjI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoIGQ9Im0zNTQtMjQ3IDEyNi03NiAxMjYgNzctMzMtMTQ0IDExMS05Ni0xNDYtMTMtNTgtMTM2LTU4IDEzNS0xNDYgMTMgMTExIDk3LTMzIDE0M1pNMjMzLTgwbDY1LTI4MUw4MC01NTBsMjg4LTI1IDExMi0yNjUgMTEyIDI2NSAyODgtMjUtMjE4IDE4OSA2NSAyODEtMjQ3LTE0OUwyMzMtODBabTI0Ny0zNTBaIiBzdHlsZT0iZmlsbDogcmdiKDI0NSwgMTk0LCAyMzEpOyIvPgo8L3N2Zz4%3D)](https://github.com/liwwyy/OneForAllLauncher/stargazers) [![GitHub release downloads](https://img.shields.io/github/downloads/liwwyy/OneForAllLauncher/total?label=Downloads&style=for-the-badge&color=%23f5c2e7&logo=github&logoColor=%23f5c2e7)](https://github.com/liwwyy/OneForAllLauncher/releases)
 
 </div>
@@ -177,7 +178,7 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers follow upstream OneLauncher. Release **2.10.1** includes upstream 2.10.1 plus the fork’s account features. The maintainer has verified offline and Ely.by skins and PolyPlus head previews in game. The Stable Releases table links directly to the published **2.10.1** packages. GitHub release tags retain the `oneforall-` prefix.
+Version numbers follow upstream OneLauncher. The local **2.10.2** source update includes upstream 2.10.2 plus the fork’s account features and is awaiting owner testing. The Stable Releases table links to the published **2.10.1** packages; 2.10.2 downloads will be added after publication. The maintainer verified offline and Ely.by skins and PolyPlus head previews in the previous 2.10.1 build. GitHub release tags retain the `oneforall-` prefix.
 
 Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 

@@ -1,43 +1,50 @@
-# Maintainer handoff: 2.10.1 release preparation
+# Maintainer handoff: local 2.10.2 update
 
-Snapshot: 2026-11-12. Read [AGENTS.md](../AGENTS.md) before making changes.
-The owner initially requested a local update and test build before committing.
-After confirming working offline/Ely.by skins and head previews, the owner
-authorized committing all pending changes, including AGENTS.md and changelog
-updates, and pushing to trigger the automatic 2.10.1 release workflow.
+Snapshot: 2026-11-13. Read [AGENTS.md](../AGENTS.md) before making changes.
+The owner requested a pink supported-platform badge and integration of stable
+upstream 2.10.2, with commits held locally for testing. Local commits are
+authorized; do not push, dispatch release workflows or publish this update until
+the owner authorizes the next step.
+The earlier 2.10.1 publication authorization does not apply to this update.
 
 ## Source and publication state
 
-- The existing checkout is `rewrite/2.10.0`; its name is retained. The local
-  workspace version is now **2.10.1**.
-- Stable upstream `oneclient-2.10.1` resolves to
-  `ec784c912792f619dd88c788f97d7477be361bd2`. Its ten commits since 2.10.0 are
-  integrated with upstream ancestry retained. Commit the upstream merge separately
-  from the offline head-preview fix and fork documentation so each is reviewable.
-- The starting fork commit is `3544820f`. Its published 2.10.0 application release
-  was built from `2b5b364aec810e39069085c31160492f5c021a31`.
-- The earlier history replacement is complete. Future approved updates should
-  retain upstream ancestry and use a normal push; do not repeat the old history
-  rewrite or reuse its obsolete expected remote SHA.
-- README downloads continue to reference the published fork 2.10.0 assets. Update
-  that table against actual fork 2.10.1 release assets when they exist.
+- Current branch: `main`. Starting fork commit: `b6b1456d`, the README download
+  refresh after the 2.10.1 release. The working version is **2.10.2**.
+- Stable upstream `oneclient-2.10.2` resolves to
+  `43815efac80072c255528d558f6325534327e4ec`. Its ten commits since 2.10.1
+  are integrated by local merge `ee05874e`, retaining upstream ancestry.
+  Local commit `a61a910c` adjusts the translation audit for registered search keys.
+  A separate documentation commit adds the platform badge and update notes.
+  Review the complete update with `git diff b6b1456d..HEAD`. Nothing is pushed.
+- Fork 2.10.1 was published from `4e119418`. Its eight application packages and
+  checksum file are linked in the README. Keep these actual downloads until
+  fork 2.10.2 is published; do not fabricate links to unbuilt packages.
+- Old local archive branches and remote `oneforall` were backed up and removed.
+  Keep remote `main` and the active `badges` branch. Do not repeat the completed
+  history rewrite, remove published tags/assets or force-push future updates.
 
 ## Changes in this update
 
-Read [the upstream changelog](../CHANGELOG.md) and
-[the fork notes](../FORK_CHANGELOG.md). Upstream adds folder resource-pack
-handling, broader instance-name punctuation, UI contrast fixes, crash-dialog
-log-upload controls, settings ordering and the social-window header changes.
-It also fixes the Windows dedicated-GPU default and read-only dedicated-folder
-sync. The README conflict was resolved by preserving this fork's documentation;
-upstream's COPR instructions do not apply to this fork.
+Read [the upstream changelog](../CHANGELOG.md) and [fork notes](../FORK_CHANGELOG.md).
+Upstream fixes context-menu dismissal/overlay layering, grid-card badge outlines,
+wardrobe resizing and partial ZIP64 imports. It adds instance migration, browser
+compatibility overrides, social group renaming, a Special tab and paginated social
+endpoints. Settings search now uses upstream's `inventory` registration mechanism.
+The new dependency is part of the stable upstream release, not a fork feature.
 
-The account implementation, private configuration/data-path rules, package and
-OS identities and updater public key remain unchanged. The follow-up head-preview
-fix below extends the local-skin hook without changing its account-kind gate.
-Cargo.lock changes only workspace version numbers, with no dependency upgrades.
-Full source diffs and the starting tip were saved outside the repository under
-`/home/user/.codex/backups/OneForAllLauncher/20261112-2.10.1/`.
+The first library-test run exposed an upstream audit assumption: search keys
+registered through `inventory` were falsely reported as unused by the direct-call
+translation scanner. A focused test-only adjustment includes registered titles
+and descriptions in that audit. Keep missing/unused-key validation enabled;
+do not remove real search translations or skip the audit to make tests pass.
+
+The merge had no conflicts. Account storage, private paths, game-library choices,
+launch/skin-agent gates, packaging identities and updater verification identity
+remain unchanged. Keep the source-built version 5 local skin hook and scoped
+VanillaHUD workaround. The README gains a pink supported-platform badge.
+A pre-update recovery bundle is stored outside the repository under
+`/home/user/.codex/backups/OneForAllLauncher/20261113T090947-2.10.2/`.
 
 ## Follow-up: PolyPlus offline head previews
 
@@ -61,7 +68,7 @@ profile-to-PNG path. See [agent verification](../distribution/offline-skin/READM
 Owner confirmation (2026-11-12): offline and Ely.by skin hooks and skin head
 previews work in game with the updated build. No additional game/loader version
 coverage was specified. No automated UI screenshots or visual comparisons have
-been performed. Publication is authorized through the automatic release workflow.
+been performed. This confirmation applies to 2.10.1; retest after the 2.10.2 update.
 
 ### Ely.by labels in the PolyPlus account switcher
 
@@ -84,34 +91,26 @@ Sources: [account UI](https://github.com/Polyfrost/PolyPlus/blob/276cc261fae42a9
 
 ## Testing and acceptance
 
-Current 2.10.1 automated results and manual checks are recorded in
-[validation.md](validation.md). Earlier 2.10.0 results are historical evidence,
-not test results for this update. The owner manually tests UI/game behavior;
-no screenshots or automated visual comparisons are authorized.
+Current 2.10.2 checks are recorded in [validation.md](validation.md); earlier
+results are historical evidence. The owner tests UI and game behavior manually.
+Do not take screenshots or perform automated visual comparisons.
 
-For the previous release, the owner confirmed shared OneClient libraries,
-offline launching, local skins on Ornithe 1.8.9 and modern versions, and opening
-OneConfig HUD with Ely.by. The HUD test's compatibility-agent setting was not
-specified, so keep the optional preview workaround. Authlib-injector remains
-separate and necessary for Ely.by/custom authentication.
+Retest offline/Ely.by/custom account flows and skins/head previews, the offline
+launch button, account wardrobe sizing, context menus, settings search and folder
+choices. Check new-instance migration, browser override prompts and ZIP64 imports
+with temporary test instances. Never modify a user's live upstream accounts or
+library to test compatibility. Windows GPU behavior and Windows/macOS packages
+need platform-specific verification.
 
-Recheck the new folder resource-pack controls, shared/dedicated-folder syncing,
-instance names with punctuation, contrast/onboarding, crash-upload confirmation
-and the retained offline-launch/local-skin flows. Windows GPU behavior and
-Windows/macOS packaging require platform-specific validation.
+## Publication after owner approval
 
-## Authorized publication and follow-up
+A push to `main` automatically builds and publishes an unpublished workspace
+version after packaging/signing succeeds. Existing releases remain immutable.
+Do not push this 2.10.2 update until authorized. Retain the fork signing identity
+and updater endpoint. After publication, refresh all README package links,
+architecture labels, checksum link and updater markers against the real assets.
 
-A push to `main` automatically starts the release workflow for an unpublished
-workspace version. It signs updater packages with the existing repository
-secrets and publishes after all platform builds succeed. It also triggers managed
-CodeQL and the stable-upstream sync badge. The owner has authorized this release.
-After publication, refresh the README download table against the actual 2.10.1
-assets, including every package, architecture, checksum link and updater marker.
-Do not claim successful packaging or publication until the workflow confirms it.
-
-CodeQL completed for the 2.10.0 release source but reported untriaged findings;
-analysis success is not security clearance. A future published 2.10.1 commit
-needs its own analysis. See [security verification](security-verification.md).
+Review managed CodeQL for the exact published source before release; a successful
+analysis is not security clearance. See [security verification](security-verification.md).
 
 [Return to the README](../README.md#maintenance).
