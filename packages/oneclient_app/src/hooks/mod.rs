@@ -10,9 +10,9 @@ mod sync_actions;
 mod view_state;
 
 pub use chat::{
-    start_invite_join,
     ChatJob, chat_draft, load_conversations, load_invite_games, load_roster, load_self_status,
     mark_read as mark_chat_read, notify_chat, player_name, resync_chat, save_chat_draft,
+    start_invite_join,
 };
 
 pub use debounce::use_debounced;
@@ -38,15 +38,17 @@ pub use active_cluster::{
 
 pub(crate) use actions::listed;
 pub use actions::{
-    CloudSignal, add_collaborator, cloud_engine, cloud_sync_signal, forget_deleted_cluster,
-    load_collaborators, load_is_shared, load_owner_check, load_setting_files, load_sync_left_out,
-    remove_collaborator,
-};
-pub use actions::{
     Actions, AlternativePick, ExternalImportJob, NotificationBuilder, PumpSignal, exporting,
     modpack_job_running, update_check_running,
 };
+pub use actions::{
+    CloudSignal, add_collaborator, cloud_engine, cloud_sync_signal, forget_deleted_cluster,
+    load_collaborators, load_embedded_files, load_is_shared, load_owner_check, load_setting_files,
+    load_sync_left_out, measure_share, remove_collaborator,
+};
 pub use queries::ALL_VERSIONS;
+pub use queries::PackageUpdatesQuery;
+pub(crate) use queries::take_bundles;
 pub(crate) use queries::invalidate_auth_queries;
 pub(crate) use queries::use_folder_watch;
 pub use queries::wardrobe;
@@ -82,29 +84,33 @@ pub use queries::{
     use_bundle_overrides, use_bundle_updates, use_bundles_with_status, use_cached_image,
     use_cancel_microsoft_login, use_changelog, use_cluster, use_cluster_analytics,
     use_cluster_content, use_cluster_logs, use_cluster_mutation, use_cluster_profile,
-    use_cluster_screenshots, use_cluster_settings, use_clusters, use_shared_groups, use_current_account,
+    use_cluster_screenshots, use_cluster_settings, use_clusters, use_current_account,
     use_default_account, use_disable_warnings, use_discard_leftovers, use_finish_microsoft_login,
-    use_folder_packs, use_game_profile, use_game_versions, use_global_analytics, use_java_majors,
-    use_is_migration_source, use_java_runtimes,
-    use_leftovers, use_loader_versions, use_local_image, use_log_action, use_log_content,
-    use_migratable_routes, use_migration, use_mods_folder_sync, use_named_profiles,
-    use_onboarding_bundles, use_package_categories, use_package_meta_batch, use_package_project,
-    use_package_search, use_package_updates, use_package_versions_when, use_player_profile,
-    use_player_skin, use_project_web_urls, use_provider_versions, use_refresh_account,
-    use_refresh_all_accounts, use_remove_account, use_screenshot_action,
-    use_screenshot_folder_watch, use_set_default_account, use_shadowed_mods, use_storage_action,
-    use_storage_report, use_terms, use_upload_log, use_version_art, use_version_art_gallery,
-    use_version_loaders, use_version_metadata, use_versions, version_list, versions_metadata,
-    versions_total,
+    use_folder_packs, use_game_profile, use_game_versions, use_global_analytics,
+    use_imported_modpacks, use_is_migration_source,
+    use_java_majors, use_java_runtimes, use_leftovers, use_loader_versions, use_local_image,
+    use_log_action, use_log_content, use_migratable_routes, use_migration, use_modpack_sources,
+    use_mods_folder_sync, use_named_profiles, use_onboarding_bundles, use_package_categories,
+    use_package_meta_batch, use_package_project, use_package_search, use_package_updates,
+    use_package_versions_when, use_player_profile, use_player_skin, use_project_web_urls,
+    use_provider_versions, use_refresh_account, use_refresh_all_accounts, use_remove_account,
+    use_screenshot_action, use_screenshot_folder_watch, use_set_default_account, use_shadowed_mods,
+    use_shared_groups, use_storage_action, use_storage_report, use_terms, use_upload_log,
+    use_version_art, use_version_art_gallery, use_version_loaders, use_version_metadata,
+    use_versions, version_list, versions_metadata, versions_total,
 };
-pub use queries::{GraphicsBackendQuery, use_graphics_backend};
+pub use queries::{BisectAction, BisectMutation, use_bisect, use_bisect_mutation};
+pub use queries::{GraphicsBackendQuery, use_graphics_backend, use_has_game_options};
+pub(crate) use queries::{UNCREATED_CLUSTER, bundle_plan, bundle_taken, pkg_key};
 pub use queries::{
     add_world_datapacks, delete_world, delete_world_datapack, invalidate_world_contents,
     spawn_world_task, try_cluster_worlds, try_world_datapacks, try_world_size, use_cluster_worlds,
     use_saves_folder_watch, use_world_datapacks, use_world_size,
 };
 pub use queries::{external_launchers, use_external_launchers};
-pub use queries::{import_screening, retry_import_screening, use_import_screening};
+pub use queries::{
+    import_screening, use_import_screening, use_modpack_header,
+};
 
 use crate::chat::{ChatInbox, ChatRoster, ChatThread};
 use crate::notifications::NotificationSnapshot;
@@ -334,7 +340,6 @@ pub fn use_microsoft_login_status() -> Option<LoginProgress> {
 
 pub use queries::{use_begin_elyby_login, use_finish_elyby_login, use_cancel_elyby_login};
 
-pub use queries::{BisectAction, BisectMutation, use_bisect, use_bisect_mutation, use_imported_modpacks, use_modpack_sources};
 
 pub use queries::{LocalSkinQuery, use_local_skin};
 pub use queries::use_player_skin_when;
