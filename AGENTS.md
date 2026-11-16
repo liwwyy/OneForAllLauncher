@@ -197,6 +197,13 @@ UI test result before publishing. Do not describe planned features as released.
 
 ## Documentation
 
+**Release notes must be publication-ready.** Never include internal testing
+notes, development-only headings, placeholders, or statements such as "local
+testing, not released" in public changelogs or GitHub releases. Review the final
+release text before publishing and include only verified, user-facing changes.
+Keep test results, local-only status and publication instructions in
+`docs/validation.md` and `docs/maintainer-handoff.md`, not the public changelog.
+
 README.md is the user entry point and source-build guide. Keep user-visible
 instructions accurate and link to focused guides instead of duplicating them.
 For every stable release, refresh the README's Stable Releases table against the
@@ -205,6 +212,9 @@ package, its operating system and architecture, and mark packages supporting
 in-launcher automatic updates with 🔄. Keep the release version and checksum link
 current. The custom fork icon in `docs/fork-icon/` is for the README only;
 preserve upstream application artwork and branding.
+Prepare the next version's deterministic download URLs from the release workflow
+with the full update, without temporary publication-status text; verify them
+against the uploaded assets after publication.
 The proposed application changes and their acceptance checks are recorded in
 `docs/implementation-plan.md`; keep planned behavior distinct from shipped
 features and respect the owner's authorized implementation scope.

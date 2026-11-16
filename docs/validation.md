@@ -1,5 +1,62 @@
 # Fork validation and release handoff
 
+## Local 2.11.0 integration (2026-11-16)
+
+The owner requested an update locally for testing before committing or pushing,
+and a rule that public release notes contain only publication-ready user-facing
+changes. Starting fork commit: `ff94de8d`. Stable upstream `oneclient-2.11.0`
+resolves to `85ae2298894413533fbe1f9f999b773a26ad5206` (28 commits since 2.10.2).
+The update retains that upstream parent in a merge. Automated checks below were
+completed locally before publication. The owner subsequently confirmed the tested
+build works and authorized commit/push to trigger the automatic release.
+
+Five conflicts were resolved in README, component/hook exports, launch actions
+and core launch. The fork's offline skip/network scope and token clearing remain
+in place; online launches pass upstream's remaining bundle budget through the
+launch wrapper. Kept fork authentication exports and removed duplicate re-exports
+found by the first compile. All 120 upstream-changed files without fork changes
+match the pinned tag exactly. No external lockfile package versions changed.
+Account storage, private paths, local skin agent/bridge, updater/distribution and
+platform identity remain unchanged. Upstream does add game profile fields such
+as Copy Mod Files; existing configuration-loading coverage passes.
+
+Fresh checks on Linux with Rust 1.98.0, Python 3 and Java 25:
+
+- The debug launcher build passed: `target/debug/oneforall_app`, version 2.11.0.
+  The launcher/game was not opened and live data was not modified.
+- All **1,250 workspace library tests** passed, with the same **14 rendering
+  tests** excluded from the markdown-image and lobby-panel suites. Coverage
+  includes the new upstream Java/download, sharing, settings and game-file logic.
+- All **16 offline-account integration tests** and **16 selected core integration
+  tests** passed. The latter cover temporary shared-library reuse, archive imports,
+  download verification and mod-folder synchronization. **4 network-dependent
+  tests** retain upstream's ignored status. All test data uses temporary roots.
+- All **10 distribution Python tests** passed.
+- Skin-agent smoke checks and the real authlib/Fabric normal/compatibility-loader
+  matrix passed on **1.8.9 and 26.3**, in classic/slim/disabled modes. Secure Skins
+  1.0.1 transport and the shipped OneConfig 1.7.0 head-reader regression passed.
+  These are headless checks, not new game-rendering evidence.
+- Workspace all-target Clippy passed with **17 diagnostics** in existing/upstream code,
+  including new upstream type-complexity and test-future warnings.
+  None concern the launch conflict resolution. No unrelated lint cleanup applied.
+- Whole-workspace formatting reports **100 files**. Each also fails formatting
+  in the pre-update fork or pinned upstream under the same formatter. Preserved
+  that formatting. `git diff --check HEAD` passes and no conflicts remain.
+- Changed documentation links and all **9** deterministic README package/checksum
+  URLs were checked against the unchanged release workflow. The 2.11.0 extracted
+  release notes were reviewed and public changelog status/testing prose removed.
+  AGENTS.md now records the publication-ready rule. The already-published 2.10.2
+  GitHub release text was not edited. No screenshots or visual comparisons used.
+
+Logs: `/tmp/oneforall-2.11.0-validation/`. Source recovery bundle, patch and test
+metadata: `/home/user/.codex/backups/OneForAllLauncher/20261116-2.11.0/`.
+
+Owner confirmation: the 2.11.0 test build works; commit and push are authorized.
+No additional platform coverage was specified. Windows/macOS packaging and UI
+verification still require their respective platforms. Earlier owner results
+below are historical.
+
+
 ## Local 2.10.2 integration (2026-11-13)
 
 The owner requested the stable 2.10.2 update with commits held locally, plus a
