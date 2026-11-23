@@ -10,7 +10,7 @@ use oneclient_common::paths;
 
 use crate::LauncherState;
 use crate::settings::data_dir;
-use crate::settings::store::save_settings;
+use crate::settings::store::save_current_settings;
 use crate::storage::{dir_size, format_bytes};
 
 pub const IN_PROGRESS_MARKER: &str = ".oneclient_migrating";
@@ -112,7 +112,7 @@ pub async fn use_library(state: &LauncherState, plan: &LibraryPlan) -> Result<()
     snapshot.data_dir = Some(plan.to.clone());
     snapshot.reused_data_dir = true;
     // Selection is not a move: neither library becomes disposable leftovers.
-    save_settings(&snapshot)
+    crate::settings::store::save_settings(&snapshot)
         .await
         .map_err(|error| error.to_string())?;
     let mut settings = state.settings.write();
@@ -346,8 +346,7 @@ pub async fn discard_leftovers(state: &LauncherState) -> Result<u64, String> {
         settings.previous_data_dir = None;
     }
 
-    let snapshot = state.settings.read().clone();
-    save_settings(&snapshot)
+    save_current_settings(&state.settings)
         .await
         .map_err(|err| format!("Couldn't save your settings: {err}"))?;
 
@@ -873,9 +872,7 @@ async fn commit(state: &LauncherState, from: &Path, to: &Path, reused: bool) -> 
         settings.reused_data_dir = false;
     }
 
-    let snapshot = state.settings.read().clone();
-
-    save_settings(&snapshot)
+    save_current_settings(&state.settings)
         .await
         .map_err(|err| format!("Everything was copied but your settings could not be saved: {err}"))
 }

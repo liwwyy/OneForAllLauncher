@@ -1,3 +1,51 @@
+# Current local integration: 2.12.0 (2026-11-23)
+
+The owner requested an upstream update locally and will test the application.
+The owner subsequently authorized committing and pushing this update on
+2026-11-23. No launcher execution, screenshots or visual comparisons were
+performed by the agent; no new owner test details were supplied. Starting HEAD: `cf93bd8f`. Stable upstream tag:
+`oneclient-2.12.0`, commit `0da930e2bb99784e4715396252f1b51f6529af25`
+(42 commits after the previously integrated upstream release).
+
+Current checks:
+
+- Before push, the latest managed CodeQL analysis was for cf93bd8f, with existing
+  open alerts including critical/high classifications. These have not been
+  triaged here and do not establish confirmed vulnerabilities. Review the new
+  exact-commit analysis after push; no clean-security-scan claim is made.
+
+- `cargo +1.98.0 build --locked -p oneclient_app --bin oneforall_app`: passed.
+  Test executable: `target/debug/oneforall_app`. The installed 1.98.0 toolchain
+  satisfies the workspace's Rust 1.97 minimum. Initial compilation was interrupted;
+  the final completed build succeeded after fixing the library-selection settings
+  save reference introduced by upstream's settings API changes.
+- `python3 -B -m unittest discover -s distribution -p 'test_*.py'`: 10 passed.
+- `git diff --check HEAD`: passed. No unresolved merge entries remain.
+- 161 upstream-only changed files match the stable tag exactly; the two Nix
+  additions intentionally use fork identity and the last published fork asset.
+- Formatting check reports differences, including an unchanged upstream chat.rs
+  formatting difference reproduced directly from the pinned tag. No broad
+  formatting cleanup was performed.
+- The broader Rust test suite did not complete. Its initial compile required a
+  DATABASE_URL for a new upstream SQLx test query. A temporary schema made from
+  repository migrations resolves that setup requirement; no live accounts or
+  libraries were accessed. After the successful application build, the remaining
+  test compilation was stopped to hand the build over for owner testing. Do not
+  treat previous-version test counts as results for this update.
+
+Manual verification areas (no new test details supplied): provider logins, offline launch/Java cache behavior,
+local skins/head previews, shared-library selection, appearance, bundle onboarding
+and the retained automatic-update choice. Windows/macOS packaging and Nix execution
+were not tested locally. The optional Nix recipe remains on published fork 2.11.0
+until a 2.12.0 asset checksum exists. README links are prepared from deterministic
+release naming; publication has not happened.
+
+The update retains a merge of the stable upstream tag, plus fork integration and
+documentation edits. The owner authorized commit and push after the local build. The earlier records below are
+historical only and do not authorize publishing this update.
+
+---
+
 # Fork validation and release handoff
 
 ## Local 2.11.0 integration (2026-11-16)

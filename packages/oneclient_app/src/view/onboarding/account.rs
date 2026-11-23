@@ -54,7 +54,7 @@ impl Component for OnboardingAccount {
             content,
             onboarding_nav(
                 Some(Route::OnboardingLanguage {}),
-                Route::OnboardingBundles {},
+                Route::OnboardingBundlePicker {},
                 has_account,
             ),
         );

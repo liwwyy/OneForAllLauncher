@@ -266,7 +266,15 @@ async fn latest_for(
     ctx: &ContentCtx,
 ) -> ContentResult<Option<(String, String)>> {
     let provider = ctx.providers.get(candidate.provider)?;
-    let Some(latest) = pick_version(provider, &candidate.project_id, cluster, ctx).await? else {
+    let Some(latest) = pick_version(
+        provider,
+        &candidate.project_id,
+        cluster,
+        Some(&candidate.version_id),
+        ctx,
+    )
+    .await?
+    else {
         return Ok(None);
     };
 
@@ -388,6 +396,7 @@ pub async fn apply_browser_package_update(
     child: Option<&GroupedProgressChild>,
     ctx: &ContentCtx,
 ) -> ContentResult<String> {
+    let _mutation = crate::packages::package_mutation_guard().await;
     // Never touch anything a bundle owns however this was called
     if bundle_dao::get_bundle_tracked(&ctx.db, update.cluster_id, &update.hash)
         .await?

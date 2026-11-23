@@ -1,3 +1,9 @@
+## OneForAllLauncher 2.12.0 — upstream OneClient 2.12.0
+
+- Update to stable OneClient 2.12.0 while retaining offline accounts, Ely.by/custom authentication, local skins and head previews, shared libraries and fork updater identity.
+- Include upstream GraalVM support, bundle-channel selection, appearance and wardrobe improvements, and supported video previews in mod descriptions.
+- Include upstream log-viewer performance improvements, OneDrive folder warnings, Windows updater exit handling, ARM Java selection fixes and instance/bundle maintenance fixes.
+
 ## OneForAllLauncher 2.11.0 — upstream OneClient 2.11.0
 
 - Update to stable upstream OneClient 2.11.0 while retaining offline accounts, Ely.by/custom authentication, local skins and PolyPlus head previews.

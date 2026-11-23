@@ -1,3 +1,29 @@
+# Local 2.12.0 integration — 2026-11-23
+
+The owner initially requested local integration for manual testing, then explicitly
+authorized commit and push on 2026-11-23. A push to main triggers the release
+workflow. No additional manual test results were provided; no UI automation was
+performed. HEAD before integration:
+`cf93bd8f`. Stable upstream `oneclient-2.12.0` resolves to
+`0da930e2bb99784e4715396252f1b51f6529af25`. The merge retains stable upstream ancestry.
+
+Retain the fork's library choices, private settings/accounts, provider features,
+local skin hooks and updater identity. Resolve upstream onboarding BundlePicker
+alongside the fork Updates step; preserve offline cache-only Java handling.
+The Windows wait-for-exit installer section is retained; upstream's stale
+OneClient executable/shortcut cleanup is omitted to protect side-by-side installs.
+README download URLs are prepared using existing deterministic release names.
+The optional Nix recipe now points at the fork and uses its own scheme/package
+identity. It remains pinned to the published 2.11.0 AppImage and published checksum;
+update its version/hash after 2.12.0 assets exist. Nix execution is untested. Its updater now follows fork releases and the fork flake
+attribute rather than stock OneClient releases.
+See docs/validation.md for current checks. The owner authorized publication; platform/game test details remain unspecified.
+
+The previous handoff below is historical and does not authorize publication of
+this update or establish current test results.
+
+---
+
 # Maintainer handoff: 2.11.0 release preparation
 
 Snapshot: 2026-11-16. Read [AGENTS.md](../AGENTS.md) before making changes.

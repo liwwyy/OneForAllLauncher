@@ -53,6 +53,7 @@ notify.workspace = true
 
 anyhow.workspace = true
 regex.workspace = true
+emojis.workspace = true
 directories.workspace = true
 dunce.workspace = true
 percent-encoding.workspace = true
@@ -147,6 +148,26 @@ timestamp-url = "https://timestamp.digicert.com"
 
 [package.metadata.packager.nsis]
 preinstall-section = """
+Section "-OneClientWaitForExit"
+  ; The updater starts this installer unattended and then quits. The packager's own
+  ; running-app check kills and sleeps a fixed 500 ms without confirming the exit, so
+  ; give the launcher up to 10 s to close by itself first. Interactive installs skip
+  ; this and go straight to the packager's prompt.
+  ${If} $PassiveMode = 1
+  ${OrIf} ${Silent}
+    StrCpy $R1 0
+    oneclient_wait:
+      nsis_tauri_utils::FindProcess "${MAINBINARYNAME}.exe"
+      Pop $R0
+      ${If} $R0 = 0
+      ${AndIf} $R1 < 40
+        IntOp $R1 $R1 + 1
+        Sleep 250
+        Goto oneclient_wait
+      ${EndIf}
+  ${EndIf}
+SectionEnd
+
 ; >>> VC_REDIST_SECTION >>>
 Section "-VCRedist"
   SetRegView 64
