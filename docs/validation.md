@@ -1,3 +1,37 @@
+# Current local integration: 2.12.1 (2026-11-24)
+
+The owner requested local integration for manual testing and the Nix updater
+pinning fix for the next push, then authorized commit and push on 2026-11-24.
+No additional owner test details were supplied.
+Starting HEAD: `fd0a4066`. Stable upstream `oneclient-2.12.1` resolves to
+`1605bf11248f8cc94eacf8ff1f86981abcab8dc8`. Stable upstream ancestry is retained.
+
+Checks for this checkout:
+
+- Distribution unit checks: 10 passed.
+- `git diff --check HEAD`: passed; no unresolved merge entries remain.
+- All 33 upstream-only changed files match the stable tag exactly.
+- Both Nix updater action pins were resolved against their official repositories:
+  checkout v5 and install-nix-action v31 now use full commit SHAs. Resolution of
+  CodeQL alert #373 must be checked after the next authorized push.
+- The Nix recipe now uses the published fork 2.12.0 AppImage/checksum rather than
+  stock upstream assets. Nix execution and platform packaging are untested.
+- `cargo +1.98.0 build --locked -p oneclient_app --bin oneforall_app`: passed
+  (4m 38s). The resulting local executable is `target/debug/oneforall_app`.
+
+UI/game testing is left to the owner: bundle onboarding, custom-theme text,
+Versions navigation, auto-hide, saved background-close preferences, and existing
+provider/offline/local-skin workflows. No launcher execution, screenshots, visual
+comparisons or full Rust test suite were performed for this update. Previously
+recorded results below are historical, not current acceptance evidence.
+
+The fork release pipeline is retained instead of upstream's new changeset/draft
+release and Apple-certificate pipeline. README links use deterministic 2.12.1
+release names, prepared for the authorized push and automatic release workflow. Publication
+and the exact-commit CodeQL scan must be checked on GitHub after pushing.
+
+---
+
 # Current local integration: 2.12.0 (2026-11-23)
 
 The owner requested an upstream update locally and will test the application.

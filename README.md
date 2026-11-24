@@ -26,22 +26,22 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 ## Stable Releases
 
-Download **OneForAllLauncher 2.12.0** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
+Download **OneForAllLauncher 2.12.1** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
 
 | Operating system | Architecture | Direct download | Installation |
 | --- | --- | --- | --- |
-| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_windows_x86_64.exe) | Run the installer. |
-| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_linux_x86_64.AppImage) | Mark executable, then run. |
-| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_linux_x86_64.deb) | Install with your package manager. |
-| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_linux_x86_64.rpm) | Install with your package manager. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/OneForAllLauncher_2.12.0_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
+| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_windows_x86_64.exe) | Run the installer. |
+| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.AppImage) | Mark executable, then run. |
+| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.deb) | Install with your package manager. |
+| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.rpm) | Install with your package manager. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
 
 🔄 Supports in-launcher automatic updates when enabled. For DEB/RPM installations, download and install newer packages manually.
 
-Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.0/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
+Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
 
 ## Fork Sync Notice
 
@@ -178,7 +178,7 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers follow upstream OneLauncher. Version **2.12.0** includes upstream 2.12.0 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
+Version numbers follow upstream OneLauncher. Version **2.12.1** includes upstream 2.12.1 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
 
 Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 

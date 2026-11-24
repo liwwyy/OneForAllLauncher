@@ -1,3 +1,31 @@
+# Local 2.12.1 integration — 2026-11-24
+
+The owner requested local integration for manual testing and Nix action pinning
+for the next push. The owner subsequently authorized commit and push on
+2026-11-24. No additional manual test details were supplied; no UI automation
+was performed. Starting HEAD: `fd0a4066`. Stable upstream `oneclient-2.12.1` is
+pinned to `1605bf11248f8cc94eacf8ff1f86981abcab8dc8`. The integration retains stable upstream ancestry.
+
+Keep the fork release workflow: upstream's replacement consumes changesets and
+uses its Apple signing credentials/draft-release architecture, which are not the
+fork's established packaging/signing pipeline. README conflicts retain the fork
+entry point, gallery and deterministic next-release URLs rather than stock
+OneClient installation instructions. Fork storage/auth/skin/updater identities
+are retained. The optional Nix recipe uses the published fork 2.12.0 AppImage and
+its published checksum; update again once fork 2.12.1 assets exist.
+
+The Nix updater now pins checkout v5 to
+`fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` and install-nix-action v31 to
+`3dc140bfc76c49fbd4dd958429132e3746bcb086`, verified against their official GitHub
+repositories. This prepares the alert #373 fix; resolution is not established
+until the next authorized push is analyzed. No alerts were dismissed.
+
+See docs/validation.md for build results. UI/game and platform packaging test details remain unspecified; the owner
+authorized publication after the local build. Older handoffs below do not authorize publication of this
+update or establish its test results.
+
+---
+
 # Local 2.12.0 integration — 2026-11-23
 
 The owner initially requested local integration for manual testing, then explicitly

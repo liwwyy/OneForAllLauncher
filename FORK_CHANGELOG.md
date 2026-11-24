@@ -1,3 +1,10 @@
+## OneForAllLauncher 2.12.1 — upstream OneClient 2.12.1
+
+- Update to stable OneClient 2.12.1 while retaining the fork's account features, local skins/head previews, shared-library choices and updater identity.
+- Include upstream fixes for auto-hide, CurseForge category filters, session streaks, macOS touchpad scrolling, onboarding and custom-theme text colors; restore the Versions navigation button.
+- Include upstream macOS background-close defaults and memory-return tuning for games using ZGC with at least 8 GB allocated.
+- Pin the Nix updater's actions to immutable commit SHAs and refresh the Nix package to the published fork 2.12.0 asset.
+
 ## OneForAllLauncher 2.12.0 — upstream OneClient 2.12.0
 
 - Update to stable OneClient 2.12.0 while retaining offline accounts, Ely.by/custom authentication, local skins and head previews, shared libraries and fork updater identity.
