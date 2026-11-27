@@ -26,22 +26,22 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 ## Stable Releases
 
-Download **OneForAllLauncher 2.12.1** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
+Download **OneForAllLauncher 2.13.0** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
 
 | Operating system | Architecture | Direct download | Installation |
 | --- | --- | --- | --- |
-| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_windows_x86_64.exe) | Run the installer. |
-| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.AppImage) | Mark executable, then run. |
-| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.deb) | Install with your package manager. |
-| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_linux_x86_64.rpm) | Install with your package manager. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/OneForAllLauncher_2.12.1_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
+| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_windows_x86_64.exe) | Run the installer. |
+| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.AppImage) | Mark executable, then run. |
+| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.deb) | Install with your package manager. |
+| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.rpm) | Install with your package manager. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
 
 🔄 Supports in-launcher automatic updates when enabled. For DEB/RPM installations, download and install newer packages manually.
 
-Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.12.1/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
+Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
 
 ## Fork Sync Notice
 
@@ -95,6 +95,12 @@ If an update is taking longer, you can contact me via **[Discord](https://discor
     </tr>
     <tr>
       <td align="center" colspan="2">
+        <a href="docs/screenshots/offline-local-cape-picker.png"><img src="docs/screenshots/offline-local-cape-picker.png" alt="Local cape picker for offline accounts" width="840" /></a><br />
+        <sub>Offline account local cape picker</sub>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" colspan="2">
         <a href="docs/screenshots/elyby-skin-ingame.png"><img src="docs/screenshots/elyby-skin-ingame.png" alt="Ely.by skin in game" width="840" /></a><br />
         <sub>Ely.by skin in game</sub>
       </td>
@@ -117,9 +123,9 @@ recommended free checks, what they establish, and their current status.
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.
 - Launch installed instances without waiting for authentication, cloud sync or update requests when offline. Use **Launch Offline** from a launch button's context menu, or enable **Always launch Offline** in an instance's settings. Missing game files still require one online installation.
 - Keep the same username on different account types without changing Minecraft profile UUIDs.
-- Set a local PNG skin in the offline account wardrobe, with no registration or upload. Local skins use shared authlib and legacy skin paths across Minecraft versions and loaders; versions before 1.8 use the classic model. Mods that replace skin loading may take precedence.
-- Display offline local skins and Ely.by skins in game, including PolyPlus skin head previews. The maintainer confirmed both skin methods and head previews work in game; local-skin head support is included in **2.10.1**.
-- Toggle the VanillaHUD preview compatibility workaround in Launcher settings independently of authlib-injector.
+- Open **Wardrobe** with a standalone offline account to import PNG skins from a file, URL or Minecraft username, choose classic or slim arms, and save outfits. The Wardrobe shows a muted **Local** label. Your selected offline account skin and cape only appear for you, even in multiplayer. [Offline Wardrobe guide](docs/offline-wardrobe.md)
+- Choose from 50 Minecraft capes or import a custom 64 × 32 PNG from a file or URL. Saved capes can be equipped offline, including with the default skin.
+- See local offline skins and Ely.by skins in game, including the PolyPlus head preview. Manage Ely.by skins through Ely.by. Local skins use classic arms in Minecraft versions before 1.8.
 - Choose automatic, signature-verified updates from this fork’s GitHub releases, or check for updates manually in Launcher settings.
 - Install alongside upstream OneClient using separate accounts, settings and game data.
 - Based on upstream OneLauncher, with the fork-specific changes described here.
@@ -178,7 +184,7 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers follow upstream OneLauncher. Version **2.12.1** includes upstream 2.12.1 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
+Version numbers follow upstream OneLauncher. Version **2.13.0** includes upstream 2.13.0 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
 
 Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 
@@ -269,23 +275,9 @@ NO_STRIP=1 cargo +stable packager --release --packages oneclient_app --formats d
 
 Output is under `target/release/`. `NO_STRIP=1` avoids linuxdeploy's older strip tool failing on modern system libraries; Cargo already strips the release executable.
 
-See [the release workflow](.github/workflows/oneclient_release.yml) for Windows NSIS runtime bundling, macOS app/DMG packages, and Linux RPM packaging. Both local Cargo builds and release/nightly CI compile the [preview compatibility agent](distribution/elyby-preview-compat/README.md) and [offline skin hook](distribution/offline-skin/README.md) from source.
+See [the release workflow](.github/workflows/oneclient_release.yml) for Windows NSIS runtime bundling, macOS app/DMG packages, and Linux RPM packaging. Both local Cargo builds and release/nightly CI compile the [offline skin and cape hook](distribution/offline-skin/README.md) from source.
 
 Publishing updater-enabled releases requires the repository secrets `CARGO_PACKAGER_SIGN_PRIVATE_KEY` and `CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD`. The workflow signs final update packages and attaches their `.sig` files plus `latest.json` to the release. Only the public verification key at `packages/oneclient_app/assets/updater.pub` belongs in Git; keep an encrypted backup of the private signing key and its password, and preserve this signing identity so installed launchers can verify future releases. These secrets are not needed for building the launcher locally.
-
-### Bundled Java compatibility agent
-
-The previously checked-in `packages/oneclient_core/assets/elyby-preview-compat.jar` has been removed. **Cargo compiles the agent from the tracked Java source and embeds the generated JAR from its build output directory.** It is only enabled for Ely.by/custom-account launches of Minecraft 1.8.9 to fix a missing-name crash in VanillaHUD's OneConfig tab preview. It is separate from authlib-injector, which the launcher downloads and verifies for Ely.by/custom authentication. The preview agent does not receive account credentials; its preview lookups may contact Mojang's public profile API.
-
-The Java source, pinned ASM dependency checksum, licenses, deterministic build script and console regression tests are in [distribution/elyby-preview-compat](distribution/elyby-preview-compat/README.md). Cargo handles normal builds. To generate a standalone test JAR at `target/elyby-preview-compat/elyby-preview-compat.jar`, run:
-
-```sh
-python3 distribution/elyby-preview-compat/build.py
-```
-
-The first agent build downloads the checksum-verified ASM dependency; later builds reuse `target/elyby-preview-compat/asm-9.10.1.jar`. For an offline build, cache that dependency first or point `ONEFORALL_ASM_JAR` to the exact pinned JAR. `PYTHON`, `JAVA_HOME` and `JAVAC` can select your build tools. End users running packaged releases need no Python or Java compiler for this agent.
-
-VanillaHUD [fixed missing preview names in its 3.5.8 source](https://github.com/Polyfrost/VanillaHUD/commit/f1c8c189b23c1e674df9319570bf7109d480828e). Before changing the workaround's default or removing it, the exact distributed Minecraft 1.8.9 mod must be verified and tested in game with the agent disabled. Authlib-injector is separate and remains necessary for Ely.by/custom authentication.
 
 ### Maintenance
 
@@ -301,7 +293,6 @@ The launcher contacts third-party services for sign-in, game metadata, downloads
 - **Crash reporting:** controlled by **Settings → Launcher → Crash Reporting** and applies after restarting. Reports require reporting to be enabled and the build to have a configured Sentry endpoint. Declining the terms/privacy consent disables reporting. Fork builds have no Sentry endpoint by default; it must be supplied at build time through `ONEFORALL_SENTRY_DSN`.
 - **Discord Rich Presence:** enabled by default and controlled by **Settings → Launcher → Discord RPC**. When enabled, it shares launcher/game activity with your running Discord client.
 - **Online username check:** **Check for online usernames with the same name** in the offline-account popup is unchecked by default in both onboarding and account settings. When enabled, valid usernames are sent over HTTPS to Mojang's public profile lookup at `api.mojang.com/users/profiles/minecraft/<username>` after a short pause in typing. Mojang receives the queried name and your public IP address; no passwords or account tokens are sent. Clearing the checkbox or closing the popup cancels pending checks. Matches and lookup failures are informational: you can still create the offline account, and its offline UUID stays unchanged. With the checkbox off, this feature sends no lookup requests.
-- **Preview compatibility agent:** for Ely.by/custom-account launches of Minecraft 1.8.9, the bundled VanillaHUD workaround may query Mojang's public profile service for missing preview names and textures. These requests send public profile UUIDs, not account credentials.
 - **PolyPlus:** when used with a supported Microsoft account, its online services connect to Polyfrost's backend. They are unavailable with offline accounts.
 
 You can inspect the source and these settings before running the launcher. See [Polyfrost's privacy policy](https://polyfrost.org/legal/privacy) for its services; Microsoft, Ely.by and other providers have their own policies.

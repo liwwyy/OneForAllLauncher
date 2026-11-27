@@ -57,7 +57,6 @@ pub struct LauncherSettings {
     pub settings_version: u32,
     pub log_debug: bool,
     pub auto_update: bool,
-    pub preview_compatibility: bool,
     pub crash_reporting: bool,
     pub discord_enabled: bool,
     pub max_concurrent_requests: usize,
@@ -126,7 +125,6 @@ impl Default for LauncherSettings {
         Self {
             settings_version: CURRENT_SETTINGS_VERSION,
             log_debug: false,
-            preview_compatibility: true,
             auto_update: false, // Users opt in during onboarding or in Launcher settings.
             crash_reporting: true,
             discord_enabled: true,
@@ -189,12 +187,15 @@ mod compatibility_tests {
     }
 
     #[test]
-    fn old_settings_keep_preview_compatibility_and_toggle_round_trips() {
-        let legacy: LauncherSettings = serde_json::from_str("{}").unwrap();
-        assert!(legacy.preview_compatibility);
-        let mut disabled = legacy;
-        disabled.preview_compatibility = false;
-        let restored: LauncherSettings = serde_json::from_value(serde_json::to_value(disabled).unwrap()).unwrap();
-        assert!(!restored.preview_compatibility);
+    fn retired_preview_setting_is_ignored_on_upgrade() {
+        let settings: LauncherSettings =
+            serde_json::from_str(r#"{"preview_compatibility":true,"auto_update":false}"#).unwrap();
+        assert!(!settings.auto_update);
+        assert!(
+            serde_json::to_value(settings)
+                .unwrap()
+                .get("preview_compatibility")
+                .is_none()
+        );
     }
 }

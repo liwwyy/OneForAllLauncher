@@ -11,6 +11,7 @@ public final class LocalSkin {
 
     public static synchronized Object skin(Object player) {
         try {
+            if (System.getProperty("oneforall.localSkin.path") == null) return null;
             ClassLoader loader = player.getClass().getClassLoader();
             Class<?> local = Class.forName("net.minecraft.unmapped.C_57778754", false, loader);
             if (!local.isInstance(player)) return null;

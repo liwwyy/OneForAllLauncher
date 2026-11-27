@@ -1,3 +1,5 @@
+pub mod local;
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -16,6 +18,7 @@ use oneclient_polyplus::api::{
 };
 use uuid::Uuid;
 
+use super::local_skin::{LocalSkinQuery, LocalWardrobeQuery};
 use super::player_profile::FetchPlayerProfileQuery;
 use crate::i18n::{t, tf};
 
@@ -455,11 +458,14 @@ impl QueryCapability for CosmeticBundleQuery {
     }
 }
 
-fn wardrobe_query<Q>(account: Uuid, capability: Q) -> UseQuery<Q>
+fn wardrobe_query<Q>(account: Option<Uuid>, capability: Q) -> UseQuery<Q>
 where
     Q: QueryCapability<Keys = WardrobeKeys>,
 {
-    use_query(Query::new(WardrobeKeys { account }, capability).stale_time(WARDROBE_STALE))
+    use_query(
+        Query::new(account.map(|account| WardrobeKeys { account }), capability)
+            .stale_time(WARDROBE_STALE),
+    )
 }
 
 const STORE_TYPES: [CosmeticType; 11] = [
@@ -596,8 +602,11 @@ impl QueryCapability for TransactionsQuery {
     }
 }
 
-pub fn use_store() -> UseQuery<StoreQuery> {
-    use_query(Query::new(StoreKeys, StoreQuery).stale_time(Duration::from_secs(5 * 60)))
+pub fn use_store(enabled: bool) -> UseQuery<StoreQuery> {
+    use_query(
+        Query::new(enabled.then_some(StoreKeys), StoreQuery)
+            .stale_time(Duration::from_secs(5 * 60)),
+    )
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -626,22 +635,22 @@ pub fn use_store_suggestions(text: &str) -> UseQuery<StoreSuggestQuery> {
 }
 
 pub fn use_transactions(account: Uuid) -> UseQuery<TransactionsQuery> {
-    wardrobe_query(account, TransactionsQuery)
+    wardrobe_query(Some(account), TransactionsQuery)
 }
 
-pub fn use_mojang_look(account: Uuid) -> UseQuery<MojangLookQuery> {
+pub fn use_mojang_look(account: Option<Uuid>) -> UseQuery<MojangLookQuery> {
     wardrobe_query(account, MojangLookQuery)
 }
 
-pub fn use_plus_cosmetics(account: Uuid) -> UseQuery<PlusCosmeticsQuery> {
+pub fn use_plus_cosmetics(account: Option<Uuid>) -> UseQuery<PlusCosmeticsQuery> {
     wardrobe_query(account, PlusCosmeticsQuery)
 }
 
-pub fn use_outfits(account: Uuid) -> UseQuery<OutfitsQuery> {
+pub fn use_outfits(account: Option<Uuid>) -> UseQuery<OutfitsQuery> {
     wardrobe_query(account, OutfitsQuery)
 }
 
-pub fn use_skin_library(account: Uuid) -> UseQuery<SkinsQuery> {
+pub fn use_skin_library(account: Option<Uuid>) -> UseQuery<SkinsQuery> {
     wardrobe_query(account, SkinsQuery)
 }
 
@@ -682,6 +691,9 @@ async fn invalidate_after(action: &WardrobeAction) {
         WardrobeAction::Equip { .. } | WardrobeAction::ParticleColor { .. } => {
             (false, true, true, false, false)
         }
+        WardrobeAction::ResetLocalSkin { .. }
+        | WardrobeAction::AddLocalCape { .. }
+        | WardrobeAction::DeleteLocalCape { .. } => return,
         WardrobeAction::MojangCape { .. } => (true, false, true, false, false),
         WardrobeAction::WearSkin { .. }
         | WardrobeAction::AddSkinFile { .. }
@@ -813,6 +825,12 @@ pub async fn invalidate_wardrobe_queries() {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum CapeImportSource {
+    File(PathBuf),
+    Url(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum WardrobeAction {
     /// Slot changes sent together, so moving a cosmetic between slots is one request
     Equip {
@@ -829,6 +847,19 @@ pub enum WardrobeAction {
         account: Uuid,
         url: String,
         slim: bool,
+        name: String,
+    },
+    ResetLocalSkin {
+        account: Uuid,
+    },
+    AddLocalCape {
+        account: Uuid,
+        source: CapeImportSource,
+        name: Option<String>,
+    },
+    DeleteLocalCape {
+        account: Uuid,
+        id: String,
         name: String,
     },
     AddSkinFile {
@@ -933,10 +964,13 @@ impl WardrobeAction {
             Self::AddSkinFile { .. } | Self::AddSkinUrl { .. } | Self::AddSkinUsername { .. } => {
                 Some(t("oneclient.wardrobe.pending.adding_skin").into())
             }
+            Self::AddLocalCape { .. } => Some(t("fork.wardrobe.adding_cape").into()),
             Self::Checkout { .. } | Self::BuyNow { .. } => {
                 Some(t("oneclient.wardrobe.pending.checkout").into())
             }
-            Self::DeleteSkin { name, .. } | Self::DeleteOutfit { name, .. } => {
+            Self::DeleteSkin { name, .. }
+            | Self::DeleteOutfit { name, .. }
+            | Self::DeleteLocalCape { name, .. } => {
                 Some(tf("oneclient.wardrobe.pending.deleting", &[&name]))
             }
             Self::ApplyOutfit { name, .. } => {
@@ -946,7 +980,8 @@ impl WardrobeAction {
             Self::ParticleColor { .. } => {
                 Some(t("oneclient.wardrobe.pending.particle_color").into())
             }
-            Self::RenameSkin { .. }
+            Self::ResetLocalSkin { .. }
+            | Self::RenameSkin { .. }
             | Self::FavoriteSkin { .. }
             | Self::SkinArms { .. }
             | Self::RenameOutfit { .. }
@@ -959,6 +994,9 @@ impl WardrobeAction {
             Self::Equip { account, .. }
             | Self::MojangCape { account, .. }
             | Self::WearSkin { account, .. }
+            | Self::ResetLocalSkin { account }
+            | Self::AddLocalCape { account, .. }
+            | Self::DeleteLocalCape { account, .. }
             | Self::AddSkinFile { account, .. }
             | Self::AddSkinUrl { account, .. }
             | Self::AddSkinUsername { account, .. }
@@ -987,11 +1025,31 @@ impl MutationCapability for WardrobeMutation {
     type Keys = WardrobeAction;
 
     async fn run(&self, keys: &Self::Keys) -> Result<Self::Ok, Self::Err> {
+        let state = crate::launcher::state().map_err(|err| err.to_string())?;
+        if let Some(account) = state.auth.get_account(keys.account()).await
+            && account.is_offline()
+        {
+            return crate::launcher::off_ui(local::run(account, keys.clone())).await;
+        }
         let account = fresh_account(keys.account()).await?;
         run_action(&account, keys).await
     }
 
     async fn on_settled(&self, keys: &Self::Keys, result: &Result<Self::Ok, Self::Err>) {
+        let id = keys.account();
+        if let Ok(state) = crate::launcher::state()
+            && state
+                .auth
+                .get_account(id)
+                .await
+                .is_some_and(|account| account.is_offline())
+        {
+            if result.is_ok() {
+                QueriesStorage::<LocalWardrobeQuery>::invalidate_matching(id).await;
+                QueriesStorage::<LocalSkinQuery>::invalidate_matching(id).await;
+            }
+            return;
+        }
         invalidate_after(keys).await;
         if result.is_ok()
             && matches!(
@@ -1149,6 +1207,11 @@ async fn run_action(account: &MinecraftAccount, action: &WardrobeAction) -> Resu
     let requester = &state.services.requester;
 
     match action {
+        WardrobeAction::ResetLocalSkin { .. }
+        | WardrobeAction::AddLocalCape { .. }
+        | WardrobeAction::DeleteLocalCape { .. } => {
+            Err(t("fork.wardrobe.offline_account_required").into())
+        }
         WardrobeAction::Equip { changes, name, .. } => {
             let map: HashMap<_, _> = changes.iter().copied().collect();
             api::set_equipped(account, &map)

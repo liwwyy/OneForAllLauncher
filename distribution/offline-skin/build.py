@@ -5,15 +5,12 @@ import hashlib
 import io
 import os
 import pathlib
-import sys
 import tempfile
 import zipfile
 
-ROOT = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT.parent / "elyby-preview-compat"))
-from build import build as compile_agent, DEFAULT_CACHE
+from agent_build import DEFAULT_CACHE, build as compile_agent
 
-BRIDGE = "offline-skin-bridge-5.jar"
+BRIDGE = "offline-skin-bridge-6.jar"
 
 
 def archive(entries):
@@ -36,7 +33,7 @@ def atomic_write(path, content):
 
 
 def build(output, cache):
-    compile_agent(output, cache, ROOT, "oneforall.localskin.LocalSkinAgent")
+    compile_agent(output, cache)
     with zipfile.ZipFile(output) as jar:
         entries = {name: jar.read(name) for name in jar.namelist()}
     # Only the small JDK-only bridge is placed on the bootstrap path. ASM and

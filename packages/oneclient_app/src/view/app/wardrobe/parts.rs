@@ -40,6 +40,13 @@ fn global_point(event: &Event<PressEventData>) -> Option<(f32, f32)> {
 pub(super) enum CapeSource {
     Mojang(String),
     Plus(String),
+    Local(bytes::Bytes),
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub(super) enum SkinTexture {
+    Remote(String),
+    Local(bytes::Bytes),
 }
 
 #[derive(Clone, PartialEq)]
@@ -754,6 +761,7 @@ pub(super) struct SectionChip {
     pub text: &'static str,
     pub icon: IconType,
     pub selected: bool,
+    pub enabled: bool,
     pub on_press: EventHandler<()>,
 }
 
@@ -784,7 +792,13 @@ impl Component for SectionChip {
             } else {
                 colors::component_border()
             }))
-            .cursor(CursorIcon::Pointer)
+            .opacity(if self.enabled { 1. } else { 0.5 })
+            .interactive(self.enabled)
+            .cursor(if self.enabled {
+                CursorIcon::Pointer
+            } else {
+                CursorIcon::Default
+            })
             .on_pointer_enter(move |_| hovered.set(true))
             .on_pointer_leave(move |_| hovered.set(false))
             .on_press(move |_| on_press.call(()))
@@ -991,7 +1005,7 @@ fn default_skin(slim: bool) -> bytes::Bytes {
 #[derive(PartialEq)]
 pub(super) struct LookThumb {
     pub uuid: String,
-    pub skin: Option<(String, bool)>,
+    pub skin: Option<(SkinTexture, bool)>,
     pub cape: Option<CapeSource>,
     pub cosmetics: Vec<(BodySlot, String)>,
     pub emote: Option<String>,
@@ -1016,8 +1030,11 @@ const COSMETIC_SLOTS: [BodySlot; 10] = [
 
 impl Component for LookThumb {
     fn render(&self) -> impl IntoElement {
-        let skin_url = self.skin.as_ref().map(|(url, _)| url.clone());
-        let skin_query = use_cached_image(skin_url.clone(), 0);
+        let skin_url = match &self.skin {
+            Some((SkinTexture::Remote(url), _)) => Some(url.clone()),
+            _ => None,
+        };
+        let skin_query = use_cached_image(skin_url, 0);
 
         let mojang_url = match &self.cape {
             Some(CapeSource::Mojang(url)) => Some(url.clone()),
@@ -1038,20 +1055,24 @@ impl Component for LookThumb {
         let cosmetic_queries = COSMETIC_SLOTS.map(|slot| use_cosmetic_bundle(url_for(slot)));
         let emote_query = use_cosmetic_bundle(self.emote.clone());
 
-        let skin = self.skin.as_ref().map(|(url, slim)| {
-            let bytes = loaded_image(Some(url.as_str()), &skin_query)
-                .map(|(_, bytes)| bytes)
-                .unwrap_or_else(|| default_skin(*slim));
+        let skin = self.skin.as_ref().map(|(source, slim)| {
+            let bytes = match source {
+                SkinTexture::Remote(url) => loaded_image(Some(url), &skin_query)
+                    .map(|(_, bytes)| bytes)
+                    .unwrap_or_else(|| default_skin(*slim)),
+                SkinTexture::Local(bytes) => bytes.clone(),
+            };
             (bytes, *slim)
         });
-        let cape = match (&mojang_url, &plus_url) {
-            (Some(url), _) => {
-                loaded_image(Some(url.as_str()), &mojang_query).map(|(_, bytes)| bytes)
+        let cape = match &self.cape {
+            Some(CapeSource::Mojang(url)) => {
+                loaded_image(Some(url), &mojang_query).map(|(_, bytes)| bytes)
             }
-            (None, Some(_)) => {
+            Some(CapeSource::Plus(_)) => {
                 settled_or_loading(&plus_query).and_then(|bundle| bundle.sheet.or(bundle.texture))
             }
-            (None, None) => None,
+            Some(CapeSource::Local(bytes)) => Some(bytes.clone()),
+            None => None,
         };
         let cosmetics = COSMETIC_SLOTS
             .iter()
@@ -1064,7 +1085,13 @@ impl Component for LookThumb {
             .as_ref()
             .and_then(|_| settled_or_loading(&emote_query)?.animation);
 
-        PlayerModel::new(self.uuid.clone())
+        let player = PlayerModel::new(self.uuid.clone());
+        let player = if self.uuid.starts_with("offline:") {
+            player.local_only()
+        } else {
+            player
+        };
+        player
             .skin(skin)
             .cape(cape)
             .cosmetics(cosmetics)

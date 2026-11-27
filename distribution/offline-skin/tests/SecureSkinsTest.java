@@ -11,8 +11,9 @@ public final class SecureSkinsTest {
     }
 
     public static void main(String[] args) throws Exception {
-        URL local = AuthlibTest.checkAuthlib(SecureSkinsTest.class.getClassLoader(), true,
+        URL local = args.length > 3 ? new URL("http://skins.minecraft.net/MinecraftCloaks/Player.png") : AuthlibTest.checkAuthlib(SecureSkinsTest.class.getClassLoader(), true,
                 Boolean.parseBoolean(args[2]), args[0]);
+        require(local.getHost().equals("127.0.0.1"), "Missing private texture endpoint");
         byte[] original;
         try (ZipFile jar = new ZipFile(args[1])) {
             java.io.InputStream input = jar.getInputStream(jar.getEntry(

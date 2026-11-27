@@ -1,3 +1,25 @@
+# Local wardrobe extension (2026-11-26)
+
+The owner authorized implementing local skin/cape libraries and outfits without
+committing or pushing. PolyPlus catalog cosmetics remain a separate feasibility
+milestone; no PolyPlus integration or mod fork is part of this implementation.
+
+Route offline accounts through the upstream Wardrobe page and disable the
+Cosmetics tab and authenticated queries. Keep the upstream skin imports, cards,
+menus, preview and outfit controls. Show public Mojang cape textures using the
+existing Minecraft cape cards in a Capes tab. Add a Custom capes section above
+them and reuse the import panel for PNG files and URLs. Show the local-only
+notice below the title. Keep the local wardrobe exclusive to standalone offline
+accounts and preserve old local skin selections. Store assets in private per-account
+folders; use version 6 hook/bridge files alongside previous files. Extend authlib
+and legacy transport with CAPE while preserving the scoped profile/head route.
+
+Implemented source behavior is described in docs/offline-wardrobe.md. Current
+checks and the owner's pending UI/game acceptance are in docs/validation.md.
+Do not describe historical skin acceptance as acceptance of the cape extension.
+
+---
+
 # Proposed application changes
 
 Status: implementation authorized and present on the local `rewrite/2.10.0`
@@ -17,45 +39,14 @@ their necessary integration; unrelated launcher improvements belong upstream.
 
 ## VanillaHUD compatibility
 
-GitHub inspection on 2026-11-09 found an existing fix for the crash that motivated
-the preview agent:
-
-- [Commit f1c8c189](https://github.com/Polyfrost/VanillaHUD/commit/f1c8c189b23c1e674df9319570bf7109d480828e),
-  released as VanillaHUD 3.5.8, checks for null profile names and supplies `Player`.
-- The current upstream HUD bundle for Minecraft 1.8.9/Ornithe supplies
-  `vanillahud-3.5.10+1.8.9.jar`, SHA-1
-  `d0539f0612488a1db712e5f6906770f3f7573bfa`.
-- Previous inspection in this work session verified that checksum and confirmed
-  the fallback in the distributed class's bytecode. The existing preview-agent
-  console suite passed on Java 25 against that JAR's transformer target. That
-  suite uses simulated preview behavior; it does not run the actual HUD in game.
-- A subsequent headless test invoked the distributed class's actual private
-  `getProfile(UUID)` method on Java 25 with no Java agents. Minecraft/session
-  services were stubbed and authlib 1.5.21 was real. Null profiles, unnamed
-  profiles and session lookup exceptions all returned a named fallback with the
-  original UUID; a named Ely.by-style profile passed through unchanged. All four
-  checks passed. This verifies the fixed method, not the entire in-game renderer.
-- Searching open issues and pull requests found no matching unresolved Ely.by,
-  authlib or null-preview-name report. Open scoreboard positioning work is a
-  separate issue. Recheck before filing any new report.
-
-Keep a persisted toggle for the scoped preview workaround, separate from
-authlib-injector. Preserve current behavior for old settings initially. With it
-disabled, omit both its Java agent argument and bridge classpath entry. Never
-disable the authentication agent as a side effect.
-
-The owner should test an Ely.by account and a custom account on Minecraft 1.8.9,
-using the current HUD bundle with the preview workaround disabled. Open OneConfig,
-edit the tab-list HUD, exercise preview heads, and reopen the editor. Include an
-unreachable profile service in the test. Compare behavior with the workaround
-enabled if the crash recurs. No screenshots or automated visual comparisons.
-
-If a failure is reproduced, help prepare an upstream issue with the minimal mod
-set, Minecraft/loader/OneConfig/VanillaHUD/Java versions, authlib-injector version,
-sanitized stack trace and precise reproduction steps. State that the preview
-agent was disabled. Link the existing fix. Prepare a narrowly scoped PR if the
-remaining failure can be explained and tested; do not file a duplicate report
-merely because the launcher still includes its historical workaround.
+Remove the fork's preview workaround and its setting. The current stable 1.8.9
+Ornithe HUD bundle contains VanillaHUD `3.5.18+1.8.9` with SHA-1
+`05fe0cb29340cf1feda2d5471f6c4b9d49ca3414`. Its distributed bytecode retains the
+missing-name fallback from the [upstream fix](https://github.com/Polyfrost/VanillaHUD/commit/f1c8c189b23c1e674df9319570bf7109d480828e).
+The owner confirmed the Ely.by preview works with the workaround disabled.
+Keep authlib-injector and verify the custom-auth tab-list preview in game.
+Old launcher settings containing the retired flag must still load. Keep the
+pinned ASM dependency and license with the offline appearance agent.
 
 ## Offline launching
 
@@ -128,7 +119,7 @@ should:
   all partially installed games can run.
 - Use an already-cached, verified authlib-injector when the chosen provider
   requires it. Missing authentication/compatibility artifacts must not trigger a
-  download in explicit offline mode. Review preview-agent network lookups too.
+  download in explicit offline mode.
 - Avoid reporting online party/invite or cloud operations as successful. Offline
   launching does not provide access to servers that require online authentication
   and does not control network activity started by Minecraft or its mods.
@@ -258,7 +249,7 @@ before adding any hook, agent arguments or classpath entries. Microsoft, Ely.by
 and custom accounts must never load this hook, including when disconnected or
 using `Launch Offline` / `Always launch Offline`. Internet connectivity and the
 launch-mode preference do not change an account's type. This gate does not change
-the separate authlib-injector or VanillaHUD preview-agent rules.
+the separate authlib-injector rules.
 
 The launcher already accepts raw skin bytes for its 3D preview, but its current
 "apply skin" actions upload to Mojang and record through Poly+. No local game-skin
@@ -290,7 +281,7 @@ Minecraft/loader combinations before the feature is described as complete.
 ## Suggested implementation order
 
 1. Rebuild the retained fork features over upstream 2.10.0 with upgrade tests.
-2. Add the preview compatibility toggle and perform the agent-disabled game test.
+2. Retire the VanillaHUD preview workaround after verifying upstream’s fix and the owner’s Ely.by test.
 3. Fix account uniqueness and any required backward-compatible storage identity.
 4. Implement offline launch policy and per-instance persistence, then all UI entry
    points and translations, with focused tests in the same behavior commits.

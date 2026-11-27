@@ -34,7 +34,6 @@ impl Component for SettingsLauncher {
             move || v
         });
 
-        let preview_compatibility = use_state({ let v = settings.preview_compatibility; move || v });
 
         let discord_rpc = use_state({
             let v = settings.discord_enabled;
@@ -74,7 +73,6 @@ impl Component for SettingsLauncher {
         let mut first = use_state(|| true);
         use_side_effect(move || {
             let automatic = *automatic_updates.read();
-            let preview_fix = *preview_compatibility.read();
             let discord = *discord_rpc.read();
             let crash = *crash_reporting.read();
             let maximized = *start_maximized.read();
@@ -88,7 +86,6 @@ impl Component for SettingsLauncher {
             }
             dispatch.edit_settings(|next| {
                 next.auto_update = automatic;
-                next.preview_compatibility = preview_fix;
                 next.discord_enabled = discord;
                 next.crash_reporting = crash;
                 next.start_maximized = maximized;
@@ -114,8 +111,6 @@ impl Component for SettingsLauncher {
             .text(t("oneclient.settings.launcher.terms.review"));
 
         settings_page()
-            .child(section_header(t("fork.compatibility.section")))
-            .child(settings_row(IconType::CodeSnippet02, t("fork.compatibility.preview.title"), t("fork.compatibility.preview.description"), resettable(toggle(preview_compatibility), preview_compatibility, defaults.preview_compatibility)))
             .child(section_header(t("fork.updates.section")))
             .child(settings_row(
                 IconType::DownloadCloud02,

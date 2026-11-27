@@ -460,21 +460,11 @@ async fn start(
     )?;
 
     let local_skin = crate::local_skin::launch_files(account).await?;
-    if let Some((jar, _, _)) = &local_skin {
+    if let Some(appearance) = &local_skin {
+        let jar = &appearance.jar;
         classpaths.push(if cfg!(windows) { ';' } else { ':' });
         classpaths.push_str(&jar.to_string_lossy());
     }
-    let preview_agent = if account.authlib_url().is_some() && state.settings.read().preview_compatibility {
-        super::elyby::preview_jar(&cluster.mc_version).await?
-    } else {
-        None
-    };
-    if let Some(jar) = &preview_agent {
-        // Fabric's isolated mod loader must be able to resolve the preview bridge.
-        classpaths.push(if cfg!(windows) { ';' } else { ':' });
-        classpaths.push_str(&jar.to_string_lossy());
-    }
-
     let mut jvm_args = arguments::java_arguments(
         arg_map.get(&ArgumentType::Jvm).map(Vec::as_slice),
         &natives,
@@ -489,10 +479,13 @@ async fn start(
         java.major,
     )?;
 
-    if let Some((jar, skin, slim)) = local_skin {
+    if let Some(appearance) = local_skin {
+        let jar = appearance.jar;
+        let slim = appearance.slim;
         jvm_args.push(format!("-javaagent:{}", jar.display()));
         jvm_args.push("-Doneforall.localSkin.offlineAccount=true".into());
-        jvm_args.push(format!("-Doneforall.localSkin.path={}", skin.display()));
+        if let Some(skin) = appearance.skin { jvm_args.push(format!("-Doneforall.localSkin.path={}", skin.display())); }
+        if let Some(cape) = appearance.cape { jvm_args.push(format!("-Doneforall.localSkin.cape={}", cape.display())); }
         jvm_args.push(format!("-Doneforall.localSkin.slim={slim}"));
         jvm_args.push(format!("-Doneforall.localSkin.uuid={}", account.game_id()));
         jvm_args.push(format!("-Doneforall.localSkin.username={}", account.username));
@@ -521,10 +514,6 @@ async fn start(
     oneclient_cluster::logs::censor_username(&account.username);
     if let Some(auth_url) = account.authlib_url() {
         jvm_args.push(super::elyby::java_argument(state, auth_url).await?);
-        if let Some(jar) = preview_agent {
-            jvm_args.push(format!("-javaagent:{}", jar.display()));
-            if offline { jvm_args.push("-Doneforall.preview.offline=true".into()); }
-        }
     }
 
     let mut mc_args = arguments::minecraft_arguments(

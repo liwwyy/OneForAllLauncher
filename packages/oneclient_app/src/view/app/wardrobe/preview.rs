@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use freya::prelude::*;
+use oneclient_core::local_skin::library::Kind;
 use oneclient_polyplus::api::{self, SkinModel};
 use uuid::Uuid;
 
@@ -13,7 +14,7 @@ use super::parts::{BACK_YAW, CapeSource, CoverThumb, FRONT_YAW, LookThumb, money
 use crate::components::{
     Button, ColorPicker, Icon, IconType, ScrollArea, Segment, SegmentedControl, TextInput,
 };
-use crate::hooks::wardrobe::{WardrobeAction, use_transactions};
+use crate::hooks::wardrobe::{CapeImportSource, WardrobeAction, use_transactions};
 use crate::hooks::{query_error, query_is_loading, settled_or_loading};
 use crate::i18n::{t, tf};
 use crate::theme::{colors, rounded, text_size};
@@ -102,7 +103,8 @@ pub(super) struct RightColumn {
 impl Component for RightColumn {
     fn render(&self) -> impl IntoElement {
         let shared = self.shared;
-        let mut adding_skin = shared.adding_skin;
+        let mut adding_texture = shared.adding_texture;
+        let import_kind = *adding_texture.read();
         let mut show_cart = shared.show_cart;
         let picked = shared.selection.read().clone();
         let data = &self.data;
@@ -115,14 +117,19 @@ impl Component for RightColumn {
                 on_close: EventHandler::new(move |()| show_cart.set(false)),
             }
             .into_element()
-        } else if *adding_skin.read() && store_enabled {
-            AddSkinPanel {
+        } else if let Some(kind) = import_kind
+            && data.library_available()
+            && (kind == Kind::Skin || data.offline)
+        {
+            AddTexturePanel {
+                kind,
                 account: data.account,
+                offline: data.offline,
                 busy: data.busy,
                 shared,
                 on_close: EventHandler::new(move |()| {
-                    if let Some(mut open) = adding_skin.try_write() {
-                        *open = false;
+                    if let Some(mut open) = adding_texture.try_write() {
+                        *open = None;
                     }
                 }),
             }
@@ -161,9 +168,11 @@ impl Component for RightColumn {
             .content(Content::Flex)
             .spacing(12.)
             .maybe_child(
-                (store_enabled && data.outfits_error.is_none()).then(|| OutfitSwitcher {
-                    data: data.clone(),
-                    shared,
+                (data.library_available() && data.outfits_error.is_none()).then(|| {
+                    OutfitSwitcher {
+                        data: data.clone(),
+                        shared,
+                    }
                 }),
             )
             .child(
@@ -304,12 +313,9 @@ impl Component for PreviewPanel {
             _ => None,
         };
         let heading: Option<(String, String)> = match &picked {
-            Some(Selection::MojangCape(id)) => data.mojang_cape(id).map(|cape| {
-                (
-                    cape.alias.clone(),
-                    t("oneclient.wardrobe.minecraft_cape").to_string(),
-                )
-            }),
+            Some(Selection::MojangCape(id)) => data
+                .mojang_cape(id)
+                .map(|cape| (cape.alias.clone(), data.cape_label(cape).to_string())),
             Some(Selection::Outfit(id)) => data.outfit(*id).map(|outfit| {
                 (
                     outfit.name.clone(),
@@ -345,7 +351,7 @@ impl Component for PreviewPanel {
 
         let show_back = matches!(picked, Some(Selection::MojangCape(_)))
             || owned.is_some_and(|group| BACK_VIEW_TYPES.contains(&group.kind))
-            || (picked.is_none() && self.section == Section::Cosmetics);
+            || (picked.is_none() && matches!(self.section, Section::Cosmetics | Section::Capes));
 
         let variants = owned
             .map(|group| (group, variant_options(group)))
@@ -508,7 +514,7 @@ impl Component for PreviewPanel {
         let (skin, cape) = match &picked {
             Some(Selection::Skin(id)) => (
                 data.skin(*id)
-                    .map(|skin| (skin.url.clone(), skin.model == SkinModel::Slim)),
+                    .and_then(|skin| data.skin_preview(skin, skin.model == SkinModel::Slim)),
                 data.current_cape(),
             ),
             Some(Selection::Outfit(id)) => match data.outfit(*id) {
@@ -518,7 +524,7 @@ impl Component for PreviewPanel {
             Some(Selection::MojangCape(id)) if trying_on => (
                 None,
                 data.mojang_cape(id)
-                    .map(|cape| CapeSource::Mojang(cape.url.clone())),
+                    .and_then(|cape| data.cape_preview(cape)),
             ),
             Some(Selection::Owned(_))
                 if trying_on
@@ -538,6 +544,11 @@ impl Component for PreviewPanel {
         let outfit = match &picked {
             Some(Selection::Outfit(id)) => data.outfit(*id),
             _ => None,
+        };
+        let skin = if outfit.is_none() && !matches!(picked, Some(Selection::Skin(_))) {
+            skin.or_else(|| data.active_local_skin_preview())
+        } else {
+            skin
         };
         let equipped = outfit.map_or_else(|| data.equipped(), |outfit| outfit.equipped.clone());
         let particle_color =
@@ -1357,24 +1368,48 @@ fn status_style(status: &str) -> (String, Color) {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum SkinSource {
+enum TextureSource {
     Username,
     Url,
     File,
 }
 
 #[derive(PartialEq)]
-struct AddSkinPanel {
+struct AddTexturePanel {
+    kind: Kind,
     account: Uuid,
+    offline: bool,
     busy: bool,
     shared: Shared,
     on_close: EventHandler<()>,
 }
 
-impl Component for AddSkinPanel {
+impl Component for AddTexturePanel {
     fn render(&self) -> impl IntoElement {
         let shared = self.shared;
-        let source = use_state(|| SkinSource::Username);
+        let cape = self.kind == Kind::Cape;
+        let source = use_state(|| {
+            if cape {
+                TextureSource::File
+            } else {
+                TextureSource::Username
+            }
+        });
+        let title = if cape {
+            t("fork.wardrobe.add_capes")
+        } else {
+            t("oneclient.wardrobe.skins.add")
+        };
+        let url_label = if cape {
+            t("fork.wardrobe.cape_url")
+        } else {
+            t("oneclient.wardrobe.add_skin.url_placeholder")
+        };
+        let dialog = if cape {
+            t("fork.wardrobe.choose_cape")
+        } else {
+            t("oneclient.wardrobe.add_skin.dialog")
+        };
         let username = use_state(String::new);
         let url = use_state(String::new);
         let name = use_state(String::new);
@@ -1394,7 +1429,7 @@ impl Component for AddSkinPanel {
             let custom_name = custom_name.trim().to_string();
             let custom_name = (!custom_name.is_empty()).then_some(custom_name);
             let keys = match *source.read() {
-                SkinSource::Username => {
+                TextureSource::Username => {
                     let username = username.read().trim().to_string();
                     if username.is_empty() {
                         message.set(Some(t("oneclient.wardrobe.add_skin.error.username").into()));
@@ -1402,29 +1437,50 @@ impl Component for AddSkinPanel {
                     }
                     WardrobeAction::AddSkinUsername { account, username }
                 }
-                SkinSource::Url => {
+                TextureSource::Url => {
                     let url = url.read().trim().to_string();
                     if !url.starts_with("http://") && !url.starts_with("https://") {
-                        message.set(Some(t("oneclient.wardrobe.add_skin.error.url").into()));
+                        let error = if cape {
+                            url_label
+                        } else {
+                            t("oneclient.wardrobe.add_skin.error.url")
+                        };
+                        message.set(Some(error.into()));
                         return;
                     }
-                    WardrobeAction::AddSkinUrl {
-                        account,
-                        url,
-                        slim: *slim.read(),
-                        name: custom_name,
+                    if cape {
+                        WardrobeAction::AddLocalCape {
+                            account,
+                            source: CapeImportSource::Url(url),
+                            name: custom_name,
+                        }
+                    } else {
+                        WardrobeAction::AddSkinUrl {
+                            account,
+                            url,
+                            slim: *slim.read(),
+                            name: custom_name,
+                        }
                     }
                 }
-                SkinSource::File => {
+                TextureSource::File => {
                     let Some(path) = file.read().clone() else {
                         message.set(Some(t("oneclient.wardrobe.add_skin.error.file").into()));
                         return;
                     };
-                    WardrobeAction::AddSkinFile {
-                        account,
-                        path,
-                        slim: *slim.read(),
-                        name: custom_name,
+                    if cape {
+                        WardrobeAction::AddLocalCape {
+                            account,
+                            source: CapeImportSource::File(path),
+                            name: custom_name,
+                        }
+                    } else {
+                        WardrobeAction::AddSkinFile {
+                            account,
+                            path,
+                            slim: *slim.read(),
+                            name: custom_name,
+                        }
                     }
                 }
             };
@@ -1440,19 +1496,19 @@ impl Component for AddSkinPanel {
         let mut body = rect().vertical().width(Size::fill()).spacing(12.);
 
         body = match picked {
-            SkinSource::Username => body.child(
+            TextureSource::Username => body.child(
                 TextInput::new(username)
                     .placeholder(t("oneclient.wardrobe.add_skin.username_placeholder"))
                     .compact()
                     .width(Size::fill()),
             ),
-            SkinSource::Url => body.child(
+            TextureSource::Url => body.child(
                 TextInput::new(url)
-                    .placeholder(t("oneclient.wardrobe.add_skin.url_placeholder"))
+                    .placeholder(url_label)
                     .compact()
                     .width(Size::fill()),
             ),
-            SkinSource::File => {
+            TextureSource::File => {
                 let chosen = file
                     .read()
                     .as_ref()
@@ -1471,7 +1527,7 @@ impl Component for AddSkinPanel {
                                 .on_press(move |_| {
                                     spawn(async move {
                                         if let Some(handle) = rfd::AsyncFileDialog::new()
-                                            .set_title(t("oneclient.wardrobe.add_skin.dialog"))
+                                            .set_title(dialog)
                                             .add_filter(
                                                 t("oneclient.wardrobe.add_skin.png_filter"),
                                                 &["png"],
@@ -1501,7 +1557,7 @@ impl Component for AddSkinPanel {
             }
         };
 
-        if picked != SkinSource::Username {
+        if picked != TextureSource::Username {
             body = body
                 .child(
                     TextInput::new(name)
@@ -1509,15 +1565,17 @@ impl Component for AddSkinPanel {
                         .compact()
                         .width(Size::fill()),
                 )
-                .child(
+                .maybe_child((!cape).then(|| {
                     SegmentedControl::new(slim)
                         .segment(Segment::new(false).label(t("oneclient.wardrobe.skins.classic")))
-                        .segment(Segment::new(true).label(t("oneclient.wardrobe.skins.slim"))),
-                );
+                        .segment(Segment::new(true).label(t("oneclient.wardrobe.skins.slim")))
+                }));
         }
 
         let note = match picked {
-            SkinSource::Username => t("oneclient.wardrobe.add_skin.note.username"),
+            TextureSource::Username => t("oneclient.wardrobe.add_skin.note.username"),
+            _ if cape => t("fork.wardrobe.cape_import_note"),
+            _ if self.offline => t("fork.wardrobe.skin_import_note"),
             _ => t("oneclient.wardrobe.add_skin.note.upload"),
         };
 
@@ -1535,7 +1593,7 @@ impl Component for AddSkinPanel {
                     .cross_align(Alignment::Center)
                     .child(
                         label()
-                            .text(t("oneclient.wardrobe.skins.add"))
+                            .text(title)
                             .width(Size::flex(1.0))
                             .font_size(text_size(16.))
                             .font_weight(FontWeight::MEDIUM)
@@ -1552,18 +1610,18 @@ impl Component for AddSkinPanel {
             )
             .child(
                 SegmentedControl::new(source)
-                    .segment(
-                        Segment::new(SkinSource::Username)
+                    .segments((!cape).then(|| {
+                        Segment::new(TextureSource::Username)
                             .icon(IconType::Users01)
-                            .label(t("oneclient.wardrobe.add_skin.source.username")),
-                    )
+                            .label(t("oneclient.wardrobe.add_skin.source.username"))
+                    }))
                     .segment(
-                        Segment::new(SkinSource::Url)
+                        Segment::new(TextureSource::Url)
                             .icon(IconType::Link03)
                             .label(t("oneclient.wardrobe.add_skin.source.url")),
                     )
                     .segment(
-                        Segment::new(SkinSource::File)
+                        Segment::new(TextureSource::File)
                             .icon(IconType::Folder)
                             .label(t("oneclient.wardrobe.add_skin.source.file")),
                     ),
@@ -1584,7 +1642,11 @@ impl Component for AddSkinPanel {
                     .enabled(!self.busy)
                     .on_press(move |_| submit.call(()))
                     .child(Icon::new(IconType::Plus).size(14.))
-                    .text(t("oneclient.wardrobe.skins.add")),
+                    .text(title),
             )
+    }
+
+    fn render_key(&self) -> DiffKey {
+        DiffKey::U64(u64::from(self.kind == Kind::Cape))
     }
 }

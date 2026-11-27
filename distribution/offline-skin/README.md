@@ -1,21 +1,25 @@
-# Offline local skin hook
+# Offline local appearance hook
 
-Cargo builds this agent from the tracked Java source. It reuses the preview
-agent's SHA-256-pinned, relocated ASM dependency and includes both licenses in the
-generated JAR. No precompiled hook is checked in. Building needs Python 3 and
+Cargo builds this agent from the tracked Java source. The build pins ASM by
+SHA-256, relocates it to avoid collisions with game ASM versions, and includes
+both licenses in the generated JAR. No precompiled hook is checked in. Building needs Python 3 and
 JDK 17+ (`javac --release 8`); the game-side agent runs on Java 8 and newer.
+
+The first build caches ASM in `target/offline-skin`. Set `ONEFORALL_ASM_JAR` to
+an existing copy of the pinned JAR for an offline build. `PYTHON`, `JAVA_HOME` and
+`JAVAC` select the build tools. Packaged releases include the generated agent.
 
 ## Scope and loading
 
 The launcher injects the hook only for **`AccountKind::Offline` with a saved
-64 × 64 PNG**, across Minecraft versions and loaders. Offline launch mode on
+skin or cape PNG**, across Minecraft versions and loaders. Offline launch mode on
 Microsoft, Ely.by or custom accounts never enables it. The launcher passes the
 actual Minecraft UUID, name and classic/slim choice as launch-only properties;
 no access token or other account credential is passed to the hook.
 
 Local skins stay under `local-skins/<launcher-account-id>/` in the fork's
 configuration directory. Changes apply on the next Minecraft launch. Only the
-selected offline player's skin is supplied. Other players and server-visible
+selected offline player's skin and/or cape is supplied. Other players and server-visible
 identity remain unchanged; no upload or registration is performed.
 
 ## Compatibility paths
@@ -49,7 +53,7 @@ Authlib and legacy URL call sites resolve the bridge explicitly through the
 bootstrap loader using JDK reflection. They do not ask the mod loader to load a
 helper package during class transformation. This avoids a silent fallback when
 loader isolation rejects that package and avoids reentrant game-class loading.
-The launcher installs version 5 agent/bridge filenames so old and new running
+The launcher uses versioned agent/bridge filenames so old and new running
 JVMs cannot disagree about an updated helper. Brief status messages report
 activation and use of local textures without exposing names, paths or credentials.
 
@@ -154,3 +158,26 @@ The owner has confirmed Ornithe 1.8.9 rendering and now reports that local skins
 also work on modern versions after the version 4 transport correction. This is
 owner testing of those setups, not a claim that every version, loader and skin mod
 has been verified. Passing library/classloader tests alone does not verify rendering.
+
+
+## Version 6 cape extension
+
+The wardrobe supports independent 64 × 64 skins and static 64 × 32 capes. The
+launcher enables the hook for either selection, exclusively for offline accounts.
+The private texture profile includes only selected SKIN/CAPE properties; cape-only
+profiles leave the default skin to the game. Authlib maps/records use the caller's
+loader for both texture types. Legacy MinecraftCloaks URLs are scoped to the same
+selected account name as MinecraftSkins URLs. No ELYTRA texture property is supplied; any native cape-to-elytra fallback
+is left to the game.
+
+Both PNGs and the profile are served on exact random loopback capability paths.
+Cape URLs end with the cape's SHA-256 to keep native texture cache keys safe.
+The HTTPS-restoration exception covers only those exact URLs. Validation checks
+PNG dimensions before decoding. Version 5 files are kept for running games.
+
+CapeTest executes cape-only, skin+cape and disabled cases against each real
+authlib generation; legacy fixtures exercise cloak URL routing. The matrix also
+runs the actual Secure Skins rewrite for a cape-only PNG and the shipped
+OneConfig head reader with a skin+cape profile. These checks establish transport
+and API behavior, not in-game cape rendering. Test the actual game/mod combination
+with normal cape visibility enabled; see docs/validation.md for the current run.

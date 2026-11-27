@@ -5,7 +5,6 @@ No Minecraft launch, screenshots, account login or external skin requests.
 """
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -14,10 +13,9 @@ import sys
 import tempfile
 import urllib.request
 
+import agent_build as builder
+
 ROOT = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location('agent_build', ROOT.parent / 'elyby-preview-compat/build.py')
-builder = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(builder)
 
 # Test-only artifacts from Fabric's own Maven, pinned independently of game data.
 FABRIC = [
@@ -86,13 +84,15 @@ def main():
         asm = builder.verified_asm(builder.DEFAULT_CACHE)
         subprocess.run([builder.javac(), '--release', '8', '-Xlint:-options', '-cp', str(asm), '-d', str(work),
                         str(ROOT / 'tests/AuthlibTest.java'), str(ROOT / 'tests/FabricLoaderTest.java'),
-                        str(ROOT / 'tests/SecureSkinsTest.java'), str(ROOT / 'tests/OneConfigHeadTest.java')], check=True)
+                        str(ROOT / 'tests/SecureSkinsTest.java'), str(ROOT / 'tests/OneConfigHeadTest.java'), str(ROOT / 'tests/CapeTest.java')], check=True)
         fabric = fabric_libraries(args.cache_dir) if args.fabric else []
         secure_skins = fetch(SECURE_SKINS_URL, SECURE_SKINS_SHA1, args.cache_dir / 'mods/secureskins.jar') if args.secure_skins else None
         oneconfig = fetch(ONECONFIG_HEAD_URL, ONECONFIG_HEAD_SHA1, args.cache_dir / 'mods/oneconfig-head.jar') if args.oneconfig_head else None
         kotlin = fetch(KOTLIN_URL, KOTLIN_SHA1, args.cache_dir / 'libraries/kotlin-stdlib-2.4.21.jar') if args.oneconfig_head else None
         png = work / 'skin.png'
         subprocess.run([args.java, '-Djava.awt.headless=true', '-cp', str(work), 'AuthlibTest', 'prepare', str(png)], check=True)
+        cape = work / 'cape.png'
+        subprocess.run([args.java, '-Djava.awt.headless=true', '-cp', str(work), 'CapeTest', 'prepare', str(cape)], check=True)
         for entry in versions:
             version = entry['minecraft']
             metadata = json.loads(fetch(entry['url'], entry['sha1'], args.cache_dir / f'{version}.json').read_text())
@@ -122,7 +122,7 @@ def main():
                 for enabled, slim in [(True, True), (True, False), (False, False)]:
                     command = [java, '-Xverify:all', '-Djava.awt.headless=true', f'-javaagent:{agent}',
                                f'-Doneforall.localSkin.offlineAccount={str(enabled).lower()}',
-                               f'-Doneforall.localSkin.path={png}', f'-Doneforall.localSkin.slim={str(slim).lower()}',
+                               f'-Doneforall.localSkin.path={png}', f'-Doneforall.localSkin.cape={cape}', f'-Doneforall.localSkin.slim={str(slim).lower()}',
                                '-Doneforall.localSkin.uuid=12345678-1234-1234-1234-123456789abc',
                                '-Doneforall.localSkin.username=Player', '-cp',
                                os.pathsep.join(map(str, [work, agent, *libraries])),
@@ -153,6 +153,23 @@ def main():
                         result = subprocess.run(head_command, capture_output=True, text=True, timeout=30)
                         if result.returncode:
                             raise RuntimeError(f'{version} / PlayerHead failed:\n{result.stdout}\n{result.stderr}')
+                for with_skin, enabled in [(False, True), (True, True), (False, False)]:
+                    cape_command = [java, '-Xverify:all', '-Djava.awt.headless=true', f'-javaagent:{agent}',
+                        f'-Doneforall.localSkin.offlineAccount={str(enabled).lower()}',
+                        f'-Doneforall.localSkin.cape={cape}', '-Doneforall.localSkin.uuid=12345678-1234-1234-1234-123456789abc',
+                        '-Doneforall.localSkin.username=Player']
+                    if with_skin:
+                        cape_command.append(f'-Doneforall.localSkin.path={png}')
+                    cape_command.extend(['-cp', os.pathsep.join(map(str, [work, agent, *libraries])), 'CapeTest', str(enabled).lower()])
+                    if legacy:
+                        cape_command.append('legacy')
+                    subprocess.run(cape_command, check=True, timeout=30)
+                    if secure_skins and version == '26.3' and enabled and not with_skin and java == args.java:
+                        secure_cape = cape_command[:cape_command.index('-cp')]
+                        secure_cape.extend(['-cp', os.pathsep.join(map(str, [work, agent, *libraries, asm])),
+                            'SecureSkinsTest', str(cape), str(secure_skins), 'false', 'cape'])
+                        subprocess.run(secure_cape, check=True, timeout=30)
+
                 loaders = ', real Fabric Knot/compatibility loaders' if fabric and not legacy and java == args.java else ''
                 print(f'PASS Minecraft {version}, authlib {authlib or "legacy URLs"}, {java}: slim/classic/disabled{loaders}', flush=True)
                 if secure_skins and version == '26.3' and java == args.java:

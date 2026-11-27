@@ -1,3 +1,10 @@
+## OneForAllLauncher 2.13.0 — upstream OneClient 2.13.0
+
+- Update to stable OneClient 2.13.0.
+- Use the Wardrobe with standalone offline accounts to import skins and custom capes, select Minecraft capes and save outfits. These appearances are visible only to you.
+- Show a Local label for offline accounts and a dedicated message when opening Wardrobe with Ely.by.
+- Retire the VanillaHUD preview workaround following the upstream fix.
+
 ## OneForAllLauncher 2.12.1 — upstream OneClient 2.12.1
 
 - Update to stable OneClient 2.12.1 while retaining the fork's account features, local skins/head previews, shared-library choices and updater identity.

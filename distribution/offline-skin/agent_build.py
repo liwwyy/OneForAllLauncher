@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Rebuild the embedded Java 8 agent with a pinned ASM dependency."""
-import argparse
 import hashlib
 import os
 import shutil
@@ -14,7 +13,7 @@ import zipfile
 ROOT = pathlib.Path(__file__).resolve().parent
 ASM_URL = "https://repo.maven.apache.org/maven2/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
 ASM_SHA256 = "ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb"
-DEFAULT_CACHE = ROOT.parents[1] / "target/elyby-preview-compat"
+DEFAULT_CACHE = ROOT.parents[1] / "target/offline-skin"
 
 def javac():
     if os.environ.get("JAVAC"):
@@ -71,19 +70,19 @@ def relocate_class(data):
         index += 1
     output.extend(data[offset:])
     return bytes(output)
-def build(output, cache, source_root=ROOT, premain="oneforall.compat.PreviewAgent"):
+def build(output, cache):
     asm = verified_asm(cache)
     with tempfile.TemporaryDirectory() as directory:
         work = pathlib.Path(directory)
         classes = work / "classes"
         subprocess.run([javac(), "--release", "8", "-Xlint:-options", "-cp", str(asm), "-d", str(classes),
-                        *map(str, sorted((source_root / "src").rglob("*.java")))], check=True)
+                        *map(str, sorted((ROOT / "src").rglob("*.java")))], check=True)
         entries = {p.relative_to(classes).as_posix(): relocate_class(p.read_bytes()) for p in classes.rglob("*.class")}
         with zipfile.ZipFile(asm) as source:
             for name in source.namelist():
                 if name.startswith("org/objectweb/asm/") and name.endswith(".class"):
                     entries[name.replace("org/objectweb/asm/", "oneforall/compat/asm/")] = relocate_class(source.read(name))
-        entries["META-INF/MANIFEST.MF"] = f"Manifest-Version: 1.0\r\nPremain-Class: {premain}\r\n\r\n".encode()
+        entries["META-INF/MANIFEST.MF"] = b"Manifest-Version: 1.0\r\nPremain-Class: oneforall.localskin.LocalSkinAgent\r\n\r\n"
         entries["META-INF/LICENSE-ASM.txt"] = (ROOT / "LICENSE-ASM.txt").read_bytes()
         entries["META-INF/LICENSE-OneForAll.txt"] = (ROOT.parents[1] / "LICENSE").read_bytes()
         jar = work / "agent.jar"
@@ -101,11 +100,3 @@ def build(output, cache, source_root=ROOT, premain="oneforall.compat.PreviewAgen
             staged = pathlib.Path(temporary.name)
         os.replace(staged, output)
     return hashlib.sha256(output.read_bytes()).hexdigest()
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=pathlib.Path, default=DEFAULT_CACHE / "elyby-preview-compat.jar")
-    parser.add_argument("--cache-dir", type=pathlib.Path, default=DEFAULT_CACHE)
-    args = parser.parse_args()
-    print(build(args.output, args.cache_dir))
-    print(args.output)

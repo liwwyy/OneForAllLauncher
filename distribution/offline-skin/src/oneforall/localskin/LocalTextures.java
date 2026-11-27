@@ -13,6 +13,7 @@ public final class LocalTextures {
     private static String username;
     private static String url;
     private static String profileUrl;
+    private static String capeUrl;
     private static String packed;
     private static boolean warned;
     private static boolean failed;
@@ -26,13 +27,19 @@ public final class LocalTextures {
             id = UUID.fromString(System.getProperty("oneforall.localSkin.uuid"));
             username = System.getProperty("oneforall.localSkin.username");
             if (username == null) throw new IllegalArgumentException("Missing account name");
-            SkinServer server = new SkinServer(new File(System.getProperty("oneforall.localSkin.path")));
-            url = server.url();
+            String skinPath = System.getProperty("oneforall.localSkin.path");
+            String capePath = System.getProperty("oneforall.localSkin.cape");
+            SkinServer server = new SkinServer(skinPath == null ? null : new File(skinPath), capePath == null ? null : new File(capePath));
+            url = skinPath == null ? null : server.url();
+            capeUrl = capePath == null ? null : server.capeUrl();
             profileUrl = server.profileUrl();
+            String entries = "";
+            if (url != null) entries = "\"SKIN\":{\"url\":\"" + url + "\",\"metadata\":{\"model\":\""
+                    + (Boolean.getBoolean("oneforall.localSkin.slim") ? "slim" : "default") + "\"}}";
+            if (capeUrl != null) entries += (entries.isEmpty() ? "" : ",") + "\"CAPE\":{\"url\":\"" + capeUrl + "\"}";
             String json = "{\"timestamp\":" + System.currentTimeMillis() + ",\"profileId\":\""
                     + id.toString().replace("-", "") + "\",\"profileName\":\"" + escape(username)
-                    + "\",\"textures\":{\"SKIN\":{\"url\":\"" + url + "\",\"metadata\":{\"model\":\""
-                    + (Boolean.getBoolean("oneforall.localSkin.slim") ? "slim" : "default") + "\"}}}}";
+                    + "\",\"textures\":{" + entries + "}}";
             String encoded = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
             server.setProfile("{\"id\":\"" + id.toString().replace("-", "")
                     + "\",\"name\":\"" + escape(username)
@@ -107,16 +114,18 @@ public final class LocalTextures {
         Class<?> texture = Class.forName("com.mojang.authlib.minecraft.MinecraftProfileTexture", true, loader);
         Class<? extends Enum> type = (Class<? extends Enum>) Class.forName(texture.getName() + "$Type", true, loader);
         Map result = new EnumMap(type);
-        result.put(Enum.valueOf(type, "SKIN"), texture(loader));
+        if (url != null) result.put(Enum.valueOf(type, "SKIN"), texture(loader, url, true));
+        if (capeUrl != null) result.put(Enum.valueOf(type, "CAPE"), texture(loader, capeUrl, false));
         return result;
     }
 
-    private static Object texture(ClassLoader loader) throws ReflectiveOperationException {
+    private static Object texture(ClassLoader loader, String address, boolean skin) throws ReflectiveOperationException {
         Class<?> texture = Class.forName("com.mojang.authlib.minecraft.MinecraftProfileTexture", true, loader);
-        Map<String, String> metadata = Collections.singletonMap("model",
-                Boolean.getBoolean("oneforall.localSkin.slim") ? "slim" : "default");
-        try { return texture.getConstructor(String.class, Map.class).newInstance(url, metadata); }
-        catch (NoSuchMethodException classic) { return texture.getConstructor(String.class).newInstance(url); }
+        if (address == null) return null;
+        Map<String, String> metadata = skin ? Collections.singletonMap("model",
+                Boolean.getBoolean("oneforall.localSkin.slim") ? "slim" : "default") : Collections.<String, String>emptyMap();
+        try { return texture.getConstructor(String.class, Map.class).newInstance(address, metadata); }
+        catch (NoSuchMethodException classic) { return texture.getConstructor(String.class).newInstance(address); }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -125,7 +134,7 @@ public final class LocalTextures {
         Class<?> result = Class.forName("com.mojang.authlib.minecraft.MinecraftProfileTextures", true, loader);
         Class<? extends Enum> signature = (Class<? extends Enum>) Class.forName("com.mojang.authlib.SignatureState", true, loader);
         return result.getConstructor(texture, texture, texture, signature)
-                .newInstance(texture(loader), null, null, Enum.valueOf(signature, "UNSIGNED"));
+                .newInstance(texture(loader, url, true), texture(loader, capeUrl, false), null, Enum.valueOf(signature, "UNSIGNED"));
     }
 
     /** Route only the selected player's public profile and legacy skin requests. */
@@ -135,7 +144,8 @@ public final class LocalTextures {
             // HTTPS-enforcing skin mods can rewrite our loopback capability.
             // Restore only this exact URL; remote HTTPS and other local URLs
             // retain their original transport and validation.
-            if (("https" + url.substring(4)).equals(original)
+            if ((url != null && ("https" + url.substring(4)).equals(original))
+                    || (capeUrl != null && ("https" + capeUrl.substring(4)).equals(original))
                     || ("https" + profileUrl.substring(4)).equals(original)) {
                 reportDownload();
                 return "http" + original.substring(5);
@@ -161,9 +171,14 @@ public final class LocalTextures {
             boolean legacy = ((host.equals("skins.minecraft.net") || host.equals("s3.amazonaws.com"))
                     && path.startsWith("/MinecraftSkins/"))
                     || ((host.equals("www.minecraft.net") || host.equals("minecraft.net")) && path.startsWith("/skin/"));
-            if (!legacy || !path.endsWith(".png")) return original;
+            boolean cloak = (host.equals("skins.minecraft.net") || host.equals("s3.amazonaws.com"))
+                    && path.startsWith("/MinecraftCloaks/");
+            if (cloak && ((!scheme.equals("http") && !scheme.equals("https"))
+                    || source.getUserInfo() != null || source.getRef() != null || query != null
+                    || (port != -1 && port != (scheme.equals("https") ? 443 : 80)))) return original;
+            if ((!legacy && !cloak) || !path.endsWith(".png")) return original;
             String name = path.substring(path.lastIndexOf('/') + 1, path.length() - 4);
-            if (username.equalsIgnoreCase(name) || username.equalsIgnoreCase(URLDecoder.decode(name, "UTF-8"))) return url;
+            if (username.equalsIgnoreCase(name) || username.equalsIgnoreCase(URLDecoder.decode(name, "UTF-8"))) return cloak ? (capeUrl == null ? original : capeUrl) : (url == null ? original : url);
         } catch (Exception ignored) {}
         return original;
     }

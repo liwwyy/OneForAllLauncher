@@ -6,6 +6,7 @@ use std::time::Duration;
 use freya::animation::*;
 use freya::prelude::*;
 use freya::query::{MutationStateData, QueryCapability, UseQuery};
+use oneclient_core::local_skin::library::{Kind, Snapshot};
 use oneclient_mc::{MojangCape, MojangFullPlayerProfile};
 use oneclient_polyplus::api::{
     self, BodySlot, BundleInfo, CosmeticGroup, CosmeticType, CosmeticVariant, EmoteInfo,
@@ -17,7 +18,8 @@ use uuid::Uuid;
 use super::parts::{
     AnchorChip, BACK_YAW, Badge, BadgeStyle, CAPE_ZOOM, CARD_CHROME, CARD_WIDTH, CapeSource,
     CoverThumb, FRONT_YAW, GRID_GAP, InfoHeading, LookThumb, MenuAction, Rename, SectionChip,
-    Swatch, WardrobeCard, detail_text, divider, library_intro, notice, price_label, store_label,
+    SkinTexture, Swatch, WardrobeCard, detail_text, divider, library_intro, notice, price_label,
+    store_label,
 };
 use super::preview::{HistoryList, RightColumn};
 use crate::components::{
@@ -27,12 +29,12 @@ use crate::components::{
 use crate::hooks::wardrobe::{
     MojangLookQuery, OutfitsQuery, PlusCosmeticsQuery, SkinsQuery, StoreData, StoreQuery,
     UseWardrobeAction, WardrobeAction, active_cape, active_skin, invalidate_wardrobe_queries,
-    plus_message, use_mojang_look, use_outfits, use_plus_cosmetics, use_skin_library, use_store,
-    use_store_suggestions, use_wardrobe_action,
+    local, plus_message, use_mojang_look, use_outfits, use_plus_cosmetics, use_skin_library,
+    use_store, use_store_suggestions, use_wardrobe_action,
 };
 use crate::hooks::{
     mutation_is_running, query_error, query_is_loading, settled_or_loading, try_default_account,
-    use_current_account, use_debounced, use_overlay_claim_when,
+    use_current_account, use_debounced, use_local_wardrobe, use_overlay_claim_when,
 };
 use crate::i18n::{t, tf};
 use crate::theme::{colors, rounded, text_size};
@@ -74,6 +76,7 @@ pub(super) const BACK_VIEW_TYPES: [CosmeticType; 3] = [
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Section {
     Cosmetics,
+    Capes,
     Outfits,
     Skins,
 }
@@ -164,6 +167,8 @@ pub(super) fn cart_key(variant: i32) -> String {
 #[derive(Clone, PartialEq)]
 pub(super) struct WardrobeData {
     pub account: Uuid,
+    pub offline: bool,
+    pub local: Option<Snapshot>,
     pub uuid: String,
     pub look: Option<MojangFullPlayerProfile>,
     pub look_error: Option<String>,
@@ -202,7 +207,11 @@ fn owned_set(plus: Option<&PlayerCosmetics>) -> HashSet<i32> {
 
 impl WardrobeData {
     pub fn plus_available(&self) -> bool {
-        self.plus.is_some() || self.plus_error.is_none()
+        !self.offline && (self.plus.is_some() || self.plus_error.is_none())
+    }
+
+    pub fn library_available(&self) -> bool {
+        self.offline || self.plus_available()
     }
 
     pub fn matches(&self, name: &str) -> bool {
@@ -402,6 +411,44 @@ impl WardrobeData {
             .and_then(|look| look.capes.iter().find(|cape| cape.id == id))
     }
 
+    pub fn is_custom_cape(&self, cape: &MojangCape) -> bool {
+        // Local imports have saved bytes and no remote texture URL.
+        self.offline && cape.url.is_empty()
+    }
+
+    pub fn cape_label(&self, cape: &MojangCape) -> &'static str {
+        if self.is_custom_cape(cape) {
+            t("fork.wardrobe.custom_cape")
+        } else {
+            t("oneclient.wardrobe.minecraft_cape")
+        }
+    }
+
+    pub fn cape_preview(&self, cape: &MojangCape) -> Option<CapeSource> {
+        self.local
+            .as_ref()
+            .and_then(|snapshot| snapshot.image(Uuid::parse_str(&cape.id).ok()))
+            .map(CapeSource::Local)
+            .or_else(|| (!cape.url.is_empty()).then(|| CapeSource::Mojang(cape.url.clone())))
+    }
+
+    pub fn skin_preview(&self, skin: &SkinInfo, slim: bool) -> Option<(SkinTexture, bool)> {
+        let texture = if let Some(snapshot) = &self.local {
+            SkinTexture::Local(snapshot.image(Uuid::parse_str(&skin.url).ok())?)
+        } else {
+            SkinTexture::Remote(skin.url.clone())
+        };
+        Some((texture, slim))
+    }
+
+    pub fn active_local_skin_preview(&self) -> Option<(SkinTexture, bool)> {
+        let snapshot = self.local.as_ref()?;
+        Some((
+            SkinTexture::Local(snapshot.image(snapshot.library.skin)?),
+            self.slim,
+        ))
+    }
+
     pub fn current_cape(&self) -> Option<CapeSource> {
         let plus_cape = self
             .plus
@@ -414,11 +461,14 @@ impl WardrobeData {
             self.look
                 .as_ref()
                 .and_then(active_cape)
-                .map(|cape| CapeSource::Mojang(cape.url.clone()))
+                .and_then(|cape| self.cape_preview(cape))
         })
     }
 
     pub fn current_skin_hash(&self) -> Option<String> {
+        if let Some(snapshot) = &self.local {
+            return snapshot.library.skin.map(|id| id.to_string());
+        }
         self.look
             .as_ref()
             .and_then(active_skin)
@@ -443,11 +493,27 @@ impl WardrobeData {
             .find(|outfit| outfit.id == id)
     }
 
-    pub fn outfit_look(&self, outfit: &OutfitInfo) -> (Option<(String, bool)>, Option<CapeSource>) {
+    pub fn outfit_look(
+        &self,
+        outfit: &OutfitInfo,
+    ) -> (Option<(SkinTexture, bool)>, Option<CapeSource>) {
+        let saved_model = self
+            .local
+            .as_ref()
+            .and_then(|snapshot| {
+                snapshot
+                    .library
+                    .outfits
+                    .iter()
+                    .find(|item| item.number == outfit.id)
+            })
+            .map(|item| item.slim);
         let skin = outfit
             .skin_id
             .and_then(|id| self.skin(id))
-            .map(|skin| (skin.url.clone(), skin.model == SkinModel::Slim));
+            .and_then(|skin| {
+                self.skin_preview(skin, saved_model.unwrap_or(skin.model == SkinModel::Slim))
+            });
         let plus_cape = outfit
             .equipped
             .get(&BodySlot::Cape)
@@ -459,7 +525,7 @@ impl WardrobeData {
                 .mojang_cape_id
                 .as_deref()
                 .and_then(|id| self.mojang_cape(id))
-                .map(|cape| CapeSource::Mojang(cape.url.clone()))
+                .and_then(|cape| self.cape_preview(cape))
         });
         (skin, cape)
     }
@@ -885,11 +951,14 @@ impl Component for Wardrobe {
         let account = try_default_account(&current);
 
         let body = match account {
-            Some(account) if account.is_microsoft() => WardrobeBody {
+            Some(account) if account.is_microsoft() || account.is_offline() => WardrobeBody {
                 account: account.id,
+                offline: account.is_offline(),
             }
             .into_element(),
-            Some(account) if account.is_offline() => super::local::LocalWardrobe { account }.into_element(),
+            Some(account) if account.is_elyby() => {
+                centered_note(t("fork.wardrobe.elyby_unavailable"))
+            }
             Some(_) => centered_note(t("oneclient.wardrobe.account.not_microsoft")),
             None if query_is_loading(&current) => {
                 centered_spinner(t("oneclient.wardrobe.account.loading"))
@@ -911,7 +980,7 @@ struct Anchors {
 pub(super) struct Shared {
     pub selection: State<Option<Selection>>,
     pub trying_on: State<bool>,
-    pub adding_skin: State<bool>,
+    pub adding_texture: State<Option<Kind>>,
     pub show_cart: State<bool>,
     pub cart: State<Vec<CartEntry>>,
     pub variant_picks: State<HashMap<i32, Pick>>,
@@ -925,7 +994,7 @@ impl PartialEq for Shared {
     fn eq(&self, other: &Self) -> bool {
         self.selection == other.selection
             && self.trying_on == other.trying_on
-            && self.adding_skin == other.adding_skin
+            && self.adding_texture == other.adding_texture
             && self.show_cart == other.show_cart
             && self.cart == other.cart
             && self.variant_picks == other.variant_picks
@@ -971,12 +1040,14 @@ impl WardrobeQueries {
 #[derive(PartialEq)]
 struct WardrobeBody {
     account: Uuid,
+    offline: bool,
 }
 
 impl WardrobeBody {
     fn key_hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.account.hash(&mut hasher);
+        self.offline.hash(&mut hasher);
         hasher.finish()
     }
 }
@@ -984,14 +1055,23 @@ impl WardrobeBody {
 impl Component for WardrobeBody {
     fn render(&self) -> impl IntoElement {
         let account = self.account;
-        let look_query = use_mojang_look(account);
-        let plus_query = use_plus_cosmetics(account);
-        let outfits_query = use_outfits(account);
-        let skins_query = use_skin_library(account);
-        let store_query = use_store();
+        let offline = self.offline;
+        let online_account = (!offline).then_some(account);
+        let look_query = use_mojang_look(online_account);
+        let plus_query = use_plus_cosmetics(online_account);
+        let outfits_query = use_outfits(online_account);
+        let skins_query = use_skin_library(online_account);
+        let store_query = use_store(!offline);
+        let local_query = use_local_wardrobe(offline.then_some(account));
         let action = use_wardrobe_action();
 
-        let section = use_state(|| Section::Cosmetics);
+        let section = use_state(|| {
+            if offline {
+                Section::Skins
+            } else {
+                Section::Cosmetics
+            }
+        });
         let show_history = use_state(|| false);
         let sort = use_state(|| Sort::Popular);
         let query = use_state(String::new);
@@ -1003,7 +1083,7 @@ impl Component for WardrobeBody {
         let shared = Shared {
             selection: use_state(|| None::<Selection>),
             trying_on: use_state(|| false),
-            adding_skin: use_state(|| false),
+            adding_texture: use_state(|| None),
             show_cart: use_state(|| false),
             cart: use_state(Vec::<CartEntry>::new),
             variant_picks: use_state(HashMap::<i32, Pick>::new),
@@ -1013,7 +1093,15 @@ impl Component for WardrobeBody {
             action,
         };
 
-        let look = settled_or_loading(&look_query);
+        let local = settled_or_loading(&local_query);
+        let local_error = query_error(&local_query);
+        let look = if offline {
+            local
+                .as_ref()
+                .map(|snapshot| local::look(account, snapshot))
+        } else {
+            settled_or_loading(&look_query)
+        };
         let plus = settled_or_loading(&plus_query);
         if let Some(current) = &plus
             && last_plus.peek().as_ref() != Some(current)
@@ -1023,20 +1111,46 @@ impl Component for WardrobeBody {
         let plus = plus.or_else(|| last_plus.peek().clone());
         let data = WardrobeData {
             account,
-            uuid: account.to_string(),
+            offline,
+            uuid: if offline {
+                format!("offline:{account}")
+            } else {
+                account.to_string()
+            },
             slim: look
                 .as_ref()
                 .and_then(active_skin)
                 .is_some_and(|skin| skin.variant == oneclient_mc::SkinVariant::Slim),
             look,
-            look_error: query_error(&look_query),
+            look_error: if offline {
+                local_error.clone()
+            } else {
+                query_error(&look_query)
+            },
             owned: owned_set(plus.as_ref()),
             plus,
             plus_error: query_error(&plus_query),
-            outfits: settled_or_loading(&outfits_query),
-            outfits_error: query_error(&outfits_query),
-            skins: settled_or_loading(&skins_query),
-            skins_error: query_error(&skins_query),
+            outfits: if offline {
+                local.as_ref().map(local::outfits)
+            } else {
+                settled_or_loading(&outfits_query)
+            },
+            outfits_error: if offline {
+                local_error.clone()
+            } else {
+                query_error(&outfits_query)
+            },
+            skins: if offline {
+                local.as_ref().map(local::skins)
+            } else {
+                settled_or_loading(&skins_query)
+            },
+            skins_error: if offline {
+                local_error
+            } else {
+                query_error(&skins_query)
+            },
+            local,
             store: settled_or_loading(&store_query),
             store_error: query_error(&store_query),
             busy: mutation_is_running(&action),
@@ -1068,9 +1182,13 @@ impl Component for WardrobeBody {
             }
         });
 
-        let loading = query_is_loading(&look_query)
-            || query_is_loading(&plus_query)
-            || query_is_loading(&store_query);
+        let loading = if offline {
+            query_is_loading(&local_query)
+        } else {
+            query_is_loading(&look_query)
+                || query_is_loading(&plus_query)
+                || query_is_loading(&store_query)
+        };
         let reveal = use_animation_with_dependencies(&loading, |conf, _| {
             conf.on_creation(OnCreation::Run);
             conf.on_change(OnChange::Rerun);
@@ -1083,7 +1201,7 @@ impl Component for WardrobeBody {
             return centered_spinner(t("oneclient.wardrobe.page.loading"));
         }
 
-        let current_section = if data.plus_available() {
+        let current_section = if data.library_available() {
             *section.read()
         } else {
             Section::Cosmetics
@@ -1098,6 +1216,7 @@ impl Component for WardrobeBody {
         } else {
             match current_section {
                 Section::Cosmetics => cosmetics_content(&ctx),
+                Section::Capes => cape_groups(&ctx),
                 Section::Outfits => outfits_content(&ctx),
                 Section::Skins => skins_content(&ctx),
             }
@@ -1110,6 +1229,13 @@ impl Component for WardrobeBody {
                 0,
                 Block::notice(tf("oneclient.wardrobe.plus_refresh_failed", &[error])),
             );
+        }
+        if data
+            .local
+            .as_ref()
+            .is_some_and(|snapshot| !snapshot.unavailable.is_empty())
+        {
+            blocks.insert(0, Block::notice(t("fork.wardrobe.unavailable")));
         }
         let layout = Rc::new(layout(blocks, data.grid_width));
         let labels = layout.anchors.clone();
@@ -1197,6 +1323,41 @@ impl Component for WardrobeBody {
             )
         });
 
+        let title = label()
+            .text(t("oneclient.wardrobe.title"))
+            .font_size(text_size(24.))
+            .font_weight(FontWeight::SEMI_BOLD)
+            .color(colors::fg_primary());
+        let title = if offline {
+            rect()
+                .vertical()
+                .width(Size::flex(1.0))
+                .spacing(3.)
+                .child(
+                    rect()
+                        .horizontal()
+                        .cross_align(Alignment::Center)
+                        .spacing(8.)
+                        .child(title)
+                        .child(
+                            label()
+                                .text(t("fork.wardrobe.local_label"))
+                                .font_size(text_size(14.))
+                                .color(colors::fg_secondary()),
+                        ),
+                )
+                .child(
+                    label()
+                        .text(t("fork.wardrobe.local_only_notice"))
+                        .width(Size::fill())
+                        .font_size(text_size(12.))
+                        .color(colors::fg_secondary()),
+                )
+                .into_element()
+        } else {
+            title.width(Size::flex(1.0)).into_element()
+        };
+
         rect()
             .width(Size::fill())
             .height(Size::fill())
@@ -1217,14 +1378,7 @@ impl Component for WardrobeBody {
                             .width(Size::fill())
                             .content(Content::Flex)
                             .cross_align(Alignment::Center)
-                            .child(
-                                label()
-                                    .text(t("oneclient.wardrobe.title"))
-                                    .width(Size::flex(1.0))
-                                    .font_size(text_size(24.))
-                                    .font_weight(FontWeight::SEMI_BOLD)
-                                    .color(colors::fg_primary()),
-                            )
+                            .child(title)
                             .child(StoreSearch {
                                 data: data.clone(),
                                 query,
@@ -1511,6 +1665,7 @@ fn section_key(section: Section, history: bool) -> u64 {
         Section::Cosmetics => 1,
         Section::Outfits => 2,
         Section::Skins => 3,
+        Section::Capes => 4,
     };
     if history { base + 10 } else { base }
 }
@@ -1598,11 +1753,19 @@ impl Header {
             mut refreshing,
             queries,
         } = self;
-        let mut adding_skin = shared.adding_skin;
+        let mut adding_texture = shared.adding_texture;
         let mut show_cart = shared.show_cart;
         let store_enabled = data.plus_available();
         let history = *show_history.read() && store_enabled;
-        let sections: Vec<(Section, &str, IconType)> = if store_enabled {
+        let sections: Vec<(Section, &str, IconType)> = if data.offline {
+            let mut tabs = section_tabs().to_vec();
+            tabs.push((
+                Section::Capes,
+                t("fork.wardrobe.capes_tab"),
+                IconType::LayersThree01,
+            ));
+            tabs
+        } else if store_enabled {
             section_tabs().to_vec()
         } else {
             vec![section_tabs()[0]]
@@ -1617,14 +1780,19 @@ impl Header {
             .height(Size::px(33.))
             .spacing(8.);
         for (target, text, icon) in sections {
+            let enabled = !data.offline || target != Section::Cosmetics;
             chips = chips.child(SectionChip {
                 text,
+                enabled,
                 icon,
                 selected: current == target && !history,
                 on_press: EventHandler::new(move |()| {
+                    if !enabled {
+                        return;
+                    }
                     section.set(target);
                     show_history.set(false);
-                    adding_skin.set(false);
+                    adding_texture.set(None);
                     if anchors.peek().pinned.is_some() {
                         anchors.write().pinned = None;
                     }
@@ -2005,14 +2173,28 @@ impl GridCtx<'_> {
         self.shared.run(keys)
     }
 
+    fn open_import(&self, kind: Kind) -> EventHandler<()> {
+        let mut adding_texture = self.shared.adding_texture;
+        let mut show_cart = self.shared.show_cart;
+        let mut status = self.shared.status;
+        let busy = self.data.busy;
+        EventHandler::new(move |()| {
+            show_cart.set(false);
+            if !busy {
+                status.set(None);
+            }
+            adding_texture.set(Some(kind));
+        })
+    }
+
     fn select(&self, picked: Selection) -> EventHandler<()> {
         let mut selection = self.shared.selection;
         let mut trying_on = self.shared.trying_on;
         let mut show_cart = self.shared.show_cart;
-        let mut adding_skin = self.shared.adding_skin;
+        let mut adding_texture = self.shared.adding_texture;
         EventHandler::new(move |()| {
             show_cart.set(false);
-            adding_skin.set(false);
+            adding_texture.set(None);
             trying_on.set(true);
             selection.set(Some(picked.clone()));
         })
@@ -2173,13 +2355,62 @@ fn cosmetics_content(ctx: &GridCtx) -> Vec<Block> {
     out
 }
 
+fn custom_capes(ctx: &GridCtx) -> Vec<Block> {
+    let data = ctx.data;
+    let open = ctx.open_import(Kind::Cape);
+    let heading = rect()
+        .horizontal()
+        .width(Size::fill())
+        .height(Size::px(INTRO_HEIGHT))
+        .cross_align(Alignment::Center)
+        .spacing(8.)
+        .child(
+            label()
+                .text(t("fork.wardrobe.custom_capes"))
+                .font_size(text_size(14.))
+                .font_weight(FontWeight::MEDIUM)
+                .color(colors::fg_primary()),
+        )
+        .child(
+            Button::new()
+                .secondary()
+                .enabled(!data.busy)
+                .on_press(move |_| open.call(()))
+                .child(Icon::new(IconType::Plus).size(14.))
+                .text(t("fork.wardrobe.add_capes")),
+        );
+    let mut blocks = vec![Block::fixed(heading.into_element(), INTRO_HEIGHT)];
+    let Some(look) = &data.look else {
+        return blocks;
+    };
+    let mut available = look
+        .capes
+        .iter()
+        .filter(|cape| data.is_custom_cape(cape))
+        .peekable();
+    if available.peek().is_none() {
+        blocks.push(Block::notice(t("fork.wardrobe.custom_capes_empty")));
+    } else {
+        let cards: Vec<_> = available
+            .filter(|cape| data.matches(&cape.alias))
+            .map(|cape| Card::Mojang(cape.id.clone()))
+            .collect();
+        if cards.is_empty() {
+            blocks.push(Block::notice(t("fork.wardrobe.custom_capes_no_match")));
+        } else {
+            blocks.push(ctx.grid(cards));
+        }
+    }
+    blocks
+}
+
 fn cape_groups(ctx: &GridCtx) -> Vec<Block> {
     let data = ctx.data;
     let searching = !data.query.trim().is_empty();
     let mojang_matches = data.look.as_ref().map(|look| {
         look.capes
             .iter()
-            .filter(|cape| data.matches(&cape.alias))
+            .filter(|cape| !data.is_custom_cape(cape) && data.matches(&cape.alias))
             .collect::<Vec<&MojangCape>>()
     });
     let plus_matches = data.plus.as_ref().map(|_| {
@@ -2197,10 +2428,19 @@ fn cape_groups(ctx: &GridCtx) -> Vec<Block> {
         return Vec::new();
     }
 
-    let mut out = vec![Block::heading(
+    let mut out = if data.offline {
+        custom_capes(ctx)
+    } else {
+        Vec::new()
+    };
+    out.push(Block::heading(
         t("oneclient.wardrobe.capes.minecraft.title"),
-        t("oneclient.wardrobe.capes.minecraft.description"),
-    )];
+        if data.offline {
+            t("fork.wardrobe.capes_description")
+        } else {
+            t("oneclient.wardrobe.capes.minecraft.description")
+        },
+    ));
 
     match (&data.look, &data.look_error) {
         (None, Some(error)) => out.push(Block::notice(error.clone())),
@@ -2226,6 +2466,10 @@ fn cape_groups(ctx: &GridCtx) -> Vec<Block> {
                 );
             }
         }
+    }
+
+    if data.offline {
+        return out;
     }
 
     out.push(Block::heading(
@@ -2274,9 +2518,45 @@ fn mojang_card(ctx: &GridCtx, cape: &MojangCape) -> Element {
     let (action_label, action_icon) = equip_strip(active);
     let picked = Selection::MojangCape(cape.id.clone());
 
+    let mut menu = vec![{
+        let toggle = ctx.equip(toggle.clone());
+        MenuAction::new(
+            if active {
+                IconType::XClose
+            } else {
+                IconType::Plus
+            },
+            if active {
+                t("oneclient.common.remove")
+            } else {
+                t("oneclient.wardrobe.action.equip")
+            },
+            true,
+            move |()| toggle.call(()),
+        )
+    }];
+    if data.is_custom_cape(cape) {
+        let mut deleting = ctx.shared.deleting;
+        let choice = picked.clone();
+        let name = cape.alias.clone();
+        let action = WardrobeAction::DeleteLocalCape {
+            account: data.account,
+            id: cape.id.clone(),
+            name: name.clone(),
+        };
+        menu.push(MenuAction::danger(
+            IconType::Trash01,
+            t("oneclient.common.delete"),
+            true,
+            move |()| {
+                deleting.set(Some((choice.clone(), name.clone(), action.clone())));
+            },
+        ));
+    }
+
     WardrobeCard {
         name: cape.alias.clone(),
-        detail: detail_text(t("oneclient.wardrobe.minecraft_cape")),
+        detail: detail_text(data.cape_label(cape)),
         action_label,
         action_icon,
         equipped: active,
@@ -2285,8 +2565,8 @@ fn mojang_card(ctx: &GridCtx, cape: &MojangCape) -> Element {
         badge: None,
         thumbnail: LookThumb {
             uuid: data.uuid.clone(),
-            skin: None,
-            cape: Some(CapeSource::Mojang(cape.url.clone())),
+            skin: data.active_local_skin_preview(),
+            cape: data.cape_preview(cape),
             cosmetics: Vec::new(),
             emote: None,
             particle_color: None,
@@ -2296,23 +2576,7 @@ fn mojang_card(ctx: &GridCtx, cape: &MojangCape) -> Element {
         }
         .into_element(),
         preview: None,
-        menu: vec![{
-            let toggle = ctx.equip(toggle.clone());
-            MenuAction::new(
-                if active {
-                    IconType::XClose
-                } else {
-                    IconType::Plus
-                },
-                if active {
-                    t("oneclient.common.remove")
-                } else {
-                    t("oneclient.wardrobe.action.equip")
-                },
-                true,
-                move |()| toggle.call(()),
-            )
-        }],
+        menu,
         rename: None,
         enabled: !data.busy,
         swatches: Vec::new(),
@@ -2719,6 +2983,8 @@ fn outfit_card(ctx: &GridCtx, outfit: &OutfitInfo) -> Element {
     let mut deleting = ctx.shared.deleting;
     let detail = if active {
         t("oneclient.wardrobe.outfits.active").to_string()
+    } else if data.offline {
+        t("oneclient.wardrobe.preview.outfit").to_string()
     } else {
         cosmetic_count_label(outfit.equipped.len())
     };
@@ -2844,27 +3110,36 @@ fn skins_content(ctx: &GridCtx) -> Vec<Block> {
         }];
     };
 
-    let mut adding_skin = ctx.shared.adding_skin;
-    let mut show_cart = ctx.shared.show_cart;
-    let mut status = ctx.shared.status;
+    let open = ctx.open_import(Kind::Skin);
     let busy = ctx.data.busy;
+    let reset = ctx.run(WardrobeAction::ResetLocalSkin {
+        account: data.account,
+    });
     let mut out = vec![Block::intro(
         tf(
             "oneclient.wardrobe.skins.intro",
             &[&list.skins.len(), &list.limit],
         ),
         Some(
-            Button::new()
-                .secondary()
-                .on_press(move |_| {
-                    show_cart.set(false);
-                    if !busy {
-                        status.set(None);
-                    }
-                    adding_skin.set(true);
-                })
-                .child(Icon::new(IconType::Plus).size(14.))
-                .text(t("oneclient.wardrobe.skins.add"))
+            rect()
+                .horizontal()
+                .spacing(8.)
+                .maybe_child(
+                    (data.offline && data.current_skin_hash().is_some()).then(|| {
+                        Button::new()
+                            .secondary()
+                            .enabled(!busy)
+                            .on_press(move |_| reset.call(()))
+                            .text(t("fork.wardrobe.restore_skin"))
+                    }),
+                )
+                .child(
+                    Button::new()
+                        .secondary()
+                        .on_press(move |_| open.call(()))
+                        .child(Icon::new(IconType::Plus).size(14.))
+                        .text(t("oneclient.wardrobe.skins.add")),
+                )
                 .into_element(),
         ),
     )];
@@ -2959,7 +3234,7 @@ fn skin_card(ctx: &GridCtx, skin: &SkinInfo) -> Element {
         badge: skin.favorite.then(Badge::favorite),
         thumbnail: LookThumb {
             uuid: data.uuid.clone(),
-            skin: Some((skin.url.clone(), slim)),
+            skin: data.skin_preview(skin, slim),
             cape: None,
             cosmetics: Vec::new(),
             emote: None,

@@ -13,21 +13,25 @@ import java.awt.image.BufferedImage;
 final class SkinServer {
     private final ServerSocket server;
     private final byte[] png;
+    private final byte[] cape;
     private final String path;
+    private final String capePath;
     private volatile byte[] profile;
 
-    SkinServer(File file) throws Exception {
-        if (file.length() > 1024 * 1024) throw new IOException("Skin exceeds 1 MB");
-        png = Files.readAllBytes(file.toPath());
-        BufferedImage image = ImageIO.read(new ByteArrayInputStream(png));
-        if (image == null || image.getWidth() != 64 || image.getHeight() != 64) {
-            throw new IOException("A 64 x 64 PNG is required");
-        }
+    SkinServer(File file) throws Exception { this(file, null); }
+
+    SkinServer(File file, File capeFile) throws Exception {
+        png = file == null ? null : readPng(file, 64, 64);
+        cape = capeFile == null ? null : readPng(capeFile, 64, 32);
+        if (png == null && cape == null) throw new IOException("No local textures selected");
         StringBuilder hash = new StringBuilder();
-        for (byte value : MessageDigest.getInstance("SHA-256").digest(png)) {
+        for (byte value : MessageDigest.getInstance("SHA-256").digest(png != null ? png : cape)) {
             hash.append(String.format("%02x", value & 255));
         }
         path = "/" + UUID.randomUUID() + "/" + hash;
+        StringBuilder capeHash = new StringBuilder();
+        if (cape != null) for (byte value : MessageDigest.getInstance("SHA-256").digest(cape)) capeHash.append(String.format("%02x", value & 255));
+        capePath = path + "/cape/" + capeHash;
         server = new ServerSocket();
         server.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 0));
         Thread worker = new Thread(new Runnable() {
@@ -41,6 +45,19 @@ final class SkinServer {
     }
 
     String url() { return "http://127.0.0.1:" + server.getLocalPort() + path; }
+
+    String capeUrl() { return "http://127.0.0.1:" + server.getLocalPort() + capePath; }
+
+    private static byte[] readPng(File file, int width, int height) throws Exception {
+        if (file.length() > 1024 * 1024) throw new IOException("Texture exceeds 1 MB");
+        byte[] data = Files.readAllBytes(file.toPath());
+        if (data.length < 24 || data[0] != (byte)137 || data[1] != 80 || data[2] != 78 || data[3] != 71
+                || java.nio.ByteBuffer.wrap(data, 16, 8).getInt() != width
+                || java.nio.ByteBuffer.wrap(data, 20, 4).getInt() != height) throw new IOException("Invalid texture dimensions");
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+        if (image == null || image.getWidth() != width || image.getHeight() != height) throw new IOException("Invalid PNG");
+        return data;
+    }
 
     String profileUrl() { return url() + "/profile"; }
 
@@ -67,6 +84,7 @@ final class SkinServer {
                 byte[] body = null;
                 String type = "image/png";
                 if (method && path.equals(parts[1])) body = png;
+                else if (method && capePath.equals(parts[1])) body = cape;
                 else if (method && (path + "/profile").equals(parts[1])) {
                     body = profile;
                     type = "application/json; charset=utf-8";

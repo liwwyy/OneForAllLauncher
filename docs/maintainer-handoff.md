@@ -1,3 +1,68 @@
+# Local OneClient 2.13.0 integration — 2026-11-27
+
+The stable upstream tag `oneclient-2.13.0` resolves to
+`a149c66981c235c5e2b823fc03083d97a5215f12` and was merged at `7ea35242`.
+The pending Wardrobe and VanillaHUD changes were restored from the local stash
+`2f83af1a48f05b1b67f352a10d5a49a17ed1ea4b` and are still uncommitted.
+
+The offline Wardrobe title now has a muted **Local** label. The notice below it
+reads “Your selected offline account skin and cape only appear for you, even in
+multiplayer.” Ely.by accounts show a dedicated unavailable message.
+
+The merge keeps the fork release workflow and pins the Nix recipe to the
+published fork 2.12.1 AppImage and its release checksum. The owner will test
+the local 2.13.0 build. See [validation](validation.md).
+
+---
+
+# Local offline wardrobe implementation — 2026-11-26
+
+The owner authorized implementing skins, capes and local outfits, explicitly
+without committing or pushing. Starting HEAD: `48c99933`. No screenshots or UI
+execution are authorized; UI and in-game acceptance stay with the owner.
+
+Offline accounts now open the upstream Wardrobe page, using its cards, menus,
+preview, import panel and outfit controls. The Cosmetics tab is disabled and
+the offline data source leaves authenticated wardrobe/store queries idle. The
+Capes tab reuses the Minecraft cape cards and lists 50 textures verified on
+Mojang's CDN. First equip persists the checked PNG for subsequent offline use.
+Custom capes appear above that catalog and use the shared file/URL import panel.
+The title includes the local-only notice. The local wardrobe remains available
+only to standalone offline accounts.
+The versioned manifest stays in the existing private per-account local-skins
+folder. Existing skin.json/skin.png files remain intact. Library validation uses
+temporary folders to cover migration, cached launch selections and bad inputs.
+
+The source-built version 6 hook/bridge extends the existing selected-offline-UUID
+profile with optional CAPE data. Cape-only launches are supported by the launcher;
+non-offline account kinds still receive no local appearance agent. Skin/cape PNGs
+use fixed validated dimensions and exact private random loopback routes. Keep
+version 5 artifacts for running games. PolyPlus catalog cosmetics are deferred;
+there is no PolyPlus mod fork, ownership modification or authenticated write.
+
+The owner verified the Ely.by HUD preview with the VanillaHUD workaround
+disabled, and the stable 1.8.9 Ornithe bundle's VanillaHUD 3.5.18 bytecode retains
+the upstream fallback. The old toggle and agent were removed. Older settings
+can still load. Authlib-injector stays enabled for supported providers, and the
+offline appearance agent now owns its ASM build helpers and license. The
+custom-auth 1.8.9 tab-list preview remains an in-game check for the owner.
+
+See docs/offline-wardrobe.md for behavior and docs/validation.md for current
+checks. The owner must verify actual capes in Ornithe and modern OneClient with
+PolyPlus, cape visibility settings, preview layout/keyboard behavior and full
+library/outfit interactions. Headless authlib/transport checks do not establish
+that a game's rendering path displays the cape. No ELYTRA texture property is supplied; native cape-to-elytra fallback is left
+to the game and has not been tested.
+
+Do not publish under the existing immutable 2.12.1 tag. Keep the changeset for a
+future authorized release/version decision and add public fork release notes
+only after owner acceptance. No version number, updater key/endpoint or account
+serialization format was changed by this implementation.
+
+Older handoffs below are historical and do not authorize publishing these changes.
+
+---
+
 # Local 2.12.1 integration — 2026-11-24
 
 The owner requested local integration for manual testing and Nix action pinning

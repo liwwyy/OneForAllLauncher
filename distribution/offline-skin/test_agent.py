@@ -1,5 +1,4 @@
 """Headless integration tests for the source-built offline-only Java agent."""
-import importlib.util
 import os
 from pathlib import Path
 import subprocess
@@ -7,10 +6,9 @@ import sys
 import tempfile
 import unittest
 
+import agent_build as builder
+
 ROOT = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location('preview_build', ROOT.parent / 'elyby-preview-compat/build.py')
-builder = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(builder)
 
 class OfflineSkinAgentTest(unittest.TestCase):
     def test_real_instrumentation_is_local_only_and_opt_in(self):
@@ -69,7 +67,7 @@ if (!local.m_63406370().equals(expected ? "slim" : "default")) throw new Asserti
                                 '-cp', os.pathsep.join([str(work), str(agent)]), 'TestSkin', str(enabled and exists).lower(), path], check=True)
 
             # A damaged/missing optional bridge must fall back instead of aborting the JVM.
-            agent.with_name('offline-skin-bridge-5.jar').unlink()
+            agent.with_name('offline-skin-bridge-6.jar').unlink()
             subprocess.run([java, '-Xverify:all', '-Djava.awt.headless=true', f'-javaagent:{agent}',
                             '-Doneforall.localSkin.offlineAccount=true',
                             f'-Doneforall.localSkin.path={work / "skin.png"}',

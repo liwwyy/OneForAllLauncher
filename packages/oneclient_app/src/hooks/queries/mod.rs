@@ -142,4 +142,4 @@ pub use worlds::{
     use_world_size,
 };
 
-pub use local_skin::{LocalSkinQuery, use_local_skin};
+pub use local_skin::use_local_wardrobe;

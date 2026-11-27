@@ -13,7 +13,7 @@ public final class LocalSkinAgent implements ClassFileTransformer {
     public static void premain(String arguments, Instrumentation instrumentation) {
         try {
             if (Boolean.getBoolean("oneforall.localSkin.offlineAccount")
-                    && System.getProperty("oneforall.localSkin.path") != null
+                    && (System.getProperty("oneforall.localSkin.path") != null || System.getProperty("oneforall.localSkin.cape") != null)
                     && LocalTextures.initialize()) {
                 instrumentation.addTransformer(new LocalSkinAgent());
                 System.err.println("[OneForAll local skin] Enabled for the selected offline account.");

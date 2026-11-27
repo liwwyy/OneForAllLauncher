@@ -1,3 +1,61 @@
+# Local OneClient 2.13.0 checks (2026-11-27)
+
+The local merge `7ea35242` includes the upstream stable commit
+`a149c66981c235c5e2b823fc03083d97a5215f12`. The pre-merge Wardrobe and
+VanillaHUD changes were restored. The lockfile changes only workspace versions.
+The Wardrobe translations contain the muted Local label, the owner's exact
+notice and the Ely.by unavailable message. Git whitespace and conflict checks
+passed. The locked Rust 1.98.0 debug build succeeded at
+`target/debug/oneforall_app`. The final binary was linked without debug info
+to reduce linker I/O and contains the updated Wardrobe copy.
+
+Manual testing stays with the owner. Verify the offline heading, skin and cape
+notice, Ely.by unavailable state, and the existing Microsoft Wardrobe.
+
+---
+
+# Upstream Wardrobe integration for offline accounts (2026-11-26)
+
+Starting HEAD: `48c99933`. The owner requested local implementation only.
+The Wardrobe uses the existing upstream page and signed-account controls.
+Offline accounts use the Skins, Capes and Outfits tabs with Cosmetics disabled.
+The Capes tab uses the same import panel for custom cape files and URLs.
+
+- The locked launcher build passed with Rust 1.98.0. The local executable is
+  `target/debug/oneforall_app`.
+- All 15 focused wardrobe Rust tests and both launcher settings tests passed.
+  Coverage includes custom cape persistence, outfit cleanup on deletion, old
+  skin selection carryover, account-kind isolation and settings containing the
+  retired preview flag.
+- All 50 catalog entries returned valid 64 × 32 PNGs from Mojang's texture CDN.
+  SHA-256 matched the embedded references, and every PNG decoded successfully.
+- The 1.8.9 and 26.3 headless matrix passed with the real authlib/Fabric loaders,
+  cape-only and skin+cape profiles, the Secure Skins rewrite, and the shipped
+  OneConfig PlayerHead reader used by PolyPlus. The separate Ornithe smoke
+  test passed.
+- All 10 distribution unit tests passed. The offline Wardrobe translation keys
+  and local documentation links resolve. Cargo dependencies and the lockfile
+  are unchanged.
+
+Polyfrost's checksum-verified stable 1.8.9 Ornithe bundle now includes
+VanillaHUD 3.5.18. The distributed class includes the missing-name fallback,
+and the owner confirmed the Ely.by preview works with the workaround disabled.
+The preview agent was removed. The owner still needs to check the custom-auth
+OneConfig tab-list preview with authlib-injector enabled.
+
+The owner still needs to test the integrated UI and in-game appearance.
+Check the legacy skin carryover, skin imports and previews, custom cape
+file/URL imports, cached cape selection and cape-only launch, outfit switching, and cape rendering in
+Ornithe 1.8.9 and modern OneClient. Recheck skins and head previews, and
+check the Microsoft Wardrobe with an authenticated account. Cape visibility
+settings apply. No screenshots or automated visual comparisons were taken.
+
+The earlier local appearance-hook matrix covered 18 pinned fixtures from beta
+1.7.3 through 26.3 and the legacy cloak URL paths. Those results concern the
+shared hook. Picker integration still needs the owner's game test.
+
+---
+
 # Current local integration: 2.12.1 (2026-11-24)
 
 The owner requested local integration for manual testing and the Nix updater
@@ -569,10 +627,10 @@ the owner's report, not automated rendering verification or full platform covera
    when launched offline. Versions before 1.8 use the classic model. Check
    installed skin mods separately.
 
-5. Test current VanillaHUD 3.5.10 with Ely.by and custom accounts, with the preview
-   workaround disabled and enabled. Exercise the OneConfig tab-list/head editor
-   and unavailable profile services. Authlib-injector must remain enabled. The
-   upstream null-name fix exists; file an issue/PR only if a failure is reproduced.
+5. The owner verified the Ely.by preview with the workaround disabled.
+   Retest the OneConfig tab-list editor with a custom-auth
+   account after removing the workaround. The authenticated launch still uses
+   authlib-injector.
 6. Build all release platforms through CI and test signed upgrades from the old
    fork, custom data paths, preserved accounts/settings/instances, OS shortcuts,
    URL handlers, tray launch and simultaneous upstream/fork operation. Check
