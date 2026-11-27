@@ -103,7 +103,8 @@ pub fn performance_flags(
         && total_ram_mb / ZGC_RAM_PER_HEAP >= mem_max;
     let use_g1 = !collector_chosen && !use_zgc && java_major >= 8;
 
-    if (use_zgc || use_g1) && java_major == 24 {
+    let compact_headers = java_major >= 24 && is_64_bit(java_arch);
+    if compact_headers && java_major == 24 {
         flags.push("-XX:+UnlockExperimentalVMOptions".to_string());
     }
 
@@ -125,7 +126,7 @@ pub fn performance_flags(
         flags.push("-XX:+ParallelRefProcEnabled".to_string());
     }
 
-    if (use_zgc || use_g1) && java_major >= 24 && is_64_bit(java_arch) {
+    if compact_headers {
         flags.push("-XX:+UseCompactObjectHeaders".to_string());
     }
 
@@ -221,6 +222,14 @@ pub fn minecraft_arguments(
                 version_type,
                 resolution,
             )?);
+        }
+        if !parsed.iter().any(|arg| arg == "--width") {
+            parsed.extend([
+                "--width".to_owned(),
+                resolution.width.to_string(),
+                "--height".to_owned(),
+                resolution.height.to_string(),
+            ]);
         }
     }
 
@@ -814,6 +823,19 @@ mod tests {
     }
 
     #[test]
+    fn a_custom_collector_keeps_compact_headers() {
+        for major in [24, 25] {
+            let flags = performance_flags(major, "amd64", 4096, 65536, &custom("-XX:+UseG1GC"));
+            assert!(!flags.contains(&"-XX:+UseG1GC".to_string()));
+            assert!(flags.contains(&"-XX:+UseCompactObjectHeaders".to_string()));
+            assert_eq!(
+                flags.contains(&"-XX:+UnlockExperimentalVMOptions".to_string()),
+                major == 24
+            );
+        }
+    }
+
+    #[test]
     fn unrelated_custom_arguments_leave_the_collector_alone() {
         let flags = performance_flags(21, "amd64", 4096, 65536, &custom("-Dfoo=bar -Xss1M"));
         assert!(flags.contains(&"-XX:+UseG1GC".to_string()));
@@ -1172,6 +1194,32 @@ mod tests {
         assert_eq!(args.first().unwrap(), "--username");
         assert_eq!(args[1], "player");
         assert_eq!(args.last().unwrap(), "--fabric");
+    }
+
+    #[test]
+    fn a_legacy_version_gets_the_profile_resolution() {
+        let dir = std::env::temp_dir();
+
+        let args = minecraft_arguments(
+            None,
+            Some("--username ${auth_player_name}"),
+            "token",
+            "player",
+            uuid::Uuid::nil(),
+            "1.8.9",
+            "1.8",
+            &dir,
+            &dir,
+            interfrost::api::minecraft::VersionType::Release,
+            Resolution::new(1280, 720),
+            "arm64",
+        )
+        .unwrap();
+
+        assert_eq!(
+            args,
+            ["--username", "player", "--width", "1280", "--height", "720"]
+        );
     }
 
     #[test]
