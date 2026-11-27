@@ -7,11 +7,11 @@
 
 let
   pname = "oneforall-launcher";
-  version = "2.12.1";
+  version = "2.13.0";
 
   src = fetchurl {
     url = "https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-${version}/OneForAllLauncher_${version}_linux_x86_64.AppImage";
-    hash = "sha256-Me6pQmBd2RXJLVyv9/ItPwVsiXw8oKTbNPC7Vd1a6Nk=";
+    hash = "sha256-gHr+XRomWOrNmnMHSMj4+7/IU8C7yWk6pxlckweE9Z4=";
   };
 
   extracted = appimageTools.extract { inherit pname version src; };
