@@ -817,8 +817,7 @@ pub async fn download_version_info(
     };
 
     if let Some(cached) = cached {
-        if !oneclient_net::offline::active()
-            && oneclient_net::status::current().online
+        if oneclient_net::status::current().online
             && VERSION_INFO_REFRESHED.lock().unwrap().insert(path.clone())
         {
             let ctx = ctx.clone();

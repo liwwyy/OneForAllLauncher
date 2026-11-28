@@ -80,6 +80,7 @@ fn apply_curseforge_auth(
 pub struct RequestClient {
     client: reqwest::Client,
     http1: reqwest::Client,
+    without_redirects: reqwest::Client,
     semaphore: Arc<Semaphore>,
     /// Shared across every clone so a settings save is visible to in-flight
     /// handles
@@ -118,10 +119,14 @@ impl RequestClient {
 
         let client = builder().build()?;
         let http1 = builder().http1_only().build()?;
+        let without_redirects = builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()?;
 
         Ok(Self {
             client,
             http1,
+            without_redirects,
             semaphore: Arc::new(Semaphore::new(MAX_INFLIGHT_REQUESTS)),
             config: Arc::new(ArcSwap::from_pointee(config)),
         })
@@ -131,8 +136,24 @@ impl RequestClient {
 impl RequestClient {
     #[tracing::instrument(level = "debug", skip_all)]
     pub async fn send(&self, request: impl Into<HttpRequest>) -> Result<Response, RequestError> {
-        if crate::offline::active() { return Err(RequestError::Offline); }
-        let mut request: HttpRequest = request.into();
+        self.send_inner(request.into(), true).await
+    }
+
+    /// Inspect a redirect while retaining the request client's normal transport policies.
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub async fn send_without_redirects(
+        &self,
+        request: reqwest::Request,
+    ) -> Result<Response, RequestError> {
+        self.send_inner(request.into(), false).await
+    }
+
+    async fn send_inner(
+        &self,
+        request: HttpRequest,
+        follow_redirects: bool,
+    ) -> Result<Response, RequestError> {
+        let mut request = request;
         let mut retries = 0;
         let mut throttle_retries = 0u32;
 
@@ -168,7 +189,9 @@ impl RequestClient {
                 None
             };
 
-            let http = if request.options.own_connection {
+            let http = if !follow_redirects {
+                &self.without_redirects
+            } else if request.options.own_connection {
                 &self.http1
             } else {
                 &self.client

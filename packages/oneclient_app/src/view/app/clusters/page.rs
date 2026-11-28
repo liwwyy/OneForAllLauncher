@@ -983,15 +983,20 @@ fn art_height_for(sidebar_height: f32) -> Option<f32> {
 
 fn play_button(
     cluster_id: i64,
-    _dispatch: crate::Actions,
+    dispatch: crate::Actions,
     state: (&'static str, bool),
 ) -> impl IntoElement {
     let (label, enabled) = state;
-    crate::components::InstanceLaunchButton {
-        cluster_id, label, enabled, grow: true,
-        button: Button::new().primary(),
-    }
-
+    Button::new()
+        .primary()
+        .width(Size::flex(1.))
+        .enabled(enabled)
+        .on_press(move |_| {
+            if enabled {
+                dispatch.launch_cluster(cluster_id);
+            }
+        })
+        .text(label)
 }
 
 fn page_header(mut show_create: State<bool>) -> impl IntoElement {

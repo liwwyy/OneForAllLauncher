@@ -226,7 +226,6 @@ impl Component for ClusterSettings {
                         "oneclient.cluster.settings.section.instance",
                     )))
                     .child(instance_row)
-                    .child(crate::components::OfflineLaunchRow { cluster_id })
                     .child(
                         CheckUpdatesRow {
                             cluster_id,

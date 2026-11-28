@@ -62,15 +62,7 @@ pub async fn launch_cluster_with(
     extra_jvm_arg: Option<&str>,
     bundle_budget: Option<Duration>,
 ) -> LauncherResult<LaunchedGame> {
-    let offline = crate::launch_mode::resolve(state, cluster_id, false).await?;
-    launch_cluster_with_mode(state, cluster_id, account, search_for_java, extra_jvm_arg, offline, bundle_budget).await
-}
-
-pub async fn launch_cluster_with_mode(
-    state: &Arc<LauncherState>, cluster_id: i64, account: &MinecraftAccount,
-    search_for_java: bool, extra_jvm_arg: Option<&str>, offline: bool, bundle_budget: Option<Duration>,
-) -> LauncherResult<LaunchedGame> {
-    tracing::info!(cluster_id, search_for_java, offline, "launching cluster");
+    tracing::info!(cluster_id, search_for_java, "launching cluster");
 
     // Parallel clusters or not a cluster runs only once a second game would
     // share its directory and its slot in the process manager
@@ -82,9 +74,15 @@ pub async fn launch_cluster_with_mode(
         return Err(GameError::AlreadyRunning(cluster_id).into());
     }
 
-    let mut launch_account = account.clone();
-    if offline { launch_account.access_token.clear(); }
-    let result = oneclient_net::offline::scope(offline, start(state, cluster_id, &launch_account, search_for_java, extra_jvm_arg, offline, bundle_budget)).await;
+    let result = start(
+        state,
+        cluster_id,
+        account,
+        search_for_java,
+        extra_jvm_arg,
+        bundle_budget,
+    )
+    .await;
 
     if result.is_err() {
         state.games.remove(cluster_id);
@@ -111,7 +109,6 @@ async fn start(
     account: &MinecraftAccount,
     search_for_java: bool,
     extra_jvm_arg: Option<&str>,
-    offline: bool,
     bundle_budget: Option<Duration>,
 ) -> LauncherResult<LaunchedGame> {
     let events = state.services.events.clone();
@@ -195,7 +192,7 @@ async fn start(
         format!("Launching {}", existing.name),
     );
 
-    if !offline && existing.uses_bundles()
+    if existing.uses_bundles()
         && let Err(err) = crate::clusters::apply_bundle_java_override(
             state,
             cluster_id,
@@ -210,8 +207,6 @@ async fn start(
 
     let cluster = if existing.stage == ClusterStage::Ready {
         existing
-    } else if offline {
-        return Err(GameError::OfflineMissing("the installed instance".into()).into());
     } else {
         stage(LaunchStage::Downloading);
         match crate::clusters::prepare_cluster_locked(
@@ -232,7 +227,7 @@ async fn start(
             }
         }
     };
-    if !offline && cluster.uses_bundles()
+    if cluster.uses_bundles()
         && let Err(err) = oneclient_content::bundles::install_cluster_bundles(
             cluster_id,
             state.bundles.as_ref(),
@@ -244,13 +239,13 @@ async fn start(
     {
         tracing::warn!(cluster_id, error = %err, "failed to install bundle content");
     }
-    let cluster = if offline { cluster } else { match crate::clusters::auto_update_loader(state, &cluster).await {
+    let cluster = match crate::clusters::auto_update_loader(state, &cluster).await {
         Ok(updated) => updated.unwrap_or(cluster),
         Err(err) => {
             tracing::warn!(cluster_id, error = %err, "failed to update the loader");
             cluster
         }
-    } };
+    };
 
     let global = state.settings.read().global_game_settings.clone();
     let profile = state.clusters.resolve_settings(&global, &cluster).await?;
@@ -325,7 +320,6 @@ async fn start(
             runtime
         }
         pinned => {
-            if offline { return Err(GameError::OfflineMissing("a compatible Java runtime".into()).into()); }
             let major = match &pinned {
                 Some(runtime) => {
                     tracing::info!(
@@ -346,7 +340,10 @@ async fn start(
                 .await?
         }
     };
-    let java = if offline { java } else { state.java.check_legacy_macos(java, required_major, native_ok, search_for_java).await? };
+    let java = state
+        .java
+        .check_legacy_macos(java, required_major, native_ok, search_for_java)
+        .await?;
 
     // Stats every library and the asset tree, the same work `plan_downloads`
     // already keeps off the runtime threads. `block_in_place` because
@@ -354,7 +351,6 @@ async fn start(
     let missing =
         tokio::task::block_in_place(|| game_files_missing(&version_info, &java.os_arch, updated));
     match missing {
-        Ok(true) if offline => return Err(GameError::OfflineMissing("required game files".into()).into()),
         Ok(true) => {
             tracing::info!(cluster_id, "missing game files; repairing");
             let _ = state

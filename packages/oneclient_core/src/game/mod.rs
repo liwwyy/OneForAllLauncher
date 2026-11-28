@@ -42,7 +42,7 @@ pub use game_options::{
 };
 pub use heal::clear_zeroed_files;
 pub use launch::{
-    LaunchedGame, crash_mod_issues, is_running, launch_cluster, launch_cluster_with, launch_cluster_with_mode, repair_cluster,
+    LaunchedGame, crash_mod_issues, is_running, launch_cluster, launch_cluster_with, repair_cluster,
 };
 pub use mod_problems::{ModProblem, ModProblemKind, ModRef};
 pub use oneclient_mc::{

@@ -554,7 +554,7 @@ pub async fn fetch_verified(
     if normalize_hash(&actual) != normalize_hash(expected_sha1) {
         return Err(RequestError::HashMismatch {
             source_desc: url.to_string(),
-            expected: expected_sha1.to_string(),
+            expected: format!("SHA-1 {expected_sha1}"),
             actual,
         });
     }

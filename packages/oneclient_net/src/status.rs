@@ -34,7 +34,6 @@ struct Connectivity {
     rx: watch::Receiver<ServiceStatus>,
     notify: Notify,
     started: AtomicBool,
-    internet: watch::Sender<Option<bool>>,
     /// While set probe results are never published so the forced status
     /// survives a recheck
     forced: RwLock<Option<ServiceStatus>>,
@@ -49,7 +48,6 @@ fn connectivity() -> &'static Connectivity {
             rx,
             notify: Notify::new(),
             started: AtomicBool::new(false),
-            internet: watch::channel(None).0,
             forced: RwLock::new(None),
         }
     })
@@ -63,7 +61,6 @@ pub fn force(status: Option<ServiceStatus>) {
 
     match status {
         Some(status) => {
-            conn.internet.send_replace(Some(status.online));
             let _ = conn.tx.send(status);
         }
         None => request_recheck(),
@@ -84,20 +81,6 @@ pub fn subscribe() -> watch::Receiver<ServiceStatus> {
 
 pub fn current() -> ServiceStatus {
     *connectivity().rx.borrow()
-}
-
-/// A cold-start launch shares the existing connectivity probe and its timeout.
-/// It does not wait for Microsoft or Polyfrost service-health checks.
-pub async fn online_for_launch() -> bool {
-    let conn = connectivity();
-    if !conn.started.load(Ordering::SeqCst) {
-        return current().online;
-    }
-    let mut internet = conn.internet.subscribe();
-    match tokio::time::timeout(PROBE_TIMEOUT, internet.wait_for(Option::is_some)).await {
-        Ok(Ok(value)) => value.unwrap_or(false),
-        _ => false,
-    }
 }
 
 pub fn request_recheck() {
@@ -125,14 +108,7 @@ pub fn start(client: RequestClient) {
             if forced().is_none() {
                 let _ = conn.tx.send(probed);
             }
-            if !probed.online {
-                tokio::select! {
-                    () = conn.notify.notified() => {},
-                    () = tokio::time::sleep(Duration::from_secs(15)) => {},
-                }
-            } else {
-                conn.notify.notified().await;
-            }
+            conn.notify.notified().await;
         }
     });
 }
@@ -144,21 +120,7 @@ async fn reachable(client: &reqwest::Client, url: &str) -> bool {
 pub async fn check_service_status(requester: &RequestClient) -> ServiceStatus {
     let client = requester.http();
 
-    let online = reachable(client, CONNECTIVITY_URL).await;
-    if forced().is_none() {
-        let conn = connectivity();
-        let mut status = current();
-        if status.online != online {
-            status.online = online;
-            if !online {
-                status.mc_auth_up = false;
-                status.polyfrost_up = false;
-            }
-            conn.tx.send_replace(status);
-        }
-        conn.internet.send_replace(Some(online));
-    }
-    if !online {
+    if !reachable(client, CONNECTIVITY_URL).await {
         return ServiceStatus {
             online: false,
             mc_auth_up: false,

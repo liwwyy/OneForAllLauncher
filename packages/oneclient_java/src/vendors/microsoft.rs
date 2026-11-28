@@ -69,8 +69,8 @@ impl JavaRuntimeProvider for MicrosoftRuntimeProvider {
     }
 }
 
-/// The checksum file names the build it belongs to so one request resolves the
-/// exact version, the filename and the hash the major-only link would download
+/// Microsoft can reuse the same artifact filename for a repackaged build.
+/// The first redirect of the checksum URL retains its versioned download alias.
 #[tracing::instrument(level = "debug", skip(net))]
 async fn resolve_package(
     major: u32,
@@ -78,7 +78,23 @@ async fn resolve_package(
     net: &RequestClient,
 ) -> JavaResult<Option<JavaPackage>> {
     let url = checksum_url(major, arch)?;
-    let response = net.send(Request::new(Method::GET, url)).await?;
+    let first = net
+        .send_without_redirects(Request::new(Method::GET, url.clone()))
+        .await?;
+    let (response, alias) = if first.status().is_redirection() {
+        let target = first
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| url.join(value).ok())
+            .filter(|target| target.scheme() == "https")
+            .unwrap_or(url);
+        let suffix = format!("-{MICROSOFT_OS}-{arch}.{}", MICROSOFT_EXT.0);
+        let alias = archive_alias(&target, &suffix);
+        (net.send(Request::new(Method::GET, target)).await?, alias)
+    } else {
+        (first, None)
+    };
     let status = response.status();
     let body = response
         .text()
@@ -102,10 +118,25 @@ async fn resolve_package(
         return Ok(None);
     };
 
+    let download_url = match alias {
+        Some(alias) if version_from_filename(&alias).as_ref() == Some(&build.java_version) => {
+            download_url(&alias)
+        }
+        Some(alias) => {
+            tracing::warn!(
+                major,
+                alias,
+                "Microsoft checksum redirect and filename disagree"
+            );
+            return Ok(None);
+        }
+        None => download_url(&build.filename),
+    };
+
     Ok(Some(
         JavaPackage {
             archive: MICROSOFT_EXT.1,
-            download_url: download_url(&build.filename),
+            download_url,
             java_version: build.java_version,
             name: build.filename,
             vendor: JavaVendor::Microsoft,
@@ -175,8 +206,27 @@ fn checksum_url(major: u32, arch: &str) -> JavaResult<Url> {
     ))?)
 }
 
-/// Prefer the versioned link the checksum names over the major-only one it was
-/// read through so the download cannot drift onto a newer build mid-release
+fn archive_alias(checksum_redirect: &Url, platform_suffix: &str) -> Option<String> {
+    if checksum_redirect.scheme() != "https" || checksum_redirect.host_str() != Some("aka.ms") {
+        return None;
+    }
+    let archive = checksum_redirect
+        .path()
+        .strip_prefix("/download-jdk/")?
+        .strip_suffix(".sha256sum.txt")?;
+    let version = archive
+        .strip_prefix("microsoft-jdk-")?
+        .strip_suffix(platform_suffix)?;
+    if !version.contains('.')
+        || !version
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'.' | b'-'))
+    {
+        return None;
+    }
+    Some(archive.to_owned())
+}
+
 fn download_url(filename: &str) -> String {
     format!("https://aka.ms/download-jdk/{filename}")
 }
@@ -233,6 +283,27 @@ mod tests {
         assert_eq!(build.java_version, vec![21, 0, 12]);
         assert_eq!(build.checksum.algorithm, polyio::ChecksumAlgorithm::Sha256);
         assert!(build.checksum.is_well_formed());
+    }
+
+    #[test]
+    fn repackaged_build_uses_the_alias_from_the_checksum_redirect() {
+        let redirect = Url::parse(
+            "https://aka.ms/download-jdk/microsoft-jdk-21.0.13.1-1-windows-x64.zip.sha256sum.txt",
+        )
+        .unwrap();
+        let build = parse_checksum_file(
+            "206e1fff36e6651cf3317901f185b66e755b4a4cbac916260b3595444deb5452  microsoft-jdk-21.0.13.1-windows-x64.zip",
+            21,
+        )
+        .unwrap();
+
+        let alias = archive_alias(&redirect, "-windows-x64.zip").unwrap();
+        assert_eq!(version_from_filename(&alias), Some(build.java_version));
+        assert_eq!(
+            download_url(&alias),
+            "https://aka.ms/download-jdk/microsoft-jdk-21.0.13.1-1-windows-x64.zip"
+        );
+        assert!(archive_alias(&redirect, "-windows-aarch64.zip").is_none());
     }
 
     #[test]

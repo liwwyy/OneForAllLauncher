@@ -103,7 +103,6 @@ impl MetadataStore {
                     polyio::write_json_atomic(&path, &metadata.inner).await?;
                 }
 
-                if oneclient_net::offline::active() { metadata.initialized = true; *self = metadata; return Ok(()); }
                 let (tx, rx) = oneshot::channel();
                 metadata.pending = Some(rx);
                 let ctx = ctx.clone();
@@ -131,7 +130,6 @@ impl MetadataStore {
                 });
             }
             Err(err) => {
-                if oneclient_net::offline::active() { return Err(oneclient_net::RequestError::Offline.into()); }
                 if path.exists() {
                     tracing::warn!(
                         path = %path.display(),
@@ -171,7 +169,6 @@ impl MetadataStore {
 
     #[tracing::instrument(level = "debug", skip_all)]
     pub async fn refetch_errored(&mut self, ctx: &McCtx) -> u8 {
-        if oneclient_net::offline::active() { return 0; }
         let mut changed: u8 = 0;
 
         if self.inner.minecraft.is_none()
@@ -210,7 +207,6 @@ impl MetadataStore {
 
     #[tracing::instrument(level = "debug", skip_all)]
     pub async fn fetch_all(&mut self, ctx: &McCtx) {
-        if oneclient_net::offline::active() { return; }
         self.inner.fetch_all(ctx).await;
     }
 

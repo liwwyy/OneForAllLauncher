@@ -1189,22 +1189,17 @@ impl Actions {
     }
 
     pub fn launch_cluster(&self, cluster_id: ClusterId) {
-        self.launch_with(cluster_id, None, false);
+        self.launch_with(cluster_id, None);
     }
 
     pub fn launch_cluster_for_invite(&self, cluster_id: ClusterId, invite_id: i32) {
         self.launch_with(
             cluster_id,
             Some(crate::invite_join::join_jvm_arg(invite_id)),
-            false,
         );
     }
 
-    pub fn launch_cluster_offline(&self, cluster_id: ClusterId) {
-        self.launch_with(cluster_id, None, true);
-    }
-
-    fn launch_with(&self, cluster_id: ClusterId, extra_jvm_arg: Option<String>, force_offline: bool) {
+    fn launch_with(&self, cluster_id: ClusterId, extra_jvm_arg: Option<String>) {
         if let Some((title, body)) = cluster_busy(cluster_id) {
             self.notify(title).body(body).send();
             return;
@@ -1232,7 +1227,7 @@ impl Actions {
             let started = Instant::now();
             match cluster_busy_elsewhere(cluster_id).await {
                 Some((title, body)) => actions.notify(title).body(body).send(),
-                None => launch(&actions, cluster_id, extra_jvm_arg, force_offline).await,
+                None => launch(&actions, cluster_id, extra_jvm_arg).await,
             }
 
             // An instant failure would hand the button back inside the same
@@ -2937,14 +2932,9 @@ pub fn update_check_running(cluster_id: ClusterId) -> bool {
     UPDATE_CHECKS.lock().unwrap().contains(&cluster_id)
 }
 
-async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<String>, force_offline: bool) {
+async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<String>) {
     let Ok(state) = launcher::state() else { return };
     let events = state.services.events.clone();
-    let offline = match oneclient_core::launch_mode::resolve(&state, cluster_id, force_offline).await {
-        Ok(value) => value,
-        Err(error) => { events.game_failed(cluster_id, error.to_string()); return; }
-    };
-    let extra_jvm_arg = if offline { None } else { extra_jvm_arg };
 
     events.game_stage(cluster_id, oneclient_events::LaunchStage::Checking);
 
@@ -2956,7 +2946,7 @@ async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<
         .flatten()
         .is_some_and(|a| a.needs_sign_in());
 
-    let account = match if offline { state.auth.default_account().await.map(|account| account.map(|mut value| { value.access_token.clear(); value })) } else { state.auth.default_account_for_launch().await } {
+    let account = match state.auth.default_account_for_launch().await {
         Ok(account) => account,
         Err(err) => {
             events.game_failed(cluster_id, format!("{err:#}"));
@@ -2978,13 +2968,13 @@ async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<
         super::invalidate_auth_queries(None).await;
     }
 
-    if !offline { crate::microsoft_java::offer_for_pinned_cluster(actions, cluster_id).await; }
+    crate::microsoft_java::offer_for_pinned_cluster(actions, cluster_id).await;
 
-    let _cloud_hold = if offline { None } else { actions.sync_before_launch(&state, cluster_id).await };
-    if !offline { actions.share_update_before_launch(&state, cluster_id).await; }
+    let _cloud_hold = actions.sync_before_launch(&state, cluster_id).await;
+    actions.share_update_before_launch(&state, cluster_id).await;
 
     let content = state.services.content();
-    if !offline { tokio::spawn(async move {
+    tokio::spawn(async move {
         if let Err(err) = oneclient_content::packages::refresh_bad_mods(&content).await {
             tracing::warn!(%err, "bad mods list refresh failed, keeping the last one");
         }
@@ -2993,22 +2983,15 @@ async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<
         }
     });
 
-    }
-
     // Before the game process never after Minecraft reads its mods once at
     // startup
-    let bundle_budget = if offline {
-        None
-    } else {
-        let Some(check) = actions.run_update_checks(&state, cluster_id, false).await else {
-            events.game_stage(cluster_id, oneclient_events::LaunchStage::Exited);
-            return;
-        };
-        check.bundle_budget
+    let Some(check) = actions.run_update_checks(&state, cluster_id, false).await else {
+        events.game_stage(cluster_id, oneclient_events::LaunchStage::Exited);
+        return;
     };
 
     // After the updates so the player never faces two modals at once
-    if !offline && actions
+    if actions
         .resolve_optional_mods_before_launch(&state, cluster_id)
         .await
         == OptionalModsOutcome::Cancel
@@ -3019,12 +3002,19 @@ async fn launch(actions: &Actions, cluster_id: ClusterId, extra_jvm_arg: Option<
 
     off_ui(async move {
         let extra = extra_jvm_arg.as_deref();
-        if let Err(err) =
-            oneclient_core::launch_cluster_with_mode(&state, cluster_id, &account, true, extra, offline, bundle_budget).await
+        if let Err(err) = oneclient_core::launch_cluster_with(
+            &state,
+            cluster_id,
+            &account,
+            true,
+            extra,
+            check.bundle_budget,
+        )
+        .await
         {
             // A missing file is the one failure the launcher can fix itself and a
             // path inside our metadata folder gives the user nothing to act on
-            if !offline && err.indicates_missing_files() {
+            if err.indicates_missing_files() {
                 repair_and_relaunch(&state, cluster_id, &account, err, extra).await;
                 return;
             }
