@@ -1,3 +1,30 @@
+# Local launch, Java and packaging follow-up — 2026-11-28
+
+All instances use the upstream launch flow. The fork-only launch menu, label,
+per-instance setting and cache-only path have been removed. The applied
+`offline_launch_settings` migration remains for database upgrades. Account
+types, the offline skin and cape hook, and authlib-injector are retained.
+
+Microsoft Java downloads now use the versioned alias from the checksum redirect
+when it is available. Windows x64 Java 21.0.13.1 was repackaged under a `-1`
+alias with a different SHA-256 while its checksum file still listed the original
+filename. Verify a fresh Windows instance with Microsoft Java 21 and launch an
+already installed Microsoft-account instance while disconnected.
+
+The pending Flatpak workflow builds from the fork's release DEB and includes
+the x86_64 bundle in the release checksums. Its first complete CI package build
+is still pending. The fork omits upstream's duplicate Windows and AppImage
+aliases. The existing 2.13.0 release stays immutable.
+
+The [local verification results](validation.md#local-launch-java-and-flatpak-checks-2026-11-28)
+include the test build at `target/debug/oneforall_app`.
+
+Proposed AUR package bases are `oneforalllauncher` for the source build and
+`oneforalllauncher-bin` for the prebuilt package. AUR submission is deferred
+until the owner can register.
+
+---
+
 # Local OneClient 2.13.0 integration — 2026-11-27
 
 The stable upstream tag `oneclient-2.13.0` resolves to

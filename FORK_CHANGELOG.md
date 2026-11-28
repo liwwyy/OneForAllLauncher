@@ -1,3 +1,9 @@
+## OneForAllLauncher 2.13.1 — upstream OneClient 2.13.0
+
+- Restore OneLauncher's standard **Launch** action for all accounts. Offline accounts retain their local skins and capes.
+- Fix Microsoft Java installation when Microsoft republishes a build under the same archive filename.
+- Add an x86_64 Linux Flatpak download.
+
 ## OneForAllLauncher 2.13.0 — upstream OneClient 2.13.0
 
 - Update to stable OneClient 2.13.0.

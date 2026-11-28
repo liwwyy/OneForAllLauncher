@@ -52,7 +52,7 @@ runners; it does not require a paid scanner.
 - The updater verifies packages with the fork's existing signing identity.
   Updater signatures establish authenticity/integrity; they are separate from
   Windows/macOS application signing and from a source security review.
-- Tests cover account/provider boundaries, private settings, cache-only launches
+- Tests cover account/provider boundaries, private settings, checksum verification
   and local skin transport. See [validation notes](validation.md) for actual runs
   and the remaining manual checks.
 

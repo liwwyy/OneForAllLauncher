@@ -91,13 +91,16 @@ The VanillaHUD preview workaround was retired after verifying the fix in the
 stable 1.8.9 Ornithe bundle and confirming the Ely.by preview in game. Preserve
 authlib-injector for Ely.by and custom launches.
 
+Use the upstream Launch flow for all account types. Preserve the applied
+`offline_launch_settings` migration for upgrades from older fork releases.
+
 The local skin client hook must run only for `AccountKind::Offline`,
 with a selected local skin or cape. Use loader-independent authlib and legacy skin paths;
 retain verified direct hooks only where necessary. Test against real authlib API
 generations and keep in-game validation separate from headless tests. Gate hook/classpath/agent
 injection in the launcher before starting Minecraft. Never load this hook for
-Microsoft, Ely.by or custom accounts, even if internet is unavailable or offline
-launch mode is selected. Authlib-injector retains its separate provider scope.
+Microsoft, Ely.by or custom accounts, even if internet is unavailable.
+Authlib-injector retains its separate provider scope.
 Resolve authlib/legacy hook calls through the source-built bootstrap bridge;
 do not load helper classes through a mod loader from inside a transformer.
 Keep regression coverage for a loader that denies the bridge package as well as
@@ -176,6 +179,12 @@ owner explicitly requests them. The owner manually tests UI changes.** Report
 which checks ran and which behaviors still need manual verification. Do not claim
 historical entries in VALIDATION.md as results from the current checkout.
 
+After verification and during upstream integrations, check the checkout size
+with `du -sh target`. Prune superseded Cargo executables and abandoned build
+outputs once builds have stopped. Keep the current test build and reusable
+dependencies where practical. Limit cleanup to generated workspace files.
+Preserve launcher data, accounts, instances, worlds and shared game libraries.
+
 ## Commits, upstream updates and releases
 
 Keep upstream history intact. Build any agreed replacement fork history from a
@@ -194,11 +203,20 @@ is separately requested. Replacing a branch does not erase commits retained by
 tags. Do not reset, force-push, delete refs or publish outside the authorized
 scope.
 
-Keep fork version numbers aligned with the upstream release being integrated.
+Normally align fork version numbers with the upstream release being integrated.
+For an owner-authorized fork-only fix, use an unused patch version and record the
+upstream base in the release notes. Keep fork versions increasing so installed
+launchers can receive the next update even if upstream uses the same version.
 Sync the fork to stable OneLauncher/OneClient releases, rather than following
 individual upstream commits or development builds. The usual update target is
 within a day of an upstream stable release; do not promise an unconditional
 deadline or bypass validation to meet it.
+When integrating a stable upstream release, compare its package formats and
+architectures with the fork release workflow. Carry forward new formats with
+fork-specific app IDs, desktop entries and URLs. Build the x86_64 Flatpak from
+the fork DEB, include its checksum in the release, and keep Flatpak out of the
+in-launcher updater manifest. Publish one installer per platform, architecture
+and package format. Omit upstream's duplicate Windows and AppImage aliases.
 The release workflow runs on pushes to `main` and supports manual dispatch. It
 skips already tagged/released versions on automatic pushes and publishes after
 successful packaging/signing. Keep existing releases immutable. The stable-sync

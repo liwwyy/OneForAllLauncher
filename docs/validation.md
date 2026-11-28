@@ -1,3 +1,28 @@
+# Local launch, Java and Flatpak checks (2026-11-28)
+
+Starting HEAD was `614aa8ac`, on OneForAllLauncher 2.13.0. All launch entry
+points use the upstream launch flow. The account code and applied database
+migration are unchanged.
+
+- The locked Rust 1.98.0 Linux debug build passed at `target/debug/oneforall_app`.
+  The executable was linked without debug info. The CLI build did not open the
+  launcher or load existing accounts or instances.
+- The Java and network crate suites passed all 71 tests, including the Microsoft
+  checksum redirect regression and the download hash-mismatch test.
+- All 8 database migration tests passed, including reopening a shared upstream
+  library with the legacy setting present. The upstream test query missing
+  SQLx metadata compiled against a temporary SQLite schema.
+- The Microsoft Windows x64 Java 21.0.13.1 `-1` archive matched Microsoft's
+  published SHA-256, `206e1fff36e6651cf3317901f185b66e755b4a4cbac916260b3595444deb5452`.
+- All 10 distribution tests passed. Flatpak Builder parsed the fork manifest and
+  AppStream validated the fork metadata. The GNOME 51 SDK is required for the
+  full bundle build in CI.
+
+Manual coverage is pending for disconnected launch with Microsoft and standalone
+offline accounts, and for fresh Microsoft Java installation on Windows x64.
+
+---
+
 # Local OneClient 2.13.0 checks (2026-11-27)
 
 The local merge `7ea35242` includes the upstream stable commit
@@ -610,15 +635,13 @@ the owner's report, not automated rendering verification or full platform covera
    sharing; verify accounts and launcher settings remain separate. On fresh
    setup, press Enter on Updates without clicking a choice; also check manual
    selection and Back/Next behavior.
-2. Disconnect before startup and launch a fully installed game. Check the
-   eight-second shared probe, all launch labels, right-click Launch Offline,
-   the per-instance toggle (default off), busy-state guards and recovery online.
-   Explicit offline mode should launch without a connectivity wait. Missing
-   metadata, files or Java must produce an installation error, not downloads.
-3. Check expired Microsoft/Ely.by/custom accounts in offline mode: preserve saved
-   credentials, selected account, player name and game UUID. Offline mode does
-   not enable authenticated multiplayer. Test equal names on different providers
-   and reject a second equal name on the same provider.
+2. Disconnect before startup and use **Launch** on a fully installed instance
+   with a Microsoft account. Repeat with a standalone offline account, then
+   reconnect and check that the normal online launch still works.
+3. On Windows x64, launch a fresh instance configured to download Microsoft
+   Java 21. Verify the launcher accepts the repackaged archive's SHA-256 and
+   starts the game. Check that equal names work across account types and that a
+   second equal name on the same account type is rejected.
 4. Minecraft 1.8.9/Ornithe and modern-version local skins have been confirmed in
    game by the owner. Continue checking untested Vanilla/Fabric/Forge/NeoForge/Quilt
    setups and representative old and new versions as available: choose a PNG,

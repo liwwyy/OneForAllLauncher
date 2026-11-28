@@ -26,26 +26,27 @@ This fork is **not** endorsed by Polyfrost/OneLauncher
 
 ## Stable Releases
 
-Download **OneForAllLauncher 2.13.0** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
+Download **OneForAllLauncher 2.13.1** from the direct links below. Choose the package matching your operating system and processor. See [GitHub Releases](https://github.com/liwwyy/OneForAllLauncher/releases/latest) for the latest published version.
 
 | Operating system | Architecture | Direct download | Installation |
 | --- | --- | --- | --- |
-| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_windows_x86_64.exe) | Run the installer. |
-| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.AppImage) | Mark executable, then run. |
-| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.deb) | Install with your package manager. |
-| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_linux_x86_64.rpm) | Install with your package manager. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
-| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
-| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/OneForAllLauncher_2.13.0_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
+| Windows | x64 (Intel / AMD) | 🔄 [`.exe`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_windows_x86_64.exe) | Run the installer. |
+| Linux — CachyOS, Arch and other distributions | x64 (Intel / AMD) | 🔄 [`.AppImage`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_linux_x86_64.AppImage) | Mark executable, then run. |
+| Linux — Debian, Ubuntu, Linux Mint | x64 (Intel / AMD) | [`.deb`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_linux_x86_64.deb) | Install with your package manager. |
+| Linux — Fedora, openSUSE and other RPM distributions | x64 (Intel / AMD) | [`.rpm`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_linux_x86_64.rpm) | Install with your package manager. |
+| Linux — Flatpak | x64 (Intel / AMD) | [`.flatpak`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_linux_x86_64.flatpak) | Run `flatpak install ./OneForAllLauncher_2.13.1_linux_x86_64.flatpak`. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_darwin_aarch64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.dmg`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_darwin_x86_64.dmg) | Open the DMG and copy the app to Applications. |
+| macOS — Apple Silicon (M-series) | ARM64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_darwin_aarch64.app.tar.gz) | Extract and move the app to Applications. |
+| macOS — Intel | x64 | 🔄 [`.app.tar.gz`](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/OneForAllLauncher_2.13.1_darwin_x86_64.app.tar.gz) | Extract and move the app to Applications. |
 
-🔄 Supports in-launcher automatic updates when enabled. For DEB/RPM installations, download and install newer packages manually.
+🔄 Supports in-launcher automatic updates when enabled. For DEB, RPM and Flatpak installations, download and install newer packages manually.
 
-Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.0/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
+Verify downloads with [SHA256SUMS.txt](https://github.com/liwwyy/OneForAllLauncher/releases/download/oneforall-2.13.1/SHA256SUMS.txt). If Windows SmartScreen or macOS Gatekeeper blocks the launcher, see [installation warnings and troubleshooting](docs/installation-troubleshooting.md).
 
 ## Fork Sync Notice
 
-This fork follows **stable OneLauncher/OneClient releases** rather than individual upstream commits or development builds. It will usually be updated within a day of an upstream stable release.
+This fork usually updates within a day of a **stable OneLauncher/OneClient release**. Urgent fork fixes may ship between upstream releases.
 
 The **Upstream sync** badge checks hourly whether this fork's `main` includes the latest stable OneClient release commit. It shows **Up to date**, **Update available**, or **Check unavailable**. It describes the source branch; the Release badge separately shows the latest published build.
 
@@ -83,12 +84,6 @@ If an update is taking longer, you can contact me via **[Discord](https://discor
     </tr>
     <tr>
       <td align="center" colspan="2">
-        <a href="docs/screenshots/offline-launch.png"><img src="docs/screenshots/offline-launch.png" alt="Offline launch controls" width="840" /></a><br />
-        <sub>Offline launch</sub>
-      </td>
-    </tr>
-    <tr>
-      <td align="center" colspan="2">
         <a href="docs/screenshots/offline-local-skin-picker.png"><img src="docs/screenshots/offline-local-skin-picker.png" alt="Local skin picker for offline accounts" width="840" /></a><br />
         <sub>Offline account local skin picker</sub>
       </td>
@@ -121,7 +116,6 @@ recommended free checks, what they establish, and their current status.
 
 - Add offline accounts without first signing in with a Microsoft account, with live username validation, an invalid-name override, random characters/username generators, and an optional online-name check (off by default).
 - Sign in with Microsoft, [Ely.by](https://ely.by/), or a custom Yggdrasil authentication server. Ely.by skin visibility to other players depends on server support.
-- Launch installed instances without waiting for authentication, cloud sync or update requests when offline. Use **Launch Offline** from a launch button's context menu, or enable **Always launch Offline** in an instance's settings. Missing game files still require one online installation.
 - Keep the same username on different account types without changing Minecraft profile UUIDs.
 - Open **Wardrobe** with a standalone offline account to import PNG skins from a file, URL or Minecraft username, choose classic or slim arms, and save outfits. The Wardrobe shows a muted **Local** label. Your selected offline account skin and cape only appear for you, even in multiplayer. [Offline Wardrobe guide](docs/offline-wardrobe.md)
 - Choose from 50 Minecraft capes or import a custom 64 × 32 PNG from a file or URL. Saved capes can be equipped offline, including with the default skin.
@@ -184,13 +178,13 @@ select **OneClient folder** again in Settings to use its actual library.
 
 ### Launcher updates
 
-Version numbers follow upstream OneLauncher. Version **2.13.0** includes upstream 2.13.0 plus the fork’s account features. GitHub release tags retain the `oneforall-` prefix.
+Version **2.13.1** is a fork-only patch based on OneLauncher 2.13.0. GitHub release tags retain the `oneforall-` prefix.
 
 Pushes to `main` automatically build and publish the workspace version when its release/tag does not already exist. Existing versions are skipped; the release workflow can also be started manually. Check [release build results](https://github.com/liwwyy/OneForAllLauncher/actions/workflows/oneclient_release.yml) for package availability and failures.
 
 Setup shows **automatic updates selected by default**. Press **Enter** or **Next** to confirm it, or select **Update manually** to opt out. Viewing the page alone does not enable updates, and existing installations retain their saved preference. Change this later in **Settings → Launcher → Updates**. Opting out disables background update checks. The **Check for updates** button works with either setting and asks before installing an available update.
 
-Updates come from this fork’s stable GitHub releases, and package signatures are verified before installation. Restart the launcher to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates; DEB/RPM installations and development builds show a download notice instead.
+Updates come from this fork’s stable GitHub releases, and package signatures are verified before installation. Restart the launcher to apply an installed update. Windows installers, macOS app bundles and Linux AppImages support self-updates; DEB, RPM and Flatpak installations and development builds show a download notice instead.
 
 Upgrades use the existing fork data directory, including a previously selected custom data location, so accounts, settings and installed instances remain available. The fork keeps separate installation and launch identities from upstream OneClient so both can be installed and run on the same machine.
 

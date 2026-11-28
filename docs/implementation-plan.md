@@ -48,102 +48,14 @@ Keep authlib-injector and verify the custom-auth tab-list preview in game.
 Old launcher settings containing the retired flag must still load. Keep the
 pinned ASM dependency and license with the offline appearance agent.
 
-## Offline launching
+## Launching with or without internet
 
-### Existing upstream behavior
-
-Upstream already has offline accounts, cached metadata, transient authentication
-failure fallbacks, signed-out Microsoft singleplayer launches, and a missing-file
-"Launch anyway" prompt. It does not provide the requested explicit launch policy,
-right-click action or per-instance always-offline setting.
-
-`oneclient_net/src/status.rs` publishes `ServiceStatus` through a Tokio watch
-channel. Its connectivity probe timeout is eight seconds. `StatusBar` subscribes
-to the same status to display the no-internet banner. Probes currently run on
-startup or a requested recheck; there is no idle recovery timer. Network request
-timeouts are separate and can be longer, so changing only the button label will
-not prevent launch delays.
-
-### Launch policy and controls
-
-Resolve one launch policy for every request, shared by the UI and launch pipeline:
-
-| Condition | Effective mode | Idle launch label |
-| --- | --- | --- |
-| Online, instance preference off | Normal | Existing normal label |
-| Existing status reports no internet | Offline | `Launch (Offline)` |
-| Instance preference on | Offline | `Launch (Offline)` |
-| Right-click `Launch Offline` | Offline for this launch only | Does not persist a preference |
-
-Keep checking, waiting, running, stopping and disabled states ahead of idle labels.
-Internet recovery restores normal labels unless the instance preference remains
-enabled. Dismissing the no-internet banner must not change the launch policy.
-An outage at Microsoft or Polyfrost alone is not proof that the internet is down.
-
-Reuse the existing timeout, probe and subscription. Add a single bounded recovery
-recheck while offline, plus rechecks on existing request/focus triggers as useful,
-so the launcher notices recovery even when no other requests are being made.
-Avoid a second competing connectivity detector or a per-button polling task.
-Freeze the chosen mode for a launch attempt so recovery does not start downloads
-or cloud synchronization halfway through preparing an offline session.
-
-Use the existing ContextMenu for right-clicking each launch button, with a
-`Launch Offline` entry and the offline icon. Right-click must not also trigger
-the normal launch. Preserve existing focus, keyboard and dismissal behavior.
-
-Under instance settings' existing **Instance** section, add a standard settings
-row with the offline icon and the toggle **Always launch Offline**. Default it to
-false for existing and new instances. Persist it per instance, not in a shared
-game-settings profile that could change multiple instances together. Use a new
-additive database migration and update the DAO, row/model and saved instance
-metadata paths as needed; never edit an already-applied migration.
-
-### Launch pipeline
-
-Thread the policy through `Actions` and the core launch functions so it also
-applies to tray, shortcut, URL-handler and pending-launch requests. Offline mode
-should:
-
-- Use the selected account's saved name and game UUID without account renewal,
-  sign-in prompts or creating/replacing an account. Keep stored credentials and
-  the selected account unchanged; use a launch-only credential snapshot.
-- Use installed Minecraft, loader, Java, libraries, assets, bundled mods and
-  cached metadata. Do not refresh loader versions, mods, modpacks or block on
-  Java offers, share updates, cloud synchronization or optional remote services.
-- Retain local directory ownership, unfinished-reset, dependency, native-library
-  and game-file checks. An installed game should launch without a chain of
-  network retries. Do not attempt network repair from the offline launch path.
-- Identify missing required local files clearly. A first installation or a
-  missing runtime cannot be completed without the necessary files. Reuse the
-  existing incomplete-assets decision where appropriate; do not promise that
-  all partially installed games can run.
-- Use an already-cached, verified authlib-injector when the chosen provider
-  requires it. Missing authentication/compatibility artifacts must not trigger a
-  download in explicit offline mode.
-- Avoid reporting online party/invite or cloud operations as successful. Offline
-  launching does not provide access to servers that require online authentication
-  and does not control network activity started by Minecraft or its mods.
-
-At the UI boundary, share the policy and menu behavior while preserving each
-existing button's dimensions and styling. Audit at least:
-
-- Home/active-instance hero (`components/active_cluster_panel.rs`).
-- Instance detail header (`layout/cluster_shell.rs`).
-- Instance list/grid/sidebar launch controls (`view/app/clusters/page.rs`).
-- Invite launch controls and the debug launch control.
-- Tray "Play last", desktop shortcuts and URL launches through IPC/pending launch.
-
-Add translations using upstream 2.10.0's existing i18n mechanism.
-
-### Acceptance checks
-
-Use fake connectivity and counted/mocked requests to test online/offline/recovery
-transitions without UI screenshots. Verify both manual and automatic offline
-launches skip launch-path network calls, preserve account/game UUIDs, respect
-busy states and default old instances to false. Cover cold startup without
-internet, recovery while idle, connection loss during launch, cached versus
-missing files, expired credentials and every launch entry point. The owner
-manually tests the game launches, context menus, labels and settings row.
+Use the upstream **Launch** action for all accounts. Keep the applied migration
+for the retired per-instance launch setting so old databases can still open.
+Account type continues to determine the launch identity and appearance hooks.
+Verify normal launch with a Microsoft account and a fully installed instance
+while disconnected, and with a standalone offline account. Verify a fresh
+Windows installation using managed Microsoft Java separately.
 
 ## Same-name accounts from different account types
 
@@ -246,10 +158,8 @@ behavior intact for Microsoft accounts.
 Gate any local game-skin hook on `AccountKind::Offline`, a selected local skin and
 a supported Minecraft/loader combination. Check that condition in the launcher
 before adding any hook, agent arguments or classpath entries. Microsoft, Ely.by
-and custom accounts must never load this hook, including when disconnected or
-using `Launch Offline` / `Always launch Offline`. Internet connectivity and the
-launch-mode preference do not change an account's type. This gate does not change
-the separate authlib-injector rules.
+and custom accounts must never load this hook, including when disconnected.
+Authlib-injector retains its separate provider rules.
 
 The launcher already accepts raw skin bytes for its 3D preview, but its current
 "apply skin" actions upload to Mojang and record through Poly+. No local game-skin
@@ -274,8 +184,8 @@ Tests must distinguish local wardrobe preview from actual in-game skin behavior.
 Verify persistence across upgrades/restarts, model selection, default restore,
 no service/registration requests, same-name account isolation and no effect on
 other players' rendering. For every other account kind, assert that no local
-skin-hook arguments or classpath entries are injected in either launch mode,
-including when a saved local skin exists. The owner verifies in-game behavior on supported
+skin-hook arguments or classpath entries are injected, including when a saved
+local skin exists. The owner verifies in-game behavior on supported
 Minecraft/loader combinations before the feature is described as complete.
 
 ## Suggested implementation order
@@ -283,8 +193,7 @@ Minecraft/loader combinations before the feature is described as complete.
 1. Rebuild the retained fork features over upstream 2.10.0 with upgrade tests.
 2. Retire the VanillaHUD preview workaround after verifying upstream’s fix and the owner’s Ely.by test.
 3. Fix account uniqueness and any required backward-compatible storage identity.
-4. Implement offline launch policy and per-instance persistence, then all UI entry
-   points and translations, with focused tests in the same behavior commits.
+4. Preserve the upstream launch flow and verify fork account hooks by provider.
 5. Complete account icon normalization through the stock icon/theme pipeline;
    the custom-account icon cleanup is already implemented locally.
 6. Implement the local wardrobe and verify its game integration separately.
