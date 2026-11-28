@@ -313,8 +313,36 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  publish:
+  flatpak:
     needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-linux-x86_64
+          path: flatpak-input
+      - name: Stage the fork DEB in the Flatpak manifest directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "flatpak-input/OneForAllLauncher_${VERSION}_linux_x86_64.deb" distribution/flatpak/oneforall-launcher.deb
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
+        with:
+          bundle: OneForAllLauncher_${{ env.VERSION }}_linux_x86_64.flatpak
+          manifest-path: distribution/flatpak/com.oneforall.OneForAllLauncher.yml
+          branch: stable
+          artifact-name: release-flatpak-x86_64
+
+  publish:
+    needs: [prepare, build, flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -353,7 +381,7 @@ jobs:
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
           set -euo pipefail
-          for suffix in windows_x86_64.exe linux_x86_64.deb linux_x86_64.rpm linux_x86_64.AppImage darwin_aarch64.dmg darwin_aarch64.app.tar.gz darwin_x86_64.dmg darwin_x86_64.app.tar.gz; do
+          for suffix in windows_x86_64.exe linux_x86_64.deb linux_x86_64.rpm linux_x86_64.AppImage linux_x86_64.flatpak darwin_aarch64.dmg darwin_aarch64.app.tar.gz darwin_x86_64.dmg darwin_x86_64.app.tar.gz; do
             test -s "dist/OneForAllLauncher_${VERSION}_${suffix}"
           done
           (cd dist && sha256sum * > SHA256SUMS.txt)

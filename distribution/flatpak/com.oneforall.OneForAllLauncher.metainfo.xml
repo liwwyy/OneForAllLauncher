@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.oneforall.OneForAllLauncher</id>
+  <name>OneForAllLauncher</name>
+  <summary>Next-generation open source Minecraft launcher</summary>
+  <developer id="com.oneforall">
+    <name>OneForAllLauncher contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>OneForAllLauncher is a fork of Polyfrost OneClient with standalone offline, Ely.by and custom authentication accounts.</p>
+  </description>
+  <launchable type="desktop-id">com.oneforall.OneForAllLauncher.desktop</launchable>
+  <url type="homepage">https://github.com/liwwyy/OneForAllLauncher</url>
+  <url type="bugtracker">https://github.com/liwwyy/OneForAllLauncher/issues</url>
+  <url type="vcs-browser">https://github.com/liwwyy/OneForAllLauncher</url>
+  <content_rating type="oars-1.1"/>
+  <provides>
+    <binary>oneforall_app</binary>
+  </provides>
+</component>
